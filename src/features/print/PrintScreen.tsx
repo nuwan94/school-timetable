@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { downloadBlob } from '@/io/projectFile';
 import { buildReviewBundle } from '@/print/bundle';
 import type { Lang } from '@/print/labels';
 import { sheetsToPdf, sheetsToZip, sheetToPng, type RenderedSheet } from '@/print/output';
 import { buildSheets, SHEET_KINDS, type Sheet, type SheetKind } from '@/print/sheets';
 import { SheetView } from '@/print/SheetView';
+import { SheetRenderer } from '@/print/SheetRenderer';
 import '@/print/sheet.css';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader } from '@/ui/kit';
@@ -238,7 +238,7 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
         </Card>
       </div>
 
-      {job && job.kind !== 'bundle' && <Renderer job={job} onReady={(nodes) => void run(job, nodes)} />}
+      {job && job.kind !== 'bundle' && <SheetRenderer sheets={job.sheets} print={job.kind === 'print'} onReady={(nodes) => void run(job, nodes)} />}
     </div>
   );
 }
@@ -269,42 +269,6 @@ function Preview({ sheet }: { sheet: Sheet }) {
           <SheetView sheet={sheet} />
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * Renders the job's sheets at real size: off-screen for image outputs,
- * into the print-only root for Print. Calls back once laid out.
- */
-function Renderer({ job, onReady }: { job: Job; onReady: (nodes: RenderedSheet[]) => void }) {
-  const refs = useRef<(HTMLDivElement | null)[]>([]);
-  const done = useRef(false);
-  useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-    // Two frames: let layout and web fonts settle before capture.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() =>
-        onReady(
-          job.sheets.map((s, i) => ({ node: refs.current[i]!, paper: s.paper, fileName: s.fileName })).filter((n) => !!n.node),
-        ),
-      ),
-    );
-  }, [job, onReady]);
-  const content = job.sheets.map((s, i) => (
-    <SheetView
-      key={s.id}
-      sheet={s}
-      ref={(el) => {
-        refs.current[i] = el;
-      }}
-    />
-  ));
-  if (job.kind === 'print') return createPortal(<div className="print-root">{content}</div>, document.body);
-  return (
-    <div aria-hidden style={{ position: 'fixed', left: -100_000, top: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {content}
     </div>
   );
 }

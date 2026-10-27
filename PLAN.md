@@ -457,6 +457,17 @@ src/
   - The vector PDF path, @pdf-lib/fontkit and regenerator-runtime are removed, as the spike decided. The JS bundle went from 1.6 MB to 1.1 MB.
   - Measured: about 340 KB and 1 s per page. Grayscale JPEG is a possible size follow-up.
   - Not done: Playwright print snapshot tests, and a check of the browser Print dialog's pagination for the A3 master chart.
+- **P4: done.**
+  - **Today — relief**: a mobile-first screen in English, Sinhala or Tamil (the choice is remembered per device).
+    - Tap a teacher to mark them away. Each absence can be the whole day or some periods, run until a date, repeat weekly or fortnightly, and have a reason.
+    - Calendar overlays (marking camp, exams, holidays) apply automatically. Classes that are away free their teachers.
+  - **Lessons to cover**, each period with ranked suggestions:
+    - order: fewest reliefs this week, then this term, then teaches the class or subject, then same department;
+    - teachers who are busy, away, unavailable or at the R12 daily maximum are skipped;
+    - other options: class teacher, combine with a same-grade class, or library/ground with a supervisor;
+    - one-tap assign, and Auto-assign all, which keeps both halves of a double with one teacher.
+  - **Relief register** sheet (with a signature column), **relief slips** (8 per A4), a cropped WhatsApp image, PDF and Print.
+  - **Relief ledger**: week, term and all-time counts, and days away; the term start date is a new optional setting.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 

@@ -28,6 +28,20 @@ function BlockView({ block, week }: { block: Block; week: boolean }) {
         ))}
       </div>
     );
+  if (block.type === 'slips')
+    return (
+      <div className="tt-slips">
+        {block.items.map((lines, i) => (
+          <div key={i} className="tt-slip">
+            {lines.map((l, j) => (
+              <div key={j} className="tt-l">
+                {l}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   if (block.type === 'sign')
     return (
       <div className="tt-sign">
@@ -91,7 +105,8 @@ function BlockView({ block, week }: { block: Block; week: boolean }) {
 }
 
 /** One printable page. Sized in mm to its paper's content box. */
-export const SheetView = forwardRef<HTMLDivElement, { sheet: Sheet }>(function SheetView({ sheet }, ref) {
+/** `fit`: height of the content only (for phone images) instead of a full page. */
+export const SheetView = forwardRef<HTMLDivElement, { sheet: Sheet; fit?: boolean }>(function SheetView({ sheet, fit = false }, ref) {
   const box = contentMm(sheet);
   return (
     <div
@@ -100,7 +115,7 @@ export const SheetView = forwardRef<HTMLDivElement, { sheet: Sheet }>(function S
       data-paper={sheet.paper}
       data-sheet-id={sheet.id}
       lang={sheet.lang}
-      style={{ width: `${box.w}mm`, minHeight: `${box.h}mm` }}
+      style={{ width: `${box.w}mm`, minHeight: fit ? undefined : `${box.h}mm`, padding: fit ? '6mm' : undefined }}
     >
       <div className="tt-head">
         {sheet.draft && <span className="tt-draft">DRAFT</span>}
