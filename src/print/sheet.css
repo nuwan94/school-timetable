@@ -137,6 +137,31 @@
   padding-top: 1mm;
 }
 
+.tt-slips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.tt-slip {
+  border: 0.75pt dashed #000;
+  padding: 3mm 4mm;
+  min-height: 60mm;
+  font-size: 10pt;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+}
+.tt-slip .tt-l:first-child {
+  font-weight: 700;
+  font-size: 11pt;
+  text-align: center;
+  margin-bottom: 1mm;
+}
+.tt-slip .tt-l:last-child {
+  margin-top: auto;
+  padding-top: 6mm;
+}
+
 /* Print: one sheet per page, page size from the sheet's paper. */
 @page tt-A4P {
   size: A4 portrait;

@@ -3,6 +3,8 @@ import { CheckScreen } from '@/features/build/CheckScreen';
 import { EditScreen } from '@/features/build/EditScreen';
 import { GenerateScreen } from '@/features/build/GenerateScreen';
 import { PrintScreen } from '@/features/print/PrintScreen';
+import { LedgerScreen } from '@/features/relief/LedgerScreen';
+import { TodayScreen } from '@/features/relief/TodayScreen';
 import { useProjectStore } from '@/store/projectStore';
 import { AllocationsStep } from './AllocationsStep';
 import { BlocksStep } from './BlocksStep';
@@ -13,7 +15,7 @@ import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
 
-type BuildId = 'check' | 'generate' | 'edit' | 'print';
+type BuildId = 'check' | 'generate' | 'edit' | 'print' | 'today' | 'ledger';
 type View = StepId | BuildId;
 
 const BUILD: { id: BuildId; label: string }[] = [
@@ -21,6 +23,11 @@ const BUILD: { id: BuildId; label: string }[] = [
   { id: 'generate', label: 'Generate' },
   { id: 'edit', label: 'Edit' },
   { id: 'print', label: 'Print & share' },
+];
+
+const DAILY: { id: BuildId; label: string }[] = [
+  { id: 'today', label: 'Today — relief' },
+  { id: 'ledger', label: 'Relief ledger' },
 ];
 
 const SCREENS: Record<StepId, () => JSX.Element> = {
@@ -58,7 +65,7 @@ export function SetupLayout() {
     }
   }, [view]);
 
-  const build = BUILD.find((b) => b.id === view);
+  const build = [...BUILD, ...DAILY].find((b) => b.id === view);
   const current = build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
@@ -81,6 +88,13 @@ export function SetupLayout() {
           ))}
           <optgroup label="Build">
             {BUILD.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Daily">
+            {DAILY.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
@@ -139,6 +153,22 @@ export function SetupLayout() {
               </li>
             ))}
           </ol>
+          <p className="label mt-5">Daily</p>
+          <ol className="mt-2 space-y-1">
+            {DAILY.map((b) => (
+              <li key={b.id}>
+                <button
+                  onClick={() => go(b.id)}
+                  aria-current={view === b.id ? 'page' : undefined}
+                  className={`w-full rounded-md px-2 py-1.5 text-left text-sm font-medium ${
+                    view === b.id ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              </li>
+            ))}
+          </ol>
           <div className="mt-6 border-t border-slate-200 pt-3">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -164,6 +194,10 @@ export function SetupLayout() {
           <CheckScreen onGenerate={() => go('generate')} />
         ) : view === 'generate' ? (
           <GenerateScreen onCheck={() => go('check')} onEdit={() => go('edit')} />
+        ) : view === 'today' ? (
+          <TodayScreen onGenerate={() => go('generate')} />
+        ) : view === 'ledger' ? (
+          <LedgerScreen />
         ) : view === 'edit' ? (
           <EditScreen onGenerate={() => go('generate')} onPrint={() => go('print')} />
         ) : (

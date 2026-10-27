@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Id, LocalText, Pack } from './common';
+import { Id, IsoDate, LocalText, Pack } from './common';
 import {
   Allocation,
   CurriculumTemplate,
@@ -34,6 +34,8 @@ export const Institute = z.object({
   logo: z.string().nullable().default(null),
   academicYear: z.string().default(''),
   term: z.string().default(''),
+  /** First day of the current term, for relief fairness counts. */
+  termStart: IsoDate.nullable().default(null),
   workingDays: z.array(Weekday).min(1),
   printLanguage: z.enum(['en', 'si', 'ta']).default('en'),
   gradeLabel: z.string().default('Grade'),

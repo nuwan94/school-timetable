@@ -12,7 +12,7 @@ import { dayName, LABELS, localName, type Lang } from './labels';
  */
 
 export type Paper = 'A4P' | 'A4L' | 'A3P' | 'A3L';
-export type SheetKind = 'class' | 'teacher' | 'room' | 'masterStaff' | 'masterClassDay' | 'free' | 'classList';
+export type SheetKind = 'class' | 'teacher' | 'room' | 'masterStaff' | 'masterClassDay' | 'free' | 'classList' | 'reliefRegister' | 'reliefSlips';
 
 export interface Cell {
   lines: string[];
@@ -23,7 +23,9 @@ export type Row = { kind: 'row'; head: Cell; cells: Cell[] } | { kind: 'band'; l
 export type Block =
   | { type: 'table'; corner: string; headGroups?: { label: string; span: number }[]; head: string[]; rows: Row[]; compact?: boolean }
   | { type: 'facts'; items: [string, string][] }
-  | { type: 'sign'; labels: string[] };
+  | { type: 'sign'; labels: string[] }
+  /** Cut-out slips, two per row. */
+  | { type: 'slips'; items: string[][] };
 
 export interface Sheet {
   id: string;
@@ -476,5 +478,8 @@ export function buildSheets(p: Project, version: TimetableVersion, kind: SheetKi
       return freeChart(c);
     case 'classList':
       return classList(c);
+    case 'reliefRegister':
+    case 'reliefSlips':
+      return []; // built per date in reliefSheets.ts
   }
 }
