@@ -42,6 +42,8 @@ export interface AbsentInfo {
   intervals: { start: number; end: number }[];
   slotIds: string[];
   sources: AbsenceSource[];
+  /** Long leave: the named cover teacher, suggested first. */
+  coverTeacherId: string | null;
 }
 
 /** Does an absence (or recurrence) cover this date? */
@@ -87,13 +89,14 @@ export function dayContext(p: Project, date: string): DayContext {
   const absent = new Map<string, AbsentInfo>();
   const info = (teacherId: string) => {
     let a = absent.get(teacherId);
-    if (!a) absent.set(teacherId, (a = { teacherId, wholeDay: false, intervals: [], slotIds: [], sources: [] }));
+    if (!a) absent.set(teacherId, (a = { teacherId, wholeDay: false, intervals: [], slotIds: [], sources: [], coverTeacherId: null }));
     return a;
   };
   for (const a of p.absences) {
     if (!absenceOn(a, date)) continue;
     const x = info(a.teacherId);
     x.sources.push({ kind: a.recurrence ? 'recurring' : 'manual', absenceId: a.id, reason: a.reason });
+    if (a.coverTeacherId) x.coverTeacherId = a.coverTeacherId;
     if (!a.slotIds.length) x.wholeDay = true;
     for (const id of a.slotIds) {
       const s = slots.get(id);
@@ -195,6 +198,8 @@ export interface Candidate {
   teachesClass: boolean;
   teachesSubject: boolean;
   sameDepartment: boolean;
+  /** Named cover for this absent teacher's long leave. */
+  designated: boolean;
 }
 
 /** Teachers who are at school, free at that time and under the daily maximum — best first. */
@@ -230,10 +235,12 @@ export function candidates(p: Project, ctx: DayContext, need: CoverNeed, relief:
       teachesClass: ctx.version ? lessonsOf(p, ctx.version, t.id).some((e) => e.classIds.some((c) => need.classIds.includes(c))) : false,
       teachesSubject: t.subjectIds.includes(need.subjectId),
       sameDepartment: !!t.department && t.department === absentTeacher?.department,
+      designated: ctx.absent.get(need.absentTeacherId)?.coverTeacherId === t.id,
     });
   }
   return out.sort(
     (a, b) =>
+      Number(b.designated) - Number(a.designated) ||
       a.week - b.week ||
       a.term - b.term ||
       Number(b.teachesClass) - Number(a.teachesClass) ||

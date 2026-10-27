@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { downloadBlob } from '@/io/projectFile';
+import { diffVersion } from '@/domain/midyear';
 import { buildReviewBundle } from '@/print/bundle';
 import type { Lang } from '@/print/labels';
 import { sheetsToPdf, sheetsToZip, sheetToPng, type RenderedSheet } from '@/print/output';
@@ -27,25 +28,39 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
   const [kind, setKind] = useState<SheetKind>('class');
   const lang = project.institute.printLanguage;
   const [picked, setPicked] = useState<string[] | null>(null); // null = all
+  const [onlyChanged, setOnlyChanged] = useState(false);
   const [page, setPage] = useState(0);
   const [job, setJob] = useState<Job | null>(null);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const meta = SHEET_KINDS.find((k) => k.kind === kind)!;
+  // Mid-year versions remember the lessons they replaced: offer only the sheets that changed.
+  const diff = useMemo(() => (version?.baseSnapshot.length ? diffVersion(project, version) : null), [project, version]);
+  const kinds = SHEET_KINDS.filter((k) => k.kind !== 'changeNotice' || diff);
+  const meta = kinds.find((k) => k.kind === kind) ?? kinds[0]!;
+  const changedIds = useMemo(() => {
+    if (!diff) return null;
+    if (meta.perItem === 'class') return [...diff.classes];
+    if (meta.perItem === 'teacher') return [...diff.teachers.keys()];
+    if (meta.perItem === 'room') return [...diff.rooms];
+    return null;
+  }, [diff, meta]);
+  const filterChanged = (onlyChanged || meta.kind === 'changeNotice') && changedIds;
   const items = useMemo(() => {
-    if (meta.perItem === 'class') return [...project.classes].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    if (meta.perItem === 'teacher') return project.teachers.filter((t) => t.active).sort((a, b) => a.name.localeCompare(b.name));
-    if (meta.perItem === 'room') return project.rooms;
+    const keep = <T extends { id: string }>(list: T[]) => (filterChanged ? list.filter((x) => changedIds!.includes(x.id)) : list);
+    if (meta.perItem === 'class') return keep([...project.classes].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
+    if (meta.perItem === 'teacher') return keep(project.teachers.filter((t) => t.active || meta.kind === 'changeNotice').sort((a, b) => a.name.localeCompare(b.name)));
+    if (meta.perItem === 'room') return keep(project.rooms);
     return [];
-  }, [meta, project]);
-  const sheets = useMemo(
-    () => (version ? buildSheets(project, version, kind, { lang, ids: meta.perItem && picked ? picked : undefined }) : []),
-    [project, version, kind, lang, picked, meta],
-  );
+  }, [meta, project, filterChanged, changedIds]);
+  const sheets = useMemo(() => {
+    if (!version) return [];
+    const ids = meta.perItem ? (picked ?? (filterChanged ? items.map((x) => x.id) : undefined)) : undefined;
+    return buildSheets(project, version, meta.kind, { lang, ids });
+  }, [project, version, meta, lang, picked, filterChanged, items]);
 
   useEffect(() => setPage(0), [kind, picked, lang]);
-  useEffect(() => setPicked(null), [kind]);
+  useEffect(() => setPicked(null), [kind, onlyChanged]);
 
   if (!version)
     return (
@@ -69,8 +84,8 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
   const run = async (j: Job, nodes: RenderedSheet[]) => {
     try {
       const step = (d: number, t: number) => setProgress(`${d} of ${t}`);
-      if (j.kind === 'pdf') downloadBlob(await sheetsToPdf(nodes, step), `${school}-${kind}-${lang}-${stamp}.pdf`);
-      if (j.kind === 'zip') downloadBlob(await sheetsToZip(nodes, step), `${school}-${kind}-${lang}-${stamp}.zip`);
+      if (j.kind === 'pdf') downloadBlob(await sheetsToPdf(nodes, step), `${school}-${meta.kind}-${lang}-${stamp}.pdf`);
+      if (j.kind === 'zip') downloadBlob(await sheetsToZip(nodes, step), `${school}-${meta.kind}-${lang}-${stamp}.zip`);
       if (j.kind === 'png' && nodes[0]) downloadBlob(await sheetToPng(nodes[0].node), `${nodes[0].fileName}-${lang}.png`);
       if (j.kind === 'print') {
         await document.fonts.ready;
@@ -89,7 +104,7 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
     setJob({ kind: 'bundle', sheets: [] });
     setProgress('building…');
     try {
-      const all = SHEET_KINDS.flatMap((k) => buildSheets(project, version, k.kind, { lang }));
+      const all = kinds.flatMap((k) => buildSheets(project, version, k.kind, { lang }));
       const blob = await buildReviewBundle(all, { title: project.institute.name || 'Timetable', note: `${version.name} (${version.status})` });
       downloadBlob(blob, `${school}-review-${lang}-${stamp}.html`);
     } catch (e) {
@@ -122,13 +137,19 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
         <div className="space-y-4">
           <Card title="Sheet">
             <div className="space-y-1" role="radiogroup" aria-label="Sheet type">
-              {SHEET_KINDS.map((k) => (
+              {kinds.map((k) => (
                 <label key={k.kind} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="sheet-kind" checked={kind === k.kind} onChange={() => setKind(k.kind)} />
+                  <input type="radio" name="sheet-kind" checked={meta.kind === k.kind} onChange={() => setKind(k.kind)} />
                   {k.label}
                 </label>
               ))}
             </div>
+            {diff && meta.perItem && meta.kind !== 'changeNotice' && (
+              <label className="mt-3 flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} data-testid="only-changed" />
+                Only sheets that changed ({changedIds?.length ?? 0})
+              </label>
+            )}
             <p className="label mt-4">Language</p>
             <div className="mt-1 flex gap-1">
               {LANGS.map((l) => (

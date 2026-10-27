@@ -48,6 +48,10 @@ export interface Unit {
   multiGradeGroupId: string | null;
   /** Fixed/locked units never move and are never evicted. */
   pinned: boolean;
+  /** R1: taught by the class teacher of its (single) class, so it belongs in P1. */
+  classTeacherLesson: boolean;
+  /** R1 applies to its class, so P1 should be left for the class teacher. */
+  keepP1Free: boolean;
   positions: Position[];
   /** Why `positions` is empty, when it is. */
   noPositionReason?: string;
@@ -130,10 +134,12 @@ export function buildModel(p: Project, opts: ModelOptions = {}): Model {
   const multiGradeOf = (classIds: string[]) =>
     classIds.length === 1 ? (p.multiGradeGroups.find((g) => g.classIds.includes(classIds[0]!))?.id ?? null) : null;
 
+  const r1 = ruleFor(p, 'R1');
+  const r1Classes = new Set(r1 && r1.strength !== 'hard' ? p.classes.filter((c) => c.classTeacherId && ruleAppliesToClass(r1, c, p)).map((c) => c.id) : []);
   const lockedByKey = new Map((opts.locked ?? []).map((pl) => [`${pl.itemId}#${pl.occurrence}`, pl]));
   const units: Unit[] = [];
 
-  const finishUnit = (u: Omit<Unit, 'positions' | 'noPositionReason'>, fixed: { day: Weekday; slotId: string } | undefined) => {
+  const finishUnit = (u: Omit<Unit, 'positions' | 'noPositionReason' | 'classTeacherLesson' | 'keepP1Free'>, fixed: { day: Weekday; slotId: string } | undefined) => {
     const cls = p.classes.find((c) => c.id === u.classIds[0]);
     const schedule = cls ? scheduleForClass(p, cls) : p.bellSchedules[0];
     let positions = schedule ? positionsFor(schedule, days, u.length) : [];
@@ -151,7 +157,16 @@ export function buildModel(p: Project, opts: ModelOptions = {}): Model {
       if (!at.length) noPositionReason = `its fixed time (${pin.day}) is not a valid time for this lesson`;
       positions = at;
     }
-    units.push({ ...u, pinned: !!pin, positions, noPositionReason });
+    const r1Class = u.classIds.length === 1 && r1Classes.has(u.classIds[0]!);
+    const ct = r1Class ? p.classes.find((c) => c.id === u.classIds[0])?.classTeacherId : null;
+    units.push({
+      ...u,
+      pinned: !!pin,
+      positions,
+      noPositionReason,
+      classTeacherLesson: !!ct && u.teacherIds.includes(ct),
+      keepP1Free: r1Class && !(ct && u.teacherIds.includes(ct)),
+    });
   };
 
   for (const a of p.allocations) {

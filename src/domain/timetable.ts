@@ -207,6 +207,7 @@ export function saveDraftVersion(d: Draft<Project>, placements: Placement[], not
     note,
     createdAt: new Date().toISOString(),
     placements,
+    baseSnapshot: [],
   };
   d.versions = [...d.versions.filter((v) => !(v.status === 'draft' && v.id === d.activeVersionId)), version];
   d.activeVersionId = version.id;
@@ -230,6 +231,7 @@ export function setActivePlacements(d: Draft<Project>, placements: Placement[]):
       note: active.note,
       createdAt: new Date().toISOString(),
       placements,
+      baseSnapshot: snapshotOf(d as Project, active),
     };
     d.versions.push(copy);
     d.activeVersionId = copy.id;
@@ -246,4 +248,15 @@ export function approveActiveVersion(d: Draft<Project>, effectiveFrom: string | 
   active.status = 'approved';
   active.effectiveFrom = effectiveFrom;
   if (active.name.startsWith('Draft')) active.name = active.name.replace(/^Draft/, 'Timetable');
+}
+
+/** Who taught what, when, in a version — kept on a new version so diffs survive later data changes. */
+export function snapshotOf(p: Project, v: Pick<TimetableVersion, 'placements'>): TimetableVersion['baseSnapshot'] {
+  return lessonEntries(p, v.placements).map((e) => ({
+    key: `${e.itemId}#${e.occurrence}`,
+    day: e.day,
+    slotIds: [...e.slotIds],
+    teacherIds: [...e.teacherIds],
+    roomIds: [...e.roomIds],
+  }));
 }

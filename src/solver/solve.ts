@@ -18,6 +18,10 @@ export interface SolveOptions {
   /** Repair steps before giving up on the remaining units. */
   maxIterations?: number;
   timeLimitMs?: number;
+  /** Start from these positions where still valid and clash-free (improve / minimal-change). */
+  initial?: Map<string, { day: string; slotId: string; roomId: string | null }>;
+  /** Positions to prefer when placing (minimal-change reference). */
+  prefer?: Map<string, { day: string; slotId: string }>;
 }
 
 export interface SolveHooks {
@@ -57,10 +61,25 @@ export async function solve(model: Model, opts: SolveOptions = {}, hooks: SolveH
     (u.pinned ? -1e6 : 0) + u.positions.length - u.length * 8 - u.teacherIds.length * 3 - u.classIds.length * 2 - (u.roomTypeId ? 5 : 0);
   const queue = [...placeable].sort((a, b) => difficulty(a) - difficulty(b) || a.key.localeCompare(b.key));
 
+  // Keep what already works (improve / minimal-change): those units skip the queue.
+  let preplaced = 0;
+  if (opts.initial) {
+    for (const u of [...queue]) {
+      const at = opts.initial.get(u.key);
+      const pos = at && u.positions.find((x) => x.day === at.day && x.slotId === at.slotId);
+      if (!pos) continue;
+      const c = state.conflicts(u, pos, true);
+      if (c.hard || c.blockers.size) continue;
+      state.place(u, pos, u.roomTypeId ? (c.roomId ?? at.roomId) : at.roomId);
+      preplaced += u.weight;
+      queue.splice(queue.indexOf(u), 1);
+    }
+  }
+
   const moved = new Map<string, number>();
   const weightOf = (key: string) => state.units.get(key)?.weight ?? 1;
   let best: { weight: number; placed: Map<string, Placed> } = { weight: -1, placed: new Map() };
-  let placedWeight = 0;
+  let placedWeight = preplaced;
 
   const snapshot = () => {
     if (placedWeight > best.weight) best = { weight: placedWeight, placed: new Map(state.placed) };
@@ -78,6 +97,10 @@ export async function solve(model: Model, opts: SolveOptions = {}, hooks: SolveH
       if (u.multiGradeGroupId && state.multiGradeAt(t, pos.day, pos.start, u.multiGradeGroupId)) s -= 6;
     }
     if (u.heavy) s += 0.15 * pos.periodIndex;
+    // R1: class teacher in P1, others leave it free.
+    if (pos.periodIndex === 0) s += u.classTeacherLesson ? -6 : u.keepP1Free ? 3 : 0;
+    const pref = opts.prefer?.get(u.key);
+    if (pref && pref.day === pos.day && pref.slotId === pos.slotId) s -= 10;
     return s;
   };
 

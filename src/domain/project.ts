@@ -18,7 +18,7 @@ import {
   Subject,
   Teacher,
 } from './entities';
-import { Absence, ReliefAssignment, RuleConfig, TimetableVersion } from './schedule';
+import { Absence, ExamSeries, ReliefAssignment, RuleConfig, TimetableVersion } from './schedule';
 import { BellSchedule, CalendarOverlay, ExtraSession, Weekday } from './time';
 
 export const FILE_FORMAT = 'school-timetable';
@@ -81,6 +81,7 @@ export const Project = z.object({
 
   absences: z.array(Absence).default([]),
   relief: z.array(ReliefAssignment).default([]),
+  exams: z.array(ExamSeries).default([]),
 });
 export type Project = z.infer<typeof Project>;
 /** Input shape (defaults optional) — handy for fixtures and pack builders. */

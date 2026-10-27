@@ -8,6 +8,7 @@ export interface Progress {
   placed: number;
   total: number;
   iteration: number;
+  phase?: 'placing' | 'improving';
 }
 
 export interface SolverRun {

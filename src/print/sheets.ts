@@ -3,6 +3,7 @@ import type { Project } from '@/domain/project';
 import type { TimetableVersion } from '@/domain/schedule';
 import { classGrid, gridByClock, lessonEntries, mainSchedule, teacherGrid, type Grid, type LessonEntry } from '@/domain/timetable';
 import { formatClock, slotsForDay, teachingSlots } from '@/domain/time';
+import { changeNotices } from './changeSheets';
 import { dayName, LABELS, localName, type Lang } from './labels';
 
 /**
@@ -12,7 +13,19 @@ import { dayName, LABELS, localName, type Lang } from './labels';
  */
 
 export type Paper = 'A4P' | 'A4L' | 'A3P' | 'A3L';
-export type SheetKind = 'class' | 'teacher' | 'room' | 'masterStaff' | 'masterClassDay' | 'free' | 'classList' | 'reliefRegister' | 'reliefSlips';
+export type SheetKind =
+  | 'class'
+  | 'teacher'
+  | 'room'
+  | 'masterStaff'
+  | 'masterClassDay'
+  | 'free'
+  | 'classList'
+  | 'reliefRegister'
+  | 'reliefSlips'
+  | 'changeNotice'
+  | 'examTimetable'
+  | 'invigilation';
 
 export interface Cell {
   lines: string[];
@@ -58,6 +71,7 @@ export const SHEET_KINDS: { kind: SheetKind; label: string; perItem: 'class' | '
   { kind: 'masterClassDay', label: 'Master chart — classes by day', perItem: null },
   { kind: 'free', label: 'Free-period chart', perItem: null },
   { kind: 'classList', label: 'Section-wise class list', perItem: null },
+  { kind: 'changeNotice', label: 'Change notices (mid-year)', perItem: 'teacher' },
 ];
 
 export interface SheetOptions {
@@ -478,8 +492,12 @@ export function buildSheets(p: Project, version: TimetableVersion, kind: SheetKi
       return freeChart(c);
     case 'classList':
       return classList(c);
+    case 'changeNotice':
+      return changeNotices(p, version, opts.lang, opts.ids);
     case 'reliefRegister':
     case 'reliefSlips':
-      return []; // built per date in reliefSheets.ts
+    case 'examTimetable':
+    case 'invigilation':
+      return []; // built per date / exam series in reliefSheets.ts and examSheets.ts
   }
 }

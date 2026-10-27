@@ -22,10 +22,12 @@ ctx.onmessage = (e) => {
     return;
   }
   stop = false;
+  let phase = 'placing';
   generateTimetable(msg.project, msg.options, {
     yieldEvery: 100,
     shouldStop: () => stop,
-    onProgress: (p) => ctx.postMessage({ type: 'progress', ...p }),
+    onPhase: (ph) => (phase = ph),
+    onProgress: (p) => ctx.postMessage({ type: 'progress', ...p, phase }),
   }).then(
     (result) => ctx.postMessage({ type: 'done', result }),
     (err: unknown) => ctx.postMessage({ type: 'error', message: err instanceof Error ? err.message : String(err) }),
