@@ -4,7 +4,18 @@ import { formatClock } from '@/domain/time';
 const DAY_LABEL = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
 /** Read-only week grid. `mode` decides what each cell shows besides the subject. */
-export function TimetableGrid({ grid, mode, nameOf }: { grid: Grid; mode: 'class' | 'teacher'; nameOf: (classId: string) => string }) {
+export function TimetableGrid({
+  grid,
+  mode,
+  nameOf,
+  teacherId,
+}: {
+  grid: Grid;
+  mode: 'class' | 'teacher';
+  nameOf: (classId: string) => string;
+  /** In teacher mode, block lessons show this teacher's own subject. */
+  teacherId?: string;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] border-collapse text-sm" data-testid="timetable-grid">
@@ -50,7 +61,9 @@ export function TimetableGrid({ grid, mode, nameOf }: { grid: Grid; mode: 'class
                     <td key={day} className="border border-slate-200 px-2 py-1 align-top">
                       {lessons.map((l) => (
                         <div key={`${l.itemId}#${l.occurrence}`} className={l.uncovered ? 'rounded bg-amber-50 px-1 ring-1 ring-amber-300' : ''}>
-                          <span className="font-semibold">{l.title}</span>
+                          <span className="font-semibold">
+                            {mode === 'teacher' && teacherId ? (l.parts.find((p) => p.teacherIds.includes(teacherId))?.subject ?? l.title) : l.title}
+                          </span>
                           {l.slotIds.length > 1 && <span className="ml-1 text-[10px] text-slate-500">double</span>}
                           {mode === 'class' ? (
                             <span className="block text-xs text-slate-600">

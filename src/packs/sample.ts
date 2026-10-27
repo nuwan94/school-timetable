@@ -1,8 +1,9 @@
 import { produce } from 'immer';
 import { addBlock, addLine, addSet } from '@/domain/blocks';
-import { makeSubject, makeTeacher, patternFrom } from '@/domain/factories';
+import { makeSubject, makeTeacher, patternFrom, patternPeriods } from '@/domain/factories';
 import { quickAddClasses, setCellAllocation } from '@/domain/mutations';
 import type { Project } from '@/domain/project';
+import { SL_SUBJECTS } from '@/domain/catalog';
 import { createProject } from './index';
 
 const SURNAMES = [
@@ -52,6 +53,13 @@ export function sampleSchool(letters = ['A', 'B', 'C'], maxLoad = 26): Project {
     d.classes.forEach((c) => (c.studentCount = 35));
     for (const [name, code, , , priority] of CORE) d.subjects.push(makeSubject({ name, shortCode: code, priority }));
     for (const [name, code] of [...RELIGIONS, ...AESTHETICS]) d.subjects.push(makeSubject({ name, shortCode: code }));
+    for (const s of d.subjects) {
+      const cat = SL_SUBJECTS.find((x) => x.code === s.shortCode);
+      if (cat) s.local = { si: cat.si, ta: cat.ta };
+    }
+    d.institute.local = { si: 'නියැදි මහා විද්‍යාලය', ta: 'மாதிரி மகா வித்தியாலயம்' };
+    d.institute.academicYear = '2027';
+    d.institute.term = 'Term 1';
     const sub = (code: string) => d.subjects.find((s) => s.shortCode === code)!.id;
 
     const pool = new Map<string, { id: string; load: number }>();
@@ -88,6 +96,19 @@ export function sampleSchool(letters = ['A', 'B', 'C'], maxLoad = 26): Project {
       const aes = addBlock(d, { name: `${g.name} Aesthetics`, classIds });
       const aesLine = addLine(d, aes, { label: 'Aesthetics', periods: AESTHETIC_PERIODS });
       for (const [, code] of AESTHETICS) addSet(d, aes, aesLine, { subjectId: sub(code), teacherId: teacherFor(code, AESTHETIC_PERIODS) });
+    }
+
+    // Class teacher: whoever teaches the class most, one class each.
+    const taken = new Set<string>();
+    for (const c of d.classes) {
+      const load = new Map<string, number>();
+      for (const a of d.allocations)
+        if (a.groupIds.includes(c.id)) for (const t of a.teacherIds) load.set(t, (load.get(t) ?? 0) + patternPeriods(a.pattern));
+      const best = [...load].filter(([t]) => !taken.has(t)).sort((a, b) => b[1] - a[1])[0]?.[0];
+      if (best) {
+        c.classTeacherId = best;
+        taken.add(best);
+      }
     }
   });
 }

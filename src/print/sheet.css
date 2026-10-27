@@ -1,0 +1,173 @@
+/*
+ * Printable sheets. Plain CSS (no Tailwind) so the same file styles the
+ * screen preview, browser print, image PDFs and the HTML review bundle.
+ * Black and white by default: print shops photocopy.
+ */
+.tt-sheet {
+  box-sizing: border-box;
+  background: #fff;
+  color: #000;
+  font-family: 'Noto Sans', 'Noto Sans Sinhala', 'Noto Sans Tamil', sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.25;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+}
+.tt-sheet *,
+.tt-sheet *::before,
+.tt-sheet *::after {
+  box-sizing: border-box;
+}
+.tt-head {
+  text-align: center;
+  position: relative;
+}
+.tt-school {
+  font-size: 14pt;
+  font-weight: 700;
+}
+.tt-title {
+  font-size: 12pt;
+  font-weight: 700;
+  margin-top: 1mm;
+}
+.tt-sub {
+  font-size: 9.5pt;
+  margin-top: 1mm;
+}
+.tt-meta {
+  font-size: 8pt;
+  margin-top: 0.5mm;
+}
+.tt-draft {
+  position: absolute;
+  right: 0;
+  top: 0;
+  border: 1.5pt solid #000;
+  padding: 0.5mm 2mm;
+  font-weight: 700;
+  font-size: 9pt;
+  letter-spacing: 0.1em;
+}
+.tt-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.tt-table th,
+.tt-table td {
+  border: 0.75pt solid #000;
+  padding: 1mm 1.2mm;
+  vertical-align: middle;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.tt-table thead {
+  display: table-header-group;
+}
+.tt-table th {
+  font-weight: 700;
+  background: #fff;
+}
+.tt-table .tt-rowhead {
+  text-align: left;
+  font-weight: 700;
+}
+.tt-table .tt-rowhead .tt-l + .tt-l {
+  font-weight: 400;
+  font-size: 7.5pt;
+}
+.tt-table td .tt-l:first-child {
+  font-weight: 700;
+}
+.tt-table td .tt-l + .tt-l {
+  font-size: 8pt;
+}
+.tt-table .tt-muted {
+  color: #555;
+  font-style: italic;
+}
+.tt-table .tt-muted .tt-l:first-child {
+  font-weight: 400;
+}
+.tt-table .tt-band td {
+  text-align: center;
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 0.6mm;
+  background: #e5e5e5;
+}
+.tt-table tr {
+  break-inside: avoid;
+}
+.tt-week td {
+  height: 13mm;
+}
+.tt-compact {
+  font-size: 7.5pt;
+}
+.tt-compact th,
+.tt-compact td {
+  padding: 0.5mm 0.7mm;
+}
+.tt-compact td .tt-l + .tt-l {
+  font-size: 7pt;
+}
+.tt-facts {
+  display: flex;
+  gap: 8mm;
+  font-size: 9.5pt;
+}
+.tt-facts b {
+  margin-left: 2mm;
+}
+.tt-sign {
+  display: flex;
+  justify-content: space-between;
+  gap: 12mm;
+  margin-top: auto;
+  padding-top: 10mm;
+}
+.tt-sign div {
+  flex: 1;
+  border-top: 0.75pt dotted #000;
+  text-align: center;
+  font-size: 8.5pt;
+  padding-top: 1mm;
+}
+
+/* Print: one sheet per page, page size from the sheet's paper. */
+@page tt-A4P {
+  size: A4 portrait;
+  margin: 10mm;
+}
+@page tt-A4L {
+  size: A4 landscape;
+  margin: 10mm;
+}
+@page tt-A3P {
+  size: A3 portrait;
+  margin: 10mm;
+}
+@page tt-A3L {
+  size: A3 landscape;
+  margin: 10mm;
+}
+@media print {
+  .tt-sheet {
+    break-after: page;
+  }
+  .tt-sheet[data-paper='A4P'] {
+    page: tt-A4P;
+  }
+  .tt-sheet[data-paper='A4L'] {
+    page: tt-A4L;
+  }
+  .tt-sheet[data-paper='A3P'] {
+    page: tt-A3P;
+  }
+  .tt-sheet[data-paper='A3L'] {
+    page: tt-A3L;
+  }
+}

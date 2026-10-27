@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { CheckScreen } from '@/features/build/CheckScreen';
+import { EditScreen } from '@/features/build/EditScreen';
 import { GenerateScreen } from '@/features/build/GenerateScreen';
-import { PdfSpike } from '@/features/spike/PdfSpike';
+import { PrintScreen } from '@/features/print/PrintScreen';
 import { useProjectStore } from '@/store/projectStore';
 import { AllocationsStep } from './AllocationsStep';
 import { BlocksStep } from './BlocksStep';
@@ -12,12 +13,14 @@ import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
 
-type BuildId = 'check' | 'generate';
-type View = StepId | BuildId | 'pdf';
+type BuildId = 'check' | 'generate' | 'edit' | 'print';
+type View = StepId | BuildId;
 
 const BUILD: { id: BuildId; label: string }[] = [
   { id: 'check', label: 'Check' },
   { id: 'generate', label: 'Generate' },
+  { id: 'edit', label: 'Edit' },
+  { id: 'print', label: 'Print & share' },
 ];
 
 const SCREENS: Record<StepId, () => JSX.Element> = {
@@ -56,7 +59,7 @@ export function SetupLayout() {
   }, [view]);
 
   const build = BUILD.find((b) => b.id === view);
-  const current = view === 'pdf' || build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
+  const current = build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
   const doneCount = steps.filter((s) => s.done(project)).length;
@@ -83,7 +86,6 @@ export function SetupLayout() {
               </option>
             ))}
           </optgroup>
-          <option value="pdf">PDF test</option>
         </select>
 
         <nav className="hidden md:block" aria-label="Setup steps">
@@ -151,9 +153,6 @@ export function SetupLayout() {
               Simple mode
             </label>
             <p className="mt-1 text-xs text-slate-500">Hides advanced fields. Nothing is deleted.</p>
-            <button className="mt-3 text-xs text-slate-500 underline" onClick={() => go('pdf')}>
-              PDF test (spike)
-            </button>
           </div>
         </nav>
       </aside>
@@ -164,9 +163,11 @@ export function SetupLayout() {
         ) : view === 'check' ? (
           <CheckScreen onGenerate={() => go('generate')} />
         ) : view === 'generate' ? (
-          <GenerateScreen onCheck={() => go('check')} />
+          <GenerateScreen onCheck={() => go('check')} onEdit={() => go('edit')} />
+        ) : view === 'edit' ? (
+          <EditScreen onGenerate={() => go('generate')} onPrint={() => go('print')} />
         ) : (
-          <PdfSpike />
+          <PrintScreen onGenerate={() => go('generate')} />
         )}
         {current && (
           <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
