@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Snapshot } from '@/store/autosave';
 import { useProjectStore } from '@/store/projectStore';
 import { autosave } from '@/store/useAutosave';
+import { alertDialog } from '@/ui/dialogs';
 
 /** The latest autosave snapshot (if any) and a way to restore it. */
 export function useRecovery() {
@@ -21,7 +22,7 @@ export function useRecovery() {
       load(autosave.restore(recovery), { fileName: recovery.fileName, handle: null, dirty: recovery.unsaved });
       return true;
     } catch (e) {
-      alert(`Could not recover: ${e instanceof Error ? e.message : String(e)}`);
+      void alertDialog('Could not recover', e instanceof Error ? e.message : String(e));
       return false;
     }
   };
