@@ -1,4 +1,6 @@
+import { DEFAULT_ROLES } from '@/domain/catalog';
 import { newId, type Pack } from '@/domain/common';
+import { makeRole, makeSection } from '@/domain/factories';
 import { Project, FILE_FORMAT, SCHEMA_VERSION, type ProjectInput } from '@/domain/project';
 import type { RuleConfig, Strength } from '@/domain/schedule';
 import { buildSlots, type BellSchedule, type SlotKind } from '@/domain/time';
@@ -131,6 +133,8 @@ export function createProject(pack: Pack, schoolName = ''): Project {
       gradeLabel: pack === 'international' ? 'Year' : 'Grade',
     },
     bellSchedules: [bell],
+    sections: [makeSection({ name: pack === 'international' ? 'Secondary' : 'School', bellScheduleId: bell.id })],
+    roles: DEFAULT_ROLES[pack].map((name) => makeRole({ name, norm: { unit: 'periods', min: null, max: null } })),
     rules: defaultRules(pack),
   };
   return Project.parse(input);

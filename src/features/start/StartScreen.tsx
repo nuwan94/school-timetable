@@ -70,7 +70,7 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
           </label>
           <input
             id="school-name"
-            className="field"
+            className="field w-full"
             value={name}
             placeholder="e.g. Sri Sumangala Vidyalaya"
             onChange={(e) => setName(e.target.value)}

@@ -1,13 +1,9 @@
-import { useState } from 'react';
 import { useFileCommands } from '@/features/files/useFileCommands';
-import { ProjectOverview } from '@/features/project/ProjectOverview';
-import { PdfSpike } from '@/features/spike/PdfSpike';
+import { SetupLayout } from '@/features/setup/SetupLayout';
 import { StartScreen } from '@/features/start/StartScreen';
 import { supportsFileHandles } from '@/io/projectFile';
 import { useProjectStore } from '@/store/projectStore';
 import { useAutosave } from '@/store/useAutosave';
-
-type Tab = 'project' | 'pdf';
 
 export function App() {
   useAutosave();
@@ -16,7 +12,6 @@ export function App() {
   const fileName = useProjectStore((s) => s.fileName);
   const dirty = useProjectStore((s) => s.dirty);
   const close = useProjectStore((s) => s.close);
-  const [tab, setTab] = useState<Tab>('project');
 
   const closeProject = () => {
     if (dirty && !confirm('You have unsaved changes. Close anyway? (An autosave copy is kept.)')) return;
@@ -25,7 +20,7 @@ export function App() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-4 py-2.5">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-4 py-2.5">
         <span className="font-bold text-teal-800">Timetable</span>
         {project && (
           <span className="min-w-0 truncate text-sm text-slate-600" data-testid="file-status">
@@ -33,36 +28,24 @@ export function App() {
             {dirty && <span className="ml-1.5 text-amber-700">• unsaved changes</span>}
           </span>
         )}
-        <nav className="ml-auto flex flex-wrap gap-2">
-          {project ? (
-            <>
-              <button className="btn" onClick={() => setTab('project')} aria-pressed={tab === 'project'}>
-                Project
-              </button>
-              <button className="btn" onClick={() => setTab('pdf')} aria-pressed={tab === 'pdf'}>
-                PDF test
-              </button>
-              <button className="btn btn-primary" onClick={() => void save()} title="Ctrl+S">
-                Save
-              </button>
-              {supportsFileHandles() && (
-                <button className="btn" onClick={() => void save(true)} title="Ctrl+Shift+S">
-                  Save as…
-                </button>
-              )}
-              <button className="btn" onClick={() => void open()} title="Ctrl+O">
-                Open…
-              </button>
-              <button className="btn" onClick={closeProject}>
-                Close
-              </button>
-            </>
-          ) : (
-            <button className="btn" onClick={() => setTab((t) => (t === 'pdf' ? 'project' : 'pdf'))}>
-              {tab === 'pdf' ? 'Back' : 'PDF test'}
+        {project && (
+          <nav className="ml-auto flex flex-wrap gap-2">
+            <button className="btn btn-primary" onClick={() => void save()} title="Ctrl+S">
+              Save
             </button>
-          )}
-        </nav>
+            {supportsFileHandles() && (
+              <button className="btn" onClick={() => void save(true)} title="Ctrl+Shift+S">
+                Save as…
+              </button>
+            )}
+            <button className="btn" onClick={() => void open()} title="Ctrl+O">
+              Open…
+            </button>
+            <button className="btn" onClick={closeProject}>
+              Close
+            </button>
+          </nav>
+        )}
       </header>
 
       {error && (
@@ -85,9 +68,7 @@ export function App() {
         </div>
       )}
 
-      <main className="flex-1">
-        {tab === 'pdf' ? <PdfSpike /> : project ? <ProjectOverview /> : <StartScreen onOpen={() => void open()} />}
-      </main>
+      <div className="flex-1">{project ? <SetupLayout /> : <StartScreen onOpen={() => void open()} />}</div>
     </div>
   );
 }
