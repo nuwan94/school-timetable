@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { Icon, type IconName } from '@/ui/Icon';
 import type { Pack } from '@/domain/common';
 import { PACK_LABELS } from '@/packs';
-import { sampleSchool } from '@/packs/sample';
+import { EXAMPLES } from '@/packs/examples';
 import { useProjectStore } from '@/store/projectStore';
 import { useUiStore } from '@/store/uiStore';
 import { confirmDiscard } from '@/ui/dialogs';
@@ -17,7 +17,7 @@ const PACK_HINTS: Record<Pack, string> = {
 
 const NEXT_STEPS = ['Classes and sections', 'Subjects', 'Rooms and labs', 'Teachers', 'Who teaches what', 'Generate'];
 
-type Step = 'choose' | 'name' | 'type' | 'ready';
+type Step = 'choose' | 'example' | 'name' | 'type' | 'ready';
 const FLOW: Step[] = ['name', 'type', 'ready'];
 
 function Choice(props: { icon: IconName; tone: string; title: string; text: string; onClick: () => void; testId: string }) {
@@ -52,7 +52,7 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
   const load = useProjectStore((s) => s.load);
   const go = useUiStore((s) => s.go);
   const { recovery, recover } = useRecovery();
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<Step>(useUiStore.getState().wizardStart);
   const [name, setName] = useState('');
   const [pack, setPack] = useState<Pack>('sl-gov');
   const dialog = useRef<HTMLDivElement>(null);
@@ -139,11 +139,49 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
             testId="wizard-sample"
             icon="sparkle"
             tone="bg-violet-100 text-violet-700"
-            title="Try a sample school"
-            text="Grades 6–11, 18 classes, ready to generate."
-            onClick={() => void finish(() => load(sampleSchool(), { fileName: null, handle: null, dirty: true }))}
+            title="Try an example school"
+            text="Primary, Type 2, 1C or 1AB, filled in and ready to generate."
+            onClick={() => setStep('example')}
           />
         </div>
+      </>
+    );
+  else if (step === 'example')
+    body = (
+      <>
+        <h2 id="wizard-title" className="text-2xl font-bold">
+          Pick an example school
+        </h2>
+        <p className="mt-1 text-slate-600">Made-up schools with classes, teachers and allocations filled in. Press Generate to see a timetable.</p>
+        <div className="mt-5 space-y-3" data-testid="wizard-examples">
+          {EXAMPLES.map((ex, i) => (
+            <Choice
+              key={ex.id}
+              testId={`example-${ex.id}`}
+              icon="school"
+              tone={
+                [
+                  'bg-emerald-100 text-emerald-700',
+                  'bg-sky-100 text-sky-700',
+                  'bg-amber-100 text-amber-700',
+                  'bg-violet-100 text-violet-700',
+                  'bg-teal-100 text-teal-700',
+                ][i % 5]!
+              }
+              title={ex.name}
+              text={ex.summary}
+              onClick={() =>
+                void finish(() => {
+                  load(ex.build(), { fileName: null, handle: null, dirty: true });
+                  go('generate');
+                })
+              }
+            />
+          ))}
+        </div>
+        <button className="btn mt-5" onClick={() => setStep('choose')}>
+          <Icon name="arrowLeft" className="h-4 w-4" /> Back
+        </button>
       </>
     );
   else if (step === 'name')

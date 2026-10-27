@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import logo from '@/assets/logo.svg';
 import { supportsFileHandles } from '@/io/projectFile';
-import { sampleSchool } from '@/packs/sample';
 import { useProjectStore } from '@/store/projectStore';
 import { useUiStore, type View } from '@/store/uiStore';
 import { canInstall, installApp, useInstall } from '@/pwa';
@@ -11,7 +10,21 @@ import { confirmDiscard } from './dialogs';
 
 const REPO = 'https://github.com/nuwan94/school-timetable';
 
-const BUILD_VIEWS: readonly string[] = ['check', 'rules', 'generate', 'edit', 'print', 'today', 'ledger', 'changes', 'calendar', 'exams'];
+const BUILD_VIEWS: readonly string[] = [
+  'check',
+  'rules',
+  'generate',
+  'edit',
+  'print',
+  'today',
+  'ledger',
+  'changes',
+  'calendar',
+  'exams',
+  'returns',
+  'workload',
+  'duties',
+];
 
 /** Quick links in a project: where the timetable teacher goes most. */
 const QUICK: { label: string; view: View; icon: IconName; match: (v: View) => boolean }[] = [
@@ -91,7 +104,6 @@ export function AppHeader({ open, save }: Props) {
   const fileName = useProjectStore((s) => s.fileName);
   const dirty = useProjectStore((s) => s.dirty);
   const close = useProjectStore((s) => s.close);
-  const load = useProjectStore((s) => s.load);
   const view = useUiStore((s) => s.view);
   const go = useUiStore((s) => s.go);
   const setWizard = useUiStore((s) => s.setWizard);
@@ -102,10 +114,7 @@ export function AppHeader({ open, save }: Props) {
     if (dirty && !(await confirmDiscard('Close'))) return;
     close();
   };
-  const trySample = async () => {
-    if (project && dirty && !(await confirmDiscard('Open the sample'))) return;
-    load(sampleSchool(), { fileName: null, handle: null, dirty: true });
-  };
+  const trySample = () => setWizard(true, 'example');
   const toFeatures = () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
 
   const version = project?.versions.find((v) => v.id === project.activeVersionId);
@@ -190,7 +199,7 @@ export function AppHeader({ open, save }: Props) {
                       </MenuItem>
                     )}
                     <MenuItem icon="sparkle" onClick={() => (done(), trySample())}>
-                      Open the sample school
+                      Open an example school…
                     </MenuItem>
                     <Divider />
                     {showInstall && (
@@ -217,7 +226,7 @@ export function AppHeader({ open, save }: Props) {
                 Features
               </button>
               <button className="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900" onClick={trySample}>
-                Sample school
+                Examples
               </button>
               <a
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900"
@@ -248,7 +257,7 @@ export function AppHeader({ open, save }: Props) {
                         Features
                       </MenuItem>
                       <MenuItem icon="sparkle" onClick={() => (done(), trySample())}>
-                        Try the sample school
+                        Example schools
                       </MenuItem>
                       <MenuItem icon="folder" onClick={() => (done(), open())}>
                         Open file…

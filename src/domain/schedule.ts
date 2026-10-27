@@ -136,3 +136,44 @@ export const ExamSeries = z.object({
   invigilation: z.array(Invigilation).default([]),
 });
 export type ExamSeries = z.infer<typeof ExamSeries>;
+
+// ------------------------------------------------------------ duty rosters
+
+/** A time that needs staff on duty, e.g. "Interval 10:30–10:50" or "Morning gate 07:00–07:30". */
+export const DutySession = z.object({
+  id: Id,
+  label: z.string(),
+  start: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 60 - 1),
+  end: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 60 - 1),
+});
+export type DutySession = z.infer<typeof DutySession>;
+
+export const DutyAssignment = z.object({
+  day: Weekday,
+  sessionId: Id,
+  post: z.string(),
+  teacherId: Id,
+});
+export type DutyAssignment = z.infer<typeof DutyAssignment>;
+
+/** A weekly duty roster (interval, gate, …): posts × sessions × days, one teacher per cell. */
+export const DutyRoster = z.object({
+  id: Id,
+  name: z.string(),
+  kind: z.enum(['interval', 'gate', 'other']).default('other'),
+  posts: z.array(z.string()).default([]),
+  sessions: z.array(DutySession).default([]),
+  days: z.array(Weekday).default([]),
+  /** Teachers never put on this roster (e.g. the principal). */
+  excludedTeacherIds: z.array(Id).default([]),
+  assignments: z.array(DutyAssignment).default([]),
+});
+export type DutyRoster = z.infer<typeof DutyRoster>;

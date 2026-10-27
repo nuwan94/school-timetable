@@ -1,20 +1,21 @@
 import { produce } from 'immer';
 import { addBlock, addLine, addSet } from '@/domain/blocks';
-import { makeSubject, makeTeacher, patternFrom, patternPeriods } from '@/domain/factories';
+import { makeSubject, makeTeacher, patternFrom } from '@/domain/factories';
 import { quickAddClasses, setCellAllocation } from '@/domain/mutations';
 import type { Project } from '@/domain/project';
 import { SL_SUBJECTS } from '@/domain/catalog';
+import { finishExample } from './finish';
 import { createProject } from './index';
 
-const SURNAMES = [
+export const SURNAMES = [
   'Perera', 'Fernando', 'Silva', 'Jayasinghe', 'Bandara', 'Dissanayake', 'Wijesinghe', 'Rajapaksha', 'Gunawardena', 'Herath',
   'Kumara', 'Rathnayake', 'Senanayake', 'Wickramasinghe', 'Ekanayake', 'Abeysekara', 'Karunaratne', 'Amarasinghe', 'Liyanage', 'Samarasinghe',
   'Mendis', 'Weerasinghe', 'Ranasinghe', 'Pathirana', 'Gamage', 'Hettiarachchi', 'Munasinghe', 'Rajan', 'Nadarajah', 'Fauzi',
 ];
-const INITIALS = ['A', 'K', 'S', 'W', 'R', 'D', 'N', 'M', 'P', 'H', 'J'];
+export const INITIALS = ['A', 'K', 'S', 'W', 'R', 'D', 'N', 'M', 'P', 'H', 'J'];
 
 /** Subject, weekly periods, doubles, priority. 37 periods + religion 2 + aesthetics 1 = 40. */
-const CORE: [string, string, number, number, 'core' | 'normal' | 'low'][] = [
+export const CORE: [string, string, number, number, 'core' | 'normal' | 'low'][] = [
   ['Mathematics', 'MAT', 6, 1, 'core'],
   ['Sinhala', 'SIN', 6, 1, 'core'],
   ['English', 'ENG', 4, 0, 'core'],
@@ -27,19 +28,19 @@ const CORE: [string, string, number, number, 'core' | 'normal' | 'low'][] = [
   ['PTS', 'PTS', 2, 0, 'low'],
   ['ICT', 'ICT', 3, 0, 'low'],
 ];
-const RELIGIONS = [
+export const RELIGIONS = [
   ['Buddhism', 'BUD'],
   ['Hinduism', 'HIN'],
   ['Islam', 'ISL'],
   ['Christianity', 'CHR'],
 ] as const;
-const AESTHETICS = [
+export const AESTHETICS = [
   ['Art', 'ART'],
   ['Music', 'MUS'],
   ['Dance', 'DAN'],
 ] as const;
-const RELIGION_PERIODS = 2;
-const AESTHETIC_PERIODS = 1;
+export const RELIGION_PERIODS = 2;
+export const AESTHETIC_PERIODS = 1;
 
 /**
  * A sample Sri Lankan government school (also the test fixture for the solver): Grades 6–11 × `letters` classes,
@@ -98,17 +99,6 @@ export function sampleSchool(letters = ['A', 'B', 'C'], maxLoad = 26): Project {
       for (const [, code] of AESTHETICS) addSet(d, aes, aesLine, { subjectId: sub(code), teacherId: teacherFor(code, AESTHETIC_PERIODS) });
     }
 
-    // Class teacher: whoever teaches the class most, one class each.
-    const taken = new Set<string>();
-    for (const c of d.classes) {
-      const load = new Map<string, number>();
-      for (const a of d.allocations)
-        if (a.groupIds.includes(c.id)) for (const t of a.teacherIds) load.set(t, (load.get(t) ?? 0) + patternPeriods(a.pattern));
-      const best = [...load].filter(([t]) => !taken.has(t)).sort((a, b) => b[1] - a[1])[0]?.[0];
-      if (best) {
-        c.classTeacherId = best;
-        taken.add(best);
-      }
-    }
+    finishExample(d, { shortBy: ['MAT', 'ICT'], overBy: ['HIS'] });
   });
 }

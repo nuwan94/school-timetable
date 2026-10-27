@@ -25,7 +25,9 @@ export type SheetKind =
   | 'reliefSlips'
   | 'changeNotice'
   | 'examTimetable'
-  | 'invigilation';
+  | 'invigilation'
+  | 'dutyRoster'
+  | 'report';
 
 export interface Cell {
   lines: string[];
@@ -498,6 +500,8 @@ export function buildSheets(p: Project, version: TimetableVersion, kind: SheetKi
     case 'reliefSlips':
     case 'examTimetable':
     case 'invigilation':
+    case 'dutyRoster':
+    case 'report':
       return []; // built per date / exam series in reliefSheets.ts and examSheets.ts
   }
 }

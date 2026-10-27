@@ -25,12 +25,16 @@ export function SheetRenderer({
   useEffect(() => {
     if (done.current) return;
     done.current = true;
-    // Two frames: let layout and web fonts settle before capture.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() =>
-        onReady(sheets.map((s, i) => ({ node: refs.current[i]!, paper: s.paper, fileName: s.fileName })).filter((n) => !!n.node)),
-      ),
-    );
+    // Two frames: let layout and web fonts settle before capture. Background tabs get no
+    // animation frames, so a timer stands in (whichever comes first, once).
+    let fired = false;
+    const ready = () => {
+      if (fired) return;
+      fired = true;
+      onReady(sheets.map((s, i) => ({ node: refs.current[i]!, paper: s.paper, fileName: s.fileName })).filter((n) => !!n.node));
+    };
+    requestAnimationFrame(() => requestAnimationFrame(ready));
+    setTimeout(ready, 250);
   }, [sheets, onReady]);
   const content = sheets.map((s, i) => (
     <SheetView

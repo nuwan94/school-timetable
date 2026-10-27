@@ -200,6 +200,7 @@ export function TemplateLibrary() {
             ref={fileRef}
             type="file"
             accept=".json,application/json"
+            aria-label="Import templates file"
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0];

@@ -494,6 +494,35 @@ src/
     - an exam timetable sheet and an invigilation roster sheet;
     - an "Add to calendar" event so relief knows which classes are sitting papers.
   - Not done: rule presets per pack beyond the defaults, and scoping rules to particular sections, classes or teachers in the UI.
+- **P6: done.**
+  - **Cadre return**:
+    - approved figures entered per subject × medium (or started from current staff);
+    - actual counts come from each teacher's appointment subject and medium; categories not in cadre are left out;
+    - a configurable layout: rename, reorder or hide columns to match the zonal form, starting from a generic layout.
+  - **Teacher deployment return**: per teacher, the service grade, appointment type, appointment subject and medium, subjects taught with grades, periods per week, periods outside the appointment (cover, another subject or another medium), and norm status.
+  - **Surplus and deficit** by subject × medium:
+    - periods needed, how many are taught by appointed teachers, by others, or uncovered;
+    - converted to teachers once the school enters its "periods per teacher" (no figure is assumed);
+    - a signed "Request for teachers" PDF lists only the deficits.
+  - **Workload and fairness**: load, free periods, relief this week and term, days absent, duties and invigilation per teacher, with summary counts.
+  - **Exports**: Excel (.xlsx, written in-app; one sheet per report), CSV (with a BOM for Sinhala and Tamil) and PDF (split into pages, signature on the last) for every report.
+  - **Duty rosters**:
+    - interval sessions taken from the bell schedule's breaks; gate duty before and after school;
+    - auto-fill keeps manual cells, shares duties evenly across all rosters, honours per-teacher duty quotas, and skips visiting staff, coaches, vacancies, teachers not working that day, and anyone teaching or on another duty;
+    - clash checks and a notice-board sheet in English, Sinhala or Tamil.
+  - Exam supervision rosters were done in P5 (term tests).
+  - **Example schools** in the start wizard, each generating with no clashes and filling the returns:
+    - a small primary school (Simple pack, with a visiting Tamil teacher);
+    - Type 2 (Grades 1–11);
+    - 1C (Grades 6–13, A/L Arts and Commerce);
+    - 1AB (Grades 6–13, A/L Bio, Maths, Commerce and Arts);
+    - the original sample.
+  - **MoE norms**: still none hard-coded. Role norms start empty and periods-per-teacher is entered by the school. §16 Q2 stays open until the circular is confirmed.
+  - **Release checks**:
+    - an accessibility sweep of every screen (all buttons and fields named);
+    - no sideways scrolling on any screen at 375 px;
+    - the offline single file runs the examples and the exports with no external requests.
+  - PDF export no longer stalls in a background tab: the renderer falls back to a timer when animation frames are paused.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 

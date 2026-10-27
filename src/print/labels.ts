@@ -61,6 +61,8 @@ const EN = {
   invigilation: 'Invigilation roster',
   session: 'Session',
   invigilator: 'Invigilator',
+  dutyRoster: 'Duty roster',
+  post: 'Place',
   mediumNames: { si: 'Sinhala', ta: 'Tamil', en: 'English', bilingual: 'Bilingual' },
 };
 
@@ -120,6 +122,8 @@ const SI: Labels = {
   invigilation: 'අධීක්ෂණ රාජකාරි ලේඛනය',
   session: 'වාරය',
   invigilator: 'අධීක්ෂක',
+  dutyRoster: 'රාජකාරි ලේඛනය',
+  post: 'ස්ථානය',
   mediumNames: { si: 'සිංහල', ta: 'දෙමළ', en: 'ඉංග්‍රීසි', bilingual: 'ද්විභාෂා' },
 };
 
@@ -177,6 +181,8 @@ const TA: Labels = {
   invigilation: 'மேற்பார்வைக் கடமைப் பட்டியல்',
   session: 'அமர்வு',
   invigilator: 'மேற்பார்வையாளர்',
+  dutyRoster: 'கடமைப் பட்டியல்',
+  post: 'இடம்',
   mediumNames: { si: 'சிங்களம்', ta: 'தமிழ்', en: 'ஆங்கிலம்', bilingual: 'இருமொழி' },
 };
 

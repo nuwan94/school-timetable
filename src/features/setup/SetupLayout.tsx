@@ -5,6 +5,9 @@ import { RulesScreen } from '@/features/build/RulesScreen';
 import { CalendarScreen } from '@/features/year/CalendarScreen';
 import { ChangesScreen } from '@/features/year/ChangesScreen';
 import { ExamsScreen } from '@/features/year/ExamsScreen';
+import { DutiesScreen } from '@/features/reports/DutiesScreen';
+import { ReturnsScreen } from '@/features/reports/ReturnsScreen';
+import { WorkloadScreen } from '@/features/reports/WorkloadScreen';
 import { PrintScreen } from '@/features/print/PrintScreen';
 import { LedgerScreen } from '@/features/relief/LedgerScreen';
 import { TodayScreen } from '@/features/relief/TodayScreen';
@@ -47,11 +50,18 @@ const YEAR: NavLink[] = [
   { id: 'exams', label: 'Term tests', hint: 'Papers and invigilation', icon: 'clipboard' },
 ];
 
+const REPORTS: NavLink[] = [
+  { id: 'returns', label: 'Returns', hint: 'Cadre, deployment, surplus', icon: 'fileText' },
+  { id: 'workload', label: 'Workload', hint: 'Load and relief fairness', icon: 'chart' },
+  { id: 'duties', label: 'Duty rosters', hint: 'Interval and gate duty', icon: 'shield' },
+];
+
 /** Colours per group (full class names so Tailwind keeps them). */
 const TONES = {
   teal: { head: 'text-teal-700', tile: 'bg-teal-50 text-teal-700', tileOn: 'bg-teal-700 text-white', on: 'bg-teal-50 ring-teal-600' },
   amber: { head: 'text-amber-700', tile: 'bg-amber-50 text-amber-700', tileOn: 'bg-amber-500 text-white', on: 'bg-amber-50 ring-amber-500' },
   violet: { head: 'text-violet-700', tile: 'bg-violet-50 text-violet-700', tileOn: 'bg-violet-600 text-white', on: 'bg-violet-50 ring-violet-500' },
+  sky: { head: 'text-sky-700', tile: 'bg-sky-50 text-sky-700', tileOn: 'bg-sky-600 text-white', on: 'bg-sky-50 ring-sky-500' },
 } as const;
 type Tone = keyof typeof TONES;
 
@@ -113,7 +123,7 @@ export function SetupLayout() {
   const go = useUiStore((s) => s.go);
   const steps = visibleSteps(project);
 
-  const build = [...BUILD, ...DAILY, ...YEAR].find((b) => b.id === view);
+  const build = [...BUILD, ...DAILY, ...YEAR, ...REPORTS].find((b) => b.id === view);
   const current = build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
@@ -152,6 +162,13 @@ export function SetupLayout() {
           </optgroup>
           <optgroup label="Year">
             {YEAR.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Reports">
+            {REPORTS.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
@@ -235,6 +252,12 @@ export function SetupLayout() {
             ))}
           </NavGroup>
 
+          <NavGroup title="Reports" icon="fileText" tone="sky">
+            {REPORTS.map((b) => (
+              <NavItem key={b.id} link={b} tone="sky" active={view === b.id} onClick={() => go(b.id)} />
+            ))}
+          </NavGroup>
+
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <input
               type="checkbox"
@@ -261,6 +284,12 @@ export function SetupLayout() {
           <CheckScreen onGenerate={() => go('generate')} />
         ) : view === 'rules' ? (
           <RulesScreen onGenerate={() => go('generate')} />
+        ) : view === 'returns' ? (
+          <ReturnsScreen />
+        ) : view === 'workload' ? (
+          <WorkloadScreen />
+        ) : view === 'duties' ? (
+          <DutiesScreen />
         ) : view === 'calendar' ? (
           <CalendarScreen />
         ) : view === 'exams' ? (
