@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import Swal from 'sweetalert2';
 import { Icon, type IconName } from '@/ui/Icon';
 import type { Pack } from '@/domain/common';
 import { PACK_LABELS } from '@/packs';
 import { sampleSchool } from '@/packs/sample';
 import { useProjectStore } from '@/store/projectStore';
 import { useUiStore } from '@/store/uiStore';
+import { confirmDiscard } from '@/ui/dialogs';
 import { useRecovery } from './useRecovery';
 
 const PACK_HINTS: Record<Pack, string> = {
@@ -57,7 +59,8 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
   const nameField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    // Esc inside a dialog on top (unsaved-changes question) closes only that dialog.
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !Swal.isVisible() && onClose();
     window.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -73,12 +76,12 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
   }, [step]);
 
   /** Replacing an open project with unsaved changes needs a yes. */
-  const okToReplace = () => {
+  const okToReplace = async () => {
     const { project, dirty } = useProjectStore.getState();
-    return !project || !dirty || confirm('You have unsaved changes. Continue anyway? (An autosave copy is kept.)');
+    return !project || !dirty || confirmDiscard('Continue');
   };
-  const finish = (action: () => void) => {
-    if (!okToReplace()) return;
+  const finish = async (action: () => void) => {
+    if (!(await okToReplace())) return;
     action();
     onClose();
   };
@@ -110,7 +113,7 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
               text={`${recovery.schoolName || 'Untitled school'} — autosaved ${new Date(recovery.savedAt).toLocaleString()}${
                 recovery.unsaved ? ' (had unsaved changes)' : ''
               }`}
-              onClick={() => okToReplace() && recover() && onClose()}
+              onClick={async () => (await okToReplace()) && recover() && onClose()}
             />
           )}
           <Choice
@@ -138,7 +141,7 @@ function Wizard({ onOpen, onClose }: { onOpen: () => void; onClose: () => void }
             tone="bg-violet-100 text-violet-700"
             title="Try a sample school"
             text="Grades 6–11, 18 classes, ready to generate."
-            onClick={() => finish(() => load(sampleSchool(), { fileName: null, handle: null, dirty: true }))}
+            onClick={() => void finish(() => load(sampleSchool(), { fileName: null, handle: null, dirty: true }))}
           />
         </div>
       </>

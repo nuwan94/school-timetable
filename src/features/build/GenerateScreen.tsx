@@ -8,6 +8,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader } from '@/ui/kit';
 import { TimetableGrid } from './TimetableGrid';
 import { WhatIf } from './WhatIf';
+import { confirmDialog } from '@/ui/dialogs';
 
 /** Last run's details (unplaced reasons) survive switching screens, not reloads. */
 let lastRun: { versionId: string; result: GenerateResult } | null = null;
@@ -19,12 +20,16 @@ type Mode = 'fresh' | 'improve' | 'minimal' | 'some';
 const MODES: { value: Mode; label: string; help: string }[] = [
   { value: 'fresh', label: 'New timetable', help: 'Arranges everything from scratch.' },
   { value: 'improve', label: 'Improve the current one', help: 'Keeps it valid and moves lessons only where the rules get better.' },
-  { value: 'minimal', label: 'Keep it, change as little as possible', help: 'After a change in teachers or periods: fixes what no longer fits and leaves the rest.' },
+  {
+    value: 'minimal',
+    label: 'Keep it, change as little as possible',
+    help: 'After a change in teachers or periods: fixes what no longer fits and leaves the rest.',
+  },
   { value: 'some', label: 'Redo only some classes', help: 'Everything else stays exactly where it is.' },
 ];
 
 const TRY_ANOTHER_WARNING =
-  'This timetable has already been approved and shared. "Try another" rearranges everything.\n\nTo adjust it instead, choose "Keep it, change as little as possible". Continue anyway?';
+  'This timetable has already been approved and shared. "Try another" rearranges everything.\n\nTo adjust it instead, choose "Keep it, change as little as possible".';
 
 export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdit: () => void }) {
   const project = useProjectStore((s) => s.project)!;
@@ -82,8 +87,8 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
   return (
     <div className="space-y-4">
       <PageHeader title="Generate timetable">
-        Places every lesson with no clashes for classes, teachers or rooms, keeping the hard rules. Each run is checked again independently
-        before you see it.
+        Places every lesson with no clashes for classes, teachers or rooms, keeping the hard rules. Each run is checked again independently before you
+        see it.
       </PageHeader>
 
       <Card>
@@ -96,13 +101,19 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
                 data-testid="generate"
                 disabled={!!version && mode === 'some' && someClasses.length === 0}
               >
-                {!version ? 'Generate' : { fresh: 'Generate new', improve: 'Improve', minimal: 'Update with least change', some: 'Redo these classes' }[mode]}
+                {!version
+                  ? 'Generate'
+                  : { fresh: 'Generate new', improve: 'Improve', minimal: 'Update with least change', some: 'Redo these classes' }[mode]}
               </button>
               {version && mode === 'fresh' && (
                 <button
                   className="btn"
-                  onClick={() => {
-                    if (shared && !confirm(TRY_ANOTHER_WARNING)) return;
+                  onClick={async () => {
+                    if (
+                      shared &&
+                      !(await confirmDialog('Rearrange a shared timetable?', { text: TRY_ANOTHER_WARNING, confirmText: 'Try another', danger: true }))
+                    )
+                      return;
                     start(nextSeed());
                   }}
                   title="Same data, a different arrangement"
@@ -251,10 +262,7 @@ function Viewer() {
   const version = project.versions.find((v) => v.id === project.activeVersionId)!;
   const [who, setWho] = useState<string>(() => (project.classes[0] ? `c:${project.classes[0].id}` : ''));
   const entries = useMemo(() => lessonEntries(project, version.placements), [project, version]);
-  const check = useMemo(
-    () => checkTimetable(project, version.placements, { relaxedRules: version.note.includes(RELAXED_NOTE) }),
-    [project, version],
-  );
+  const check = useMemo(() => checkTimetable(project, version.placements, { relaxedRules: version.note.includes(RELAXED_NOTE) }), [project, version]);
   const nameOf = (id: string) => project.classes.find((c) => c.id === id)?.name ?? '?';
   const id = who.slice(2);
   const grid = who.startsWith('t:') ? teacherGrid(project, entries, id) : classGrid(project, entries, id);
@@ -289,8 +297,8 @@ function Viewer() {
     >
       {check.violations.length > 0 && (
         <p className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-          This timetable no longer matches the setup ({check.violations.length} problem(s), e.g. “{check.violations[0]!.message}”). Generate again
-          to update it.
+          This timetable no longer matches the setup ({check.violations.length} problem(s), e.g. “{check.violations[0]!.message}”). Generate again to
+          update it.
         </p>
       )}
       <p className="mb-2 text-xs text-slate-500">
@@ -301,7 +309,16 @@ function Viewer() {
           : `${teacherLessons} period(s) a week.`}{' '}
         Amber = no teacher yet (uncovered).
       </p>
-      {grid ? <TimetableGrid grid={grid} mode={who.startsWith('t:') ? 'teacher' : 'class'} nameOf={nameOf} teacherId={who.startsWith('t:') ? id : undefined} /> : <Empty>Nothing to show.</Empty>}
+      {grid ? (
+        <TimetableGrid
+          grid={grid}
+          mode={who.startsWith('t:') ? 'teacher' : 'class'}
+          nameOf={nameOf}
+          teacherId={who.startsWith('t:') ? id : undefined}
+        />
+      ) : (
+        <Empty>Nothing to show.</Empty>
+      )}
     </Card>
   );
 }

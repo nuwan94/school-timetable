@@ -11,6 +11,7 @@ import type { Sheet } from '@/print/sheets';
 import '@/print/sheet.css';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, PageHeader, TextInput, TrashIcon } from '@/ui/kit';
+import { confirmDialog } from '@/ui/dialogs';
 
 const toClock = (v: string) => {
   const [h, m] = v.split(':').map(Number);
@@ -110,8 +111,15 @@ export function ExamsScreen() {
         </button>
         <button
           className="btn"
-          onClick={() => {
-            if (!confirm(`Delete ${series.name}?`)) return;
+          onClick={async () => {
+            if (
+              !(await confirmDialog(`Delete ${series.name}?`, {
+                text: 'Its papers, invigilation and calendar event are removed.',
+                confirmText: 'Delete',
+                danger: true,
+              }))
+            )
+              return;
             update((d) => {
               d.exams = d.exams.filter((x) => x.id !== series.id);
               d.overlays = d.overlays.filter((o) => o.id !== `ovl_${series.id}`);

@@ -7,6 +7,7 @@ import { downloadBlob } from '@/io/projectFile';
 import { parseAllocationPaste } from '@/io/paste';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, Select, TrashIcon } from '@/ui/kit';
+import { confirmDialog, promptDialog } from '@/ui/dialogs';
 
 /** Toolbar above the matrix: apply / save templates for the current grade, paste from Excel. */
 export function GradeTools({ grade, classes, onPaste }: { grade: Grade; classes: SchoolClass[]; onPaste: () => void }) {
@@ -17,25 +18,42 @@ export function GradeTools({ grade, classes, onPaste }: { grade: Grade; classes:
     (a, b) => Math.abs(a.gradeLevel - grade.level) - Math.abs(b.gradeLevel - grade.level) || a.name.localeCompare(b.name),
   );
 
-  const apply = (id: string) => {
+  const apply = async (id: string) => {
     const tpl = project.templates.find((t) => t.id === id);
     if (!tpl || classes.length === 0) return;
-    if (!confirm(`Apply "${tpl.name}" (${tpl.version}) to ${classes.map((c) => c.name).join(', ')}? Periods are replaced; teachers are kept.`)) return;
+    const ok = await confirmDialog(`Apply "${tpl.name}"?`, {
+      text: `${tpl.version ? `${tpl.version}\n` : ''}To ${classes.map((c) => c.name).join(', ')}. Periods are replaced; teachers are kept.`,
+      confirmText: 'Apply',
+    });
+    if (!ok) return;
     let result = { cells: 0, missing: [] as string[] };
     update((d) => {
-      result = applyTemplate(d, tpl, classes.map((c) => c.id));
+      result = applyTemplate(
+        d,
+        tpl,
+        classes.map((c) => c.id),
+      );
     });
     setMessage(
       `Set ${result.cells} cell(s).` + (result.missing.length ? ` No subject with code: ${result.missing.join(', ')} — add them in Subjects.` : ''),
     );
   };
 
-  const save = (classId: string) => {
+  const save = async (classId: string) => {
     const cls = classes.find((c) => c.id === classId);
     if (!cls) return;
-    const name = prompt('Template name', `${grade.name}${cls.stream ? ` ${cls.stream}` : ''}`);
+    const name = await promptDialog(`Save ${cls.name} as a template`, {
+      label: 'Template name',
+      value: `${grade.name}${cls.stream ? ` ${cls.stream}` : ''}`,
+      required: true,
+      confirmText: 'Next',
+    });
     if (!name) return;
-    const version = prompt('Curriculum version (e.g. "NIE 2024 reform")', project.templates[0]?.version ?? '');
+    const version = await promptDialog('Curriculum version', {
+      label: 'For example "NIE 2024 reform" (optional)',
+      value: project.templates[0]?.version ?? '',
+      confirmText: 'Save template',
+    });
     if (version === null) return;
     update((d) => {
       d.templates.push(templateFromClass(d as typeof project, classId, { name, version }));
@@ -85,9 +103,9 @@ export function PasteAllocations({ onDone }: { onDone: () => void }) {
   return (
     <Card title="Paste who-teaches-what from Excel">
       <p className="mb-2 text-sm text-slate-600">
-        Either a <strong>list</strong> (Class · Subject · Periods · Teacher · Doubles) or a <strong>grid</strong> like the matrix: first
-        row <code>Class</code> then subject codes, cells like <code>6 KP</code> or <code>5 1D NF</code>. Teachers by code or name. Existing
-        cells are overwritten.
+        Either a <strong>list</strong> (Class · Subject · Periods · Teacher · Doubles) or a <strong>grid</strong> like the matrix: first row{' '}
+        <code>Class</code> then subject codes, cells like <code>6 KP</code> or <code>5 1D NF</code>. Teachers by code or name. Existing cells are
+        overwritten.
       </p>
       <textarea
         aria-label="Pasted allocations"
@@ -173,9 +191,7 @@ export function TemplateLibrary() {
           {project.templates.length > 0 && (
             <button
               className="btn"
-              onClick={() =>
-                downloadBlob(new Blob([exportTemplates(project.templates)], { type: 'application/json' }), 'timetable-templates.json')
-              }
+              onClick={() => downloadBlob(new Blob([exportTemplates(project.templates)], { type: 'application/json' }), 'timetable-templates.json')}
             >
               Export all
             </button>
@@ -204,8 +220,8 @@ export function TemplateLibrary() {
       }
     >
       <p className="mb-2 text-sm text-slate-600">
-        Periods per subject for a grade, labelled with the curriculum version. Save one from a finished class, or import a file
-        shared by another school. The app ships no official figures.
+        Periods per subject for a grade, labelled with the curriculum version. Save one from a finished class, or import a file shared by another
+        school. The app ships no official figures.
       </p>
       {error && <p className="mb-2 text-sm text-red-800">{error}</p>}
       {project.templates.length === 0 ? (
@@ -226,12 +242,12 @@ export function TemplateLibrary() {
                     <IconButton
                       label={`Delete template ${t.name}`}
                       danger
-                      onClick={() =>
-                        confirm(`Delete template "${t.name}"?`) &&
-                        update((d) => {
-                          d.templates = d.templates.filter((x) => x.id !== t.id);
-                        })
-                      }
+                      onClick={async () => {
+                        if (await confirmDialog(`Delete template "${t.name}"?`, { confirmText: 'Delete', danger: true }))
+                          update((d) => {
+                            d.templates = d.templates.filter((x) => x.id !== t.id);
+                          });
+                      }}
                     >
                       <TrashIcon />
                     </IconButton>

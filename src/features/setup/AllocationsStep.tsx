@@ -7,6 +7,7 @@ import type { Project } from '@/domain/project';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, LevelBadge, NumberInput, PageHeader, Select } from '@/ui/kit';
 import { GradeTools, PasteAllocations, TemplateLibrary } from './AllocationTools';
+import { confirmDialog } from '@/ui/dialogs';
 
 interface Cell {
   classId: string;
@@ -70,20 +71,28 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
         </div>
         <label>
           <span className="label">Periods/week</span>
-          <NumberInput autoFocus value={periods} min={0} max={20} onChange={(v) => set({ pattern: patternFrom(v ?? 0, doubles), periods: v ?? 0 })} className="w-20" />
+          <NumberInput
+            autoFocus
+            value={periods}
+            min={0}
+            max={20}
+            onChange={(v) => set({ pattern: patternFrom(v ?? 0, doubles), periods: v ?? 0 })}
+            className="w-20"
+          />
         </label>
         <label>
           <span className="label">of which doubles</span>
-          <NumberInput value={doubles} min={0} max={Math.floor(periods / 2)} onChange={(v) => periods > 0 && set({ pattern: patternFrom(periods, v ?? 0) })} className="w-20" />
+          <NumberInput
+            value={doubles}
+            min={0}
+            max={Math.floor(periods / 2)}
+            onChange={(v) => periods > 0 && set({ pattern: patternFrom(periods, v ?? 0) })}
+            className="w-20"
+          />
         </label>
         <label className="min-w-64 flex-1">
           <span className="label">Teacher</span>
-          <select
-            className="field w-full"
-            value={teacherId}
-            disabled={periods === 0}
-            onChange={(e) => set({ teacherId: e.target.value || null })}
-          >
+          <select className="field w-full" value={teacherId} disabled={periods === 0} onChange={(e) => set({ teacherId: e.target.value || null })}>
             <option value="">— no teacher (uncovered) —</option>
             {qualified.length > 0 && (
               <optgroup label={`Teaches ${subject.name}`}>
@@ -133,7 +142,19 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
   );
 }
 
-function MatrixCell({ alloc, subject, project, selected, onSelect }: { alloc?: Allocation; subject: Subject; project: Project; selected: boolean; onSelect: () => void }) {
+function MatrixCell({
+  alloc,
+  subject,
+  project,
+  selected,
+  onSelect,
+}: {
+  alloc?: Allocation;
+  subject: Subject;
+  project: Project;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const teacher = alloc?.teacherIds[0] ? project.teachers.find((t) => t.id === alloc.teacherIds[0]) : undefined;
   const periods = alloc ? patternPeriods(alloc.pattern) : 0;
   const doubles = alloc ? doublesIn(alloc.pattern) : 0;
@@ -208,8 +229,8 @@ export function AllocationsStep() {
   return (
     <>
       <PageHeader title="Who teaches what">
-        Each cell is one subject for one class: periods per week and the teacher. Fill one class, then copy its periods to the
-        rest of the grade and just pick teachers. Totals update as you type.
+        Each cell is one subject for one class: periods per week and the teacher. Fill one class, then copy its periods to the rest of the grade and
+        just pick teachers. Totals update as you type.
       </PageHeader>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -303,9 +324,23 @@ export function AllocationsStep() {
                         <button
                           className="text-xs text-teal-800 underline"
                           title={`Copy ${c.name}'s periods per subject to the other classes in ${grade?.name} (teachers are kept)`}
-                          onClick={() => {
-                            if (confirm(`Copy ${c.name}'s periods to ${classes.filter((x) => x.id !== c.id).map((x) => x.name).join(', ')}? Teachers already chosen are kept.`))
-                              update((d) => copyClassPeriods(d, c.id, classes.map((x) => x.id)));
+                          onClick={async () => {
+                            const others = classes
+                              .filter((x) => x.id !== c.id)
+                              .map((x) => x.name)
+                              .join(', ');
+                            const ok = await confirmDialog(`Copy ${c.name}'s periods?`, {
+                              text: `To ${others}. Teachers already chosen are kept.`,
+                              confirmText: 'Copy',
+                            });
+                            if (ok)
+                              update((d) =>
+                                copyClassPeriods(
+                                  d,
+                                  c.id,
+                                  classes.map((x) => x.id),
+                                ),
+                              );
                           }}
                         >
                           Copy to grade
@@ -370,7 +405,11 @@ export function AllocationsStep() {
                       {t.periods}/{limit}
                       {t.min !== null && ` (min ${t.min})`}
                     </LevelBadge>
-                    {t.covering > 0 && <span className="text-xs text-amber-800" title="Periods outside appointment">{t.covering} cov.</span>}
+                    {t.covering > 0 && (
+                      <span className="text-xs text-amber-800" title="Periods outside appointment">
+                        {t.covering} cov.
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -392,7 +431,11 @@ export function AllocationsStep() {
                 <li
                   key={n}
                   className={`rounded border-l-4 px-2 py-1 ${
-                    i.severity === 'error' ? 'border-red-500 bg-red-50' : i.severity === 'warning' ? 'border-amber-400 bg-amber-50' : 'border-slate-300 bg-slate-50'
+                    i.severity === 'error'
+                      ? 'border-red-500 bg-red-50'
+                      : i.severity === 'warning'
+                        ? 'border-amber-400 bg-amber-50'
+                        : 'border-slate-300 bg-slate-50'
                   }`}
                 >
                   {i.message}

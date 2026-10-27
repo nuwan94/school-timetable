@@ -7,6 +7,7 @@ import { useUiStore, type View } from '@/store/uiStore';
 import { canInstall, installApp, useInstall } from '@/pwa';
 import { Icon, type IconName } from './Icon';
 import { InstallButton } from './Install';
+import { confirmDiscard } from './dialogs';
 
 const REPO = 'https://github.com/nuwan94/school-timetable';
 
@@ -97,12 +98,12 @@ export function AppHeader({ open, save }: Props) {
   const installed = useInstall((s) => s.installed);
   const showInstall = canInstall && !installed;
 
-  const closeProject = () => {
-    if (dirty && !confirm('You have unsaved changes. Close anyway? (An autosave copy is kept.)')) return;
+  const closeProject = async () => {
+    if (dirty && !(await confirmDiscard('Close'))) return;
     close();
   };
-  const trySample = () => {
-    if (project && dirty && !confirm('You have unsaved changes. Continue anyway? (An autosave copy is kept.)')) return;
+  const trySample = async () => {
+    if (project && dirty && !(await confirmDiscard('Open the sample'))) return;
     load(sampleSchool(), { fileName: null, handle: null, dirty: true });
   };
   const toFeatures = () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });

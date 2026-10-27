@@ -3,6 +3,7 @@ import { addMultiGradeGroup, mergeClasses, setMergeExceptions, unmergeClasses } 
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Chips, IconButton, TextInput, TrashIcon } from '@/ui/kit';
 import { ClassPicker, classNames } from './ClassPicker';
+import { confirmDialog } from '@/ui/dialogs';
 
 type Kind = 'merge' | 'multigrade';
 
@@ -36,11 +37,11 @@ export function TaughtTogether() {
   return (
     <Card title="Classes taught together">
       <p className="mb-3 text-sm text-slate-600">
-        <strong>Merged classes</strong>: few students, so two classes sit together for every subject except the ones you tick
-        (they then appear as one shared cell in Who teaches what).
+        <strong>Merged classes</strong>: few students, so two classes sit together for every subject except the ones you tick (they then appear as one
+        shared cell in Who teaches what).
         <br />
-        <strong>Multi-grade</strong>: one teacher holds several grades in one room at the same time, each doing its own lesson — their
-        periods count once in the teacher's load.
+        <strong>Multi-grade</strong>: one teacher holds several grades in one room at the same time, each doing its own lesson — their periods count
+        once in the teacher's load.
       </p>
 
       {project.mergedClasses.length + project.multiGradeGroups.length > 0 && (
@@ -62,14 +63,24 @@ export function TaughtTogether() {
                 <span className="text-sm text-slate-600">{classNames(project, m.classIds)}</span>
                 <button
                   className="btn ml-auto"
-                  onClick={() => confirm(`Separate ${m.name}? Each class keeps a copy of the shared lessons.`) && update((d) => unmergeClasses(d, m.id))}
+                  onClick={async () =>
+                    (await confirmDialog(`Separate ${m.name}?`, {
+                      text: 'Each class keeps a copy of the shared lessons.',
+                      confirmText: 'Separate',
+                    })) && update((d) => unmergeClasses(d, m.id))
+                  }
                 >
                   Separate
                 </button>
               </div>
               <div className="mt-2">
                 <p className="mb-1 text-xs text-slate-600">Taught separately (tick subjects):</p>
-                <Chips size="sm" value={m.exceptSubjectIds} options={subjectOptions} onChange={(v) => update((d) => setMergeExceptions(d, m.id, v))} />
+                <Chips
+                  size="sm"
+                  value={m.exceptSubjectIds}
+                  options={subjectOptions}
+                  onChange={(v) => update((d) => setMergeExceptions(d, m.id, v))}
+                />
               </div>
             </li>
           ))}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ProjectFileError } from '@/domain/migrations';
 import { openProjectFile, saveProjectFile } from '@/io/projectFile';
 import { useProjectStore } from '@/store/projectStore';
+import { confirmDiscard } from '@/ui/dialogs';
 
 export interface FileError {
   message: string;
@@ -19,7 +20,7 @@ export function useFileCommands() {
 
   const open = useCallback(async () => {
     const { dirty } = useProjectStore.getState();
-    if (dirty && !confirm('You have unsaved changes. Open another file anyway?')) return;
+    if (dirty && !(await confirmDiscard('Open another file'))) return;
     try {
       const result = await openProjectFile();
       if (result) {

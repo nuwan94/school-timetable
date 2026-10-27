@@ -19,6 +19,7 @@ import { doublesIn, patternPeriods } from '@/domain/factories';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, LevelBadge, NumberInput, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
 import { ClassPicker, classNames } from './ClassPicker';
+import { confirmDialog } from '@/ui/dialogs';
 
 const MEDIUM_OPTIONS = [
   { value: '', label: '—' },
@@ -82,7 +83,13 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
         </label>
         <label>
           <span className="label">Periods/week</span>
-          <NumberInput value={periods} min={1} max={20} onChange={(v) => v && update((d) => updateLine(d, block.id, line.id, { periods: v }))} className="w-20" />
+          <NumberInput
+            value={periods}
+            min={1}
+            max={20}
+            onChange={(v) => v && update((d) => updateLine(d, block.id, line.id, { periods: v }))}
+            className="w-20"
+          />
         </label>
         <label>
           <span className="label">Doubles</span>
@@ -97,12 +104,20 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
         {blockStudents > 0 && (
           <span className="pb-2 text-sm">
             Students:{' '}
-            <LevelBadge level={groupStudents === 0 ? 'none' : groupStudents === blockStudents ? 'ok' : groupStudents < blockStudents ? 'under' : 'over'}>
+            <LevelBadge
+              level={groupStudents === 0 ? 'none' : groupStudents === blockStudents ? 'ok' : groupStudents < blockStudents ? 'under' : 'over'}
+            >
               {groupStudents}/{blockStudents}
             </LevelBadge>
           </span>
         )}
-        <button className="btn ml-auto" onClick={() => confirm(`Delete line "${line.label}"?`) && update((d) => removeLine(d, block.id, line.id))}>
+        <button
+          className="btn ml-auto"
+          onClick={async () =>
+            (await confirmDialog(`Delete line "${line.label}"?`, { confirmText: 'Delete', danger: true })) &&
+            update((d) => removeLine(d, block.id, line.id))
+          }
+        >
           Delete line
         </button>
       </div>
@@ -208,7 +223,11 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                       />
                     </td>
                     <td className="py-1 text-right">
-                      <IconButton label={`Remove ${group?.name ?? 'group'}`} danger onClick={() => update((d) => removeSet(d, block.id, line.id, s.id))}>
+                      <IconButton
+                        label={`Remove ${group?.name ?? 'group'}`}
+                        danger
+                        onClick={() => update((d) => removeSet(d, block.id, line.id, s.id))}
+                      >
                         <TrashIcon />
                       </IconButton>
                     </td>
@@ -257,7 +276,13 @@ function BlockCard({ block }: { block: OptionBlock }) {
         />
       }
       actions={
-        <button className="btn" onClick={() => confirm(`Delete block "${block.name}" and its groups?`) && update((d) => removeBlock(d, block.id))}>
+        <button
+          className="btn"
+          onClick={async () =>
+            (await confirmDialog(`Delete block "${block.name}"?`, { text: 'Its groups are deleted too.', confirmText: 'Delete', danger: true })) &&
+            update((d) => removeBlock(d, block.id))
+          }
+        >
           Delete block
         </button>
       }
@@ -270,10 +295,7 @@ function BlockCard({ block }: { block: OptionBlock }) {
         </button>
         {editingClasses && (
           <div className="mt-2 rounded-md bg-slate-50 p-2">
-            <ClassPicker
-              value={block.classIds}
-              onChange={(ids) => ids.length > 0 && update((d) => setBlockClasses(d, block.id, ids))}
-            />
+            <ClassPicker value={block.classIds} onChange={(ids) => ids.length > 0 && update((d) => setBlockClasses(d, block.id, ids))} />
           </div>
         )}
       </div>
@@ -298,13 +320,15 @@ function BlockCard({ block }: { block: OptionBlock }) {
 
 export function BlocksStep() {
   const project = useProjectStore((s) => s.project)!;
-  const errors = runChecks(project).issues.filter((i) => i.severity !== 'info' && project.optionBlocks.some((b) => i.message.startsWith(`${b.name} /`)));
+  const errors = runChecks(project).issues.filter(
+    (i) => i.severity !== 'info' && project.optionBlocks.some((b) => i.message.startsWith(`${b.name} /`)),
+  );
   return (
     <>
       <PageHeader title="Option blocks">
-        Use a block when students split into groups that study different subjects at the same time — Religion, Aesthetics, Second
-        National Language, O/L baskets, A/L subject lines, or a bilingual class split into English- and Sinhala-medium groups. Every
-        group in a line is timetabled together, so each needs its own teacher.
+        Use a block when students split into groups that study different subjects at the same time — Religion, Aesthetics, Second National Language,
+        O/L baskets, A/L subject lines, or a bilingual class split into English- and Sinhala-medium groups. Every group in a line is timetabled
+        together, so each needs its own teacher.
       </PageHeader>
       <div className="space-y-4">
         {project.optionBlocks.length === 0 && <Empty>No option blocks yet. Most schools start with Religion and Aesthetics.</Empty>}
@@ -315,7 +339,10 @@ export function BlocksStep() {
           <Card title="Problems in blocks">
             <ul className="space-y-1 text-sm">
               {errors.map((e, i) => (
-                <li key={i} className={`rounded border-l-4 px-2 py-1 ${e.severity === 'error' ? 'border-red-500 bg-red-50' : 'border-amber-400 bg-amber-50'}`}>
+                <li
+                  key={i}
+                  className={`rounded border-l-4 px-2 py-1 ${e.severity === 'error' ? 'border-red-500 bg-red-50' : 'border-amber-400 bg-amber-50'}`}
+                >
                   {e.message}
                 </li>
               ))}
