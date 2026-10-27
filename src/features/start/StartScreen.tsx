@@ -1,37 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
 import logo from '@/assets/logo.svg';
-import type { Pack } from '@/domain/common';
-import { PACK_LABELS } from '@/packs';
 import { sampleSchool } from '@/packs/sample';
-import type { Snapshot } from '@/store/autosave';
 import { useProjectStore } from '@/store/projectStore';
-import { autosave } from '@/store/useAutosave';
+import { useUiStore } from '@/store/uiStore';
+import { Icon, type IconName } from '@/ui/Icon';
+import { InstallButton } from '@/ui/Install';
+import { useRecovery } from './useRecovery';
 
-const PACK_HINTS: Record<Pack, string> = {
-  simple: 'Small or rural school. Guided setup, few rules, handles teacher shortage.',
-  'sl-gov': 'National / provincial school. NIE grades, media, O/L baskets, A/L streams, returns.',
-  international: 'Cambridge / Pearson Edexcel. Student-level clashes, sets, contact hours. (Full screens in v1.1)',
-};
-
-/** 24px stroke icons (paths only), drawn in currentColor. */
-const ICONS: Record<string, string> = {
-  grid: 'M4 5h16v14H4zM4 10h16M9 5v14M14 5v14',
-  swap: 'M7 7h11l-3-3M17 17H6l3 3',
-  print: 'M7 9V4h10v5M7 17H5v-6h14v6h-2M7 14h10v6H7z',
-  pen: 'M5 19h4L19 9l-4-4L5 15zM13 7l4 4',
-  calendar: 'M5 6h14v14H5zM5 10h14M9 3v4M15 3v4M9 14h2',
-  lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5zM12 15v2',
-};
-
-function Icon({ name, className = 'h-6 w-6' }: { name: string; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d={ICONS[name]} />
-    </svg>
-  );
-}
-
-const FEATURES: { icon: string; title: string; text: string; tone: string }[] = [
+const FEATURES: { icon: IconName; title: string; text: string; tone: string }[] = [
   {
     icon: 'grid',
     title: 'Clash-free in seconds',
@@ -72,11 +47,41 @@ const FEATURES: { icon: string; title: string; text: string; tone: string }[] = 
 
 /** A small week grid for the hero (decorative). */
 const PREVIEW: [string, string][][] = [
-  [['Maths', 'a'], ['Sci', 'b'], ['Eng', 'c'], ['Maths', 'a'], ['Sin', 'd']],
-  [['Sci', 'b'], ['Maths', 'a'], ['Sin', 'd'], ['Hist', 'e'], ['Eng', 'c']],
-  [['Eng', 'c'], ['Sin', 'd'], ['Maths', 'a'], ['Sci', 'b'], ['Relief', 'x']],
-  [['Hist', 'e'], ['Eng', 'c'], ['Sci', 'b'], ['Sin', 'd'], ['Maths', 'a']],
-  [['ICT', 'e'], ['Art', 'b'], ['Rel', 'd'], ['Eng', 'c'], ['Sci', 'b']],
+  [
+    ['Maths', 'a'],
+    ['Sci', 'b'],
+    ['Eng', 'c'],
+    ['Maths', 'a'],
+    ['Sin', 'd'],
+  ],
+  [
+    ['Sci', 'b'],
+    ['Maths', 'a'],
+    ['Sin', 'd'],
+    ['Hist', 'e'],
+    ['Eng', 'c'],
+  ],
+  [
+    ['Eng', 'c'],
+    ['Sin', 'd'],
+    ['Maths', 'a'],
+    ['Sci', 'b'],
+    ['Relief', 'x'],
+  ],
+  [
+    ['Hist', 'e'],
+    ['Eng', 'c'],
+    ['Sci', 'b'],
+    ['Sin', 'd'],
+    ['Maths', 'a'],
+  ],
+  [
+    ['ICT', 'e'],
+    ['Art', 'b'],
+    ['Rel', 'd'],
+    ['Eng', 'c'],
+    ['Sci', 'b'],
+  ],
 ];
 const CELL: Record<string, string> = {
   a: 'bg-teal-100 text-teal-900',
@@ -122,37 +127,11 @@ function Row({ n, row }: { n: number; row: [string, string][] }) {
   );
 }
 
-function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}>{children}</section>;
-}
-
-export function StartScreen({ onOpen }: { onOpen: () => void }) {
-  const newProject = useProjectStore((s) => s.newProject);
+export function StartScreen() {
   const load = useProjectStore((s) => s.load);
-  const [pack, setPack] = useState<Pack>('sl-gov');
-  const [name, setName] = useState('');
-  const [recovery, setRecovery] = useState<Snapshot | null>(null);
-
-  useEffect(() => {
-    autosave
-      .latest()
-      .then((s) => setRecovery(s ?? null))
-      .catch(() => setRecovery(null));
-  }, []);
-
-  const recover = () => {
-    if (!recovery) return;
-    try {
-      load(autosave.restore(recovery), { fileName: recovery.fileName, handle: null, dirty: recovery.unsaved });
-    } catch (e) {
-      alert(`Could not recover: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
+  const setWizard = useUiStore((s) => s.setWizard);
+  const { recovery, recover, dismiss } = useRecovery();
   const trySample = () => load(sampleSchool(), { fileName: null, handle: null, dirty: true });
-  const toStart = () => {
-    document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth' });
-    setTimeout(() => document.getElementById('school-name')?.focus({ preventScroll: true }), 400);
-  };
 
   return (
     <div>
@@ -165,7 +144,7 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
         />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-16 md:grid-cols-[1.1fr_1fr] lg:py-20">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-3 sm:flex">
               <img src={logo} alt="" className="h-12 w-12 rounded-xl ring-2 ring-white/30" />
               <span className="text-lg font-semibold tracking-wide text-teal-50">School Timetable</span>
             </div>
@@ -174,21 +153,22 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
               <span className="bg-gradient-to-r from-amber-200 to-yellow-300 bg-clip-text text-transparent">made simple.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-teal-50/90">
-              Generate, print and share in minutes. Daily relief, term tests and mid-year changes for Sri Lankan schools. Free, private
-              and works offline.
+              Generate, print and share in minutes. Daily relief, term tests and mid-year changes for Sri Lankan schools. Free, private and works
+              offline.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
                 className="rounded-xl bg-amber-400 px-5 py-3 font-semibold text-amber-950 shadow-lg shadow-amber-900/20 transition hover:-translate-y-0.5 hover:bg-amber-300"
-                onClick={trySample}
+                onClick={() => setWizard(true)}
+                data-testid="hero-get-started"
               >
-                Try a sample school
+                Get started →
               </button>
               <button
                 className="rounded-xl bg-white/15 px-5 py-3 font-semibold text-white ring-1 ring-white/40 backdrop-blur transition hover:bg-white/25"
-                onClick={toStart}
+                onClick={trySample}
               >
-                Start your school →
+                Try a sample school
               </button>
             </div>
             <div className="mt-8 flex flex-wrap gap-2 text-sm">
@@ -206,12 +186,43 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-12">
+      {recovery && (
+        <div className="px-4">
+          <div
+            className="mx-auto mt-6 flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-amber-300 bg-amber-50 p-4"
+            data-testid="recovery-banner"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <Icon name="history" className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1 basis-56">
+              <p className="font-semibold text-amber-900">Continue where you left off?</p>
+              <p className="text-sm text-amber-800">
+                {recovery.schoolName || 'Untitled school'} — autosaved {new Date(recovery.savedAt).toLocaleString()}
+                {recovery.unsaved ? ' (had unsaved changes)' : ''}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn btn-primary" onClick={recover}>
+                Recover
+              </button>
+              <button className="btn" onClick={dismiss}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <section id="features" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12">
         <h2 className="text-center text-2xl font-bold sm:text-3xl">Everything the timetable teacher does, in one place</h2>
         <p className="mx-auto mt-2 max-w-2xl text-center text-slate-600">From the first draft in January to the last relief slip in December.</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <div
+              key={f.title}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
               <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${f.tone}`}>
                 <Icon name={f.icon} />
               </span>
@@ -222,83 +233,21 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
         </div>
       </section>
 
-      <section id="get-started" className="scroll-mt-16 bg-gradient-to-b from-slate-50 to-teal-50/60">
-        <div className="mx-auto max-w-4xl px-4 py-12">
-          <h2 className="text-2xl font-bold sm:text-3xl">Get started</h2>
-
-          {recovery && (
-            <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-amber-900">Recover your last session?</p>
-                <p className="mt-0.5 text-sm text-amber-800">
-                  {recovery.schoolName || 'Untitled school'} — autosaved {new Date(recovery.savedAt).toLocaleString()}
-                  {recovery.unsaved ? ' (had unsaved changes)' : ''}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button className="btn btn-primary" onClick={recover}>
-                  Recover
-                </button>
-                <button className="btn" onClick={() => setRecovery(null)}>
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_16rem]">
-            <Card>
-              <h3 className="text-lg font-semibold">New project</h3>
-              <label className="label mt-4" htmlFor="school-name">
-                School name
-              </label>
-              <input
-                id="school-name"
-                className="field w-full"
-                value={name}
-                placeholder="e.g. Sri Sumangala Vidyalaya"
-                onChange={(e) => setName(e.target.value)}
-              />
-              <fieldset className="mt-4">
-                <legend className="label">School type</legend>
-                <div className="space-y-2">
-                  {(Object.keys(PACK_LABELS) as Pack[]).map((p) => (
-                    <label
-                      key={p}
-                      className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition ${
-                        pack === p ? 'border-teal-600 bg-teal-50 ring-1 ring-teal-600' : 'border-slate-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <input type="radio" name="pack" checked={pack === p} onChange={() => setPack(p)} className="accent-teal-700" />
-                      <span>
-                        <span className="block text-sm font-medium">{PACK_LABELS[p]}</span>
-                        <span className="block text-xs text-slate-600">{PACK_HINTS[p]}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <button className="btn btn-primary mt-5 px-4 py-2" onClick={() => newProject(pack, name.trim())}>
-                Create project
-              </button>
-            </Card>
-
-            <div className="space-y-6">
-              <Card>
-                <h3 className="font-semibold">Existing project</h3>
-                <p className="mt-2 text-sm text-slate-600">Open a .ttb file saved earlier.</p>
-                <button className="btn mt-4" onClick={onOpen}>
-                  Open file…
-                </button>
-              </Card>
-              <Card className="border-amber-200 bg-amber-50/60">
-                <h3 className="font-semibold">Just looking?</h3>
-                <p className="mt-2 text-sm text-slate-600">A filled-in school (Grades 6–11, 18 classes) to try Generate on.</p>
-                <button className="btn mt-4" onClick={trySample}>
-                  Try a sample school
-                </button>
-              </Card>
-            </div>
+      <section className="px-4 pb-14">
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-teal-700 to-emerald-600 px-6 py-10 text-center text-white shadow-xl sm:px-10">
+          <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-300/30 blur-3xl" />
+          <h2 className="relative text-2xl font-bold sm:text-3xl">Ready for next term?</h2>
+          <p className="relative mx-auto mt-2 max-w-xl text-teal-50/90">
+            Set up your school in a few minutes, or open the sample and press Generate.
+          </p>
+          <div className="relative mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              className="rounded-xl bg-amber-400 px-5 py-3 font-semibold text-amber-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-amber-300"
+              onClick={() => setWizard(true)}
+            >
+              Get started →
+            </button>
+            <InstallButton className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 font-semibold text-white ring-1 ring-white/40 transition hover:bg-white/25" />
           </div>
         </div>
       </section>
@@ -309,11 +258,7 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
             <Icon name="lock" className="h-4 w-4 text-emerald-600" />
             Everything stays on this device. Nothing is uploaded.
           </span>
-          {!__SINGLE_FILE__ && (
-            <a className="font-medium text-teal-700 hover:underline" href="./timetable-offline.html" download>
-              Download the offline copy
-            </a>
-          )}
+          <InstallButton className="inline-flex items-center gap-1.5 font-medium text-teal-700 hover:underline" />
         </div>
       </footer>
     </div>
