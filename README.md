@@ -1,5 +1,9 @@
 # School Timetable
 
+**Clash-free school timetables, made simple.**
+
+![School Timetable](public/og-image.png)
+
 A clash-free school timetable builder that runs as a frontend-only app in the browser. See [PLAN.md](PLAN.md).
 
 - **Use it online:** https://timetable.nuwan.dev/
@@ -25,3 +29,7 @@ npm run build:single   # one offline HTML file -> dist-single/index.html
 - `src/store/`: Zustand store, IndexedDB autosave and crash recovery
 - `src/features/`: screens (start, project overview, PDF spike)
 - `docs/spikes/`: spike write-ups
+
+## Branding
+
+The icons, `favicon.ico` and the social preview image in `public/` are rendered from `public/favicon.svg`, `public/icon-maskable.svg` and `scripts/branding/og.html` with `python scripts/branding/render.py` (needs Chrome and Pillow).
