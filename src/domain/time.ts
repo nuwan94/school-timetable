@@ -133,6 +133,16 @@ export function buildSlots(
   });
 }
 
+/** Lays slots end to end from `start`, keeping each slot's duration (used after edits/reorders). */
+export function relayoutSlots<T extends Pick<BellSlot, 'start' | 'duration'>>(slots: T[], start: number): T[] {
+  let t = start;
+  return slots.map((s) => {
+    const next = { ...s, start: t };
+    t += s.duration;
+    return next;
+  });
+}
+
 /** Total teaching minutes per week for a schedule over the given working days. */
 export function weeklyTeachingMinutes(schedule: BellSchedule, days: readonly Weekday[]): number {
   return days.reduce(
