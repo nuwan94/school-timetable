@@ -1,3 +1,4 @@
+import logo from '@/assets/logo.svg';
 import { useFileCommands } from '@/features/files/useFileCommands';
 import { SetupLayout } from '@/features/setup/SetupLayout';
 import { StartScreen } from '@/features/start/StartScreen';
@@ -21,7 +22,10 @@ export function App() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-4 py-2.5">
-        <span className="font-bold text-teal-800">Timetable</span>
+        <span className="flex items-center gap-2 font-bold text-teal-800">
+          <img src={logo} alt="" className="h-7 w-7" />
+          Timetable
+        </span>
         {project && (
           <span className="min-w-0 truncate text-sm text-slate-600" data-testid="file-status">
             {fileName ?? 'Not saved yet'}

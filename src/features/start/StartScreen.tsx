@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import logo from '@/assets/logo.svg';
 import type { Pack } from '@/domain/common';
 import { PACK_LABELS } from '@/packs';
 import { sampleSchool } from '@/packs/sample';
@@ -37,9 +38,16 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-bold">School Timetable</h1>
-      <p className="mt-1 text-slate-600">
-        Clash-free timetables, daily relief and printable sheets. Everything stays on this device.
+      <div className="flex items-center gap-4">
+        <img src={logo} alt="" className="h-14 w-14" />
+        <div>
+          <h1 className="text-2xl font-bold">School Timetable</h1>
+          <p className="font-medium text-teal-800">Clash-free school timetables, made simple.</p>
+        </div>
+      </div>
+      <p className="mt-3 text-slate-600">
+        Generate timetables, arrange daily relief, plan term tests and print sheets in English, සිංහල and தமிழ். Everything stays
+        on this device.
       </p>
 
       {recovery && (

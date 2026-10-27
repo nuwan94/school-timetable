@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body { font-family: 'Segoe UI', 'Nirmala UI', 'Iskoola Pota', sans-serif; background: #f0fdfa; color: #0f172a; overflow: hidden; position: relative; }
+  .band { position: absolute; inset: 0 auto 0 0; width: 14px; background: #0f766e; }
+  .left { position: absolute; left: 72px; top: 60px; width: 620px; }
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .brand img { width: 84px; height: 84px; }
+  .brand span { font-size: 30px; font-weight: 600; color: #0f766e; letter-spacing: .3px; }
+  h1 { margin-top: 36px; font-size: 58px; line-height: 1.05; font-weight: 700; letter-spacing: -1px; }
+  p.sub { margin-top: 22px; font-size: 26px; line-height: 1.4; color: #334155; }
+  .langs { margin-left: 6px; font-size: 22px; font-weight: 400; color: #115e59; font-family: 'Nirmala UI', 'Segoe UI', sans-serif; }
+  .url { font-family: 'Segoe UI', 'Nirmala UI', sans-serif; position: absolute; left: 72px; bottom: 48px; font-size: 22px; font-weight: 600; color: #0f766e; }
+  .chips { position: absolute; left: 72px; bottom: 96px; display: flex; gap: 10px; }
+  .chip { font-family: 'Segoe UI', 'Nirmala UI', sans-serif; font-size: 18px; padding: 6px 14px; border-radius: 999px; background: #ccfbf1; color: #115e59; font-weight: 600; }
+  .card { position: absolute; right: 56px; top: 70px; width: 440px; height: 490px; background: #fff; border-radius: 22px; box-shadow: 0 20px 50px rgba(15, 118, 110, .18); padding: 26px; transform: rotate(2deg); }
+  .card .t { font-size: 18px; font-weight: 700; color: #0f766e; margin-bottom: 14px; }
+  table { border-collapse: separate; border-spacing: 5px; width: 100%; }
+  th { font-size: 14px; color: #64748b; font-weight: 600; text-align: center; }
+  td { height: 48px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; color: #134e4a; }
+  td.p { width: 22px; color: #94a3b8; background: none; font-size: 13px; }
+  .a { background: #ccfbf1; } .b { background: #e0f2fe; color: #075985; } .c { background: #fef3c7; color: #92400e; } .d { background: #ede9fe; color: #5b21b6; } .e { background: #f1f5f9; color: #475569; }
+  .x { background: #fbbf24; color: #78350f; }
+</style></head>
+<body>
+  <div class="band"></div>
+  <div class="left">
+    <div class="brand"><img src="LOGO"><span>School Timetable</span></div>
+    <h1>Clash-free school timetables, made simple.</h1>
+    <p class="sub">Generate, print and share in minutes. Free, private and works offline.</p>
+  </div>
+  <div class="chips"><span class="chip">No clashes</span><span class="chip">Daily relief</span><span class="chip">Print-ready PDFs</span></div>
+  <div class="url">timetable.nuwan.dev <span class="langs">· English · සිංහල · தமிழ்</span></div>
+  <div class="card">
+    <div class="t">Grade 10 A · Week</div>
+    <table>
+      <tr><th></th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th></tr>
+      <tr><td class="p">1</td><td class="a">Maths</td><td class="b">Sci</td><td class="c">Eng</td><td class="a">Maths</td><td class="d">Sin</td></tr>
+      <tr><td class="p">2</td><td class="b">Sci</td><td class="a">Maths</td><td class="d">Sin</td><td class="e">Hist</td><td class="c">Eng</td></tr>
+      <tr><td class="p">3</td><td class="c">Eng</td><td class="d">Sin</td><td class="a">Maths</td><td class="b">Sci</td><td class="x">Relief</td></tr>
+      <tr><td class="p">4</td><td class="e">Hist</td><td class="c">Eng</td><td class="b">Sci</td><td class="d">Sin</td><td class="a">Maths</td></tr>
+      <tr><td class="p">5</td><td class="d">Rel</td><td class="e">ICT</td><td class="e">Hist</td><td class="c">Eng</td><td class="b">Sci</td></tr>
+      <tr><td class="p">6</td><td class="a">Maths</td><td class="b">Art</td><td class="d">Rel</td><td class="a">Maths</td><td class="e">ICT</td></tr>
+      <tr><td class="p">7</td><td class="e">PE</td><td class="a">Maths</td><td class="c">Eng</td><td class="b">Sci</td><td class="d">Tam</td></tr>
+    </table>
+  </div>
+</body></html>
