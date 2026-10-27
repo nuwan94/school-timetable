@@ -2,6 +2,13 @@
 
 A clash-free school timetable builder that runs as a frontend-only app in the browser. See [PLAN.md](PLAN.md).
 
+- **Use it online:** https://nuwan94.github.io/school-timetable/
+- **Offline copy:** download [timetable-offline.html](https://nuwan94.github.io/school-timetable/timetable-offline.html), copy it to any computer (a pendrive works), and open it in Chrome or Edge.
+
+All data stays on your device. Nothing is uploaded. Projects are saved as `.ttb` files.
+
+Open source under the [MIT License](LICENSE). Contributions are welcome.
+
 ```bash
 npm install
 npm run dev            # http://localhost:5173

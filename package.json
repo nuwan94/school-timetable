@@ -41,5 +41,11 @@
     "vite-plugin-singlefile": "2.0.3",
     "vitest": "2.1.4"
   },
-  "private": true
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nuwan94/school-timetable.git"
+  },
+  "homepage": "https://nuwan94.github.io/school-timetable/"
 }
