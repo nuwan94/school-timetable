@@ -1,5 +1,6 @@
 import type { Draft } from 'immer';
-import type { Allocation, SchoolClass } from './entities';
+import { newId } from './common';
+import { MergedClass, MultiGradeGroup, type Allocation, type SchoolClass } from './entities';
 import { makeAllocation, makeClass, makeGrade, patternPeriods } from './factories';
 import type { Project } from './project';
 
@@ -9,6 +10,8 @@ import type { Project } from './project';
  */
 
 export type EntityKind = 'section' | 'grade' | 'class' | 'subject' | 'roomType' | 'room' | 'role' | 'teacher' | 'bellSchedule';
+
+const blockSets = (p: Project) => p.optionBlocks.flatMap((b) => b.lines.flatMap((l) => l.sets));
 
 /** What would be affected by deleting an entity; shown in the confirm dialog. */
 export function deleteImpact(p: Project, kind: EntityKind, id: string): string[] {
@@ -24,12 +27,19 @@ export function deleteImpact(p: Project, kind: EntityKind, id: string): string[]
       ];
     }
     case 'class':
-      return n(p.allocations.filter((a) => a.groupIds.includes(id)).length, 'allocation(s)');
+      return [
+        ...n(p.allocations.filter((a) => a.groupIds.includes(id)).length, 'allocation(s)'),
+        ...n(p.optionBlocks.filter((b) => b.classIds.includes(id)).length, 'option block(s) lose this class'),
+      ];
     case 'subject':
-      return n(p.allocations.filter((a) => a.subjectId === id).length, 'allocation(s)');
+      return [
+        ...n(p.allocations.filter((a) => a.subjectId === id).length, 'allocation(s)'),
+        ...n(blockSets(p).filter((s) => s.subjectId === id).length, 'option-block group(s)'),
+      ];
     case 'teacher':
       return [
         ...n(p.allocations.filter((a) => a.teacherIds.includes(id)).length, 'allocation(s) become uncovered'),
+        ...n(blockSets(p).filter((s) => s.teacherIds.includes(id)).length, 'option-block group(s) lose their teacher'),
         ...n(p.classes.filter((c) => c.classTeacherId === id).length, 'class(es) lose their class teacher'),
       ];
     case 'room':
@@ -54,17 +64,26 @@ export function deleteEntity(d: Draft<Project>, kind: EntityKind, id: string): v
       for (const c of d.classes.filter((x) => x.gradeId === id)) deleteEntity(d, 'class', c.id);
       d.grades = d.grades.filter((x) => x.id !== id);
       break;
-    case 'class':
+    case 'class': {
       d.classes = d.classes.filter((x) => x.id !== id);
       d.studentGroups = d.studentGroups.filter((g) => {
         g.classIds = g.classIds.filter((c) => c !== id);
         return g.classIds.length > 0;
       });
+      const groups = new Set(d.studentGroups.map((g) => g.id));
       d.allocations = d.allocations.filter((a) => {
         a.groupIds = a.groupIds.filter((g) => g !== id);
         return a.groupIds.length > 0;
       });
+      d.optionBlocks = d.optionBlocks.filter((b) => {
+        b.classIds = b.classIds.filter((c) => c !== id);
+        for (const line of b.lines) line.sets = line.sets.filter((s) => groups.has(s.groupId));
+        return b.classIds.length > 0;
+      });
+      d.multiGradeGroups = d.multiGradeGroups.filter((g) => (g.classIds = g.classIds.filter((c) => c !== id)).length >= 2);
+      d.mergedClasses = d.mergedClasses.filter((m) => (m.classIds = m.classIds.filter((c) => c !== id)).length >= 2);
       break;
+    }
     case 'subject':
       d.subjects = d.subjects.filter((x) => x.id !== id);
       d.allocations = d.allocations.filter((a) => a.subjectId !== id);
@@ -72,6 +91,9 @@ export function deleteEntity(d: Draft<Project>, kind: EntityKind, id: string): v
         t.subjectIds = t.subjectIds.filter((s) => s !== id);
         if (t.appointmentSubjectId === id) t.appointmentSubjectId = null;
       }
+      for (const b of d.optionBlocks) for (const line of b.lines) line.sets = line.sets.filter((s) => s.subjectId !== id);
+      for (const m of d.mergedClasses) m.exceptSubjectIds = m.exceptSubjectIds.filter((s) => s !== id);
+      pruneStudentGroups(d);
       break;
     case 'teacher':
       d.teachers = d.teachers.filter((x) => x.id !== id);
@@ -80,12 +102,14 @@ export function deleteEntity(d: Draft<Project>, kind: EntityKind, id: string): v
         a.teacherIds = a.teacherIds.filter((t) => t !== id);
         if (a.teacherIds.length === 0) a.status = 'uncovered';
       }
+      for (const b of d.optionBlocks) for (const line of b.lines) for (const s of line.sets) s.teacherIds = s.teacherIds.filter((t) => t !== id);
       for (const c of d.classes) if (c.classTeacherId === id) c.classTeacherId = null;
       break;
     case 'room':
       d.rooms = d.rooms.filter((x) => x.id !== id);
       for (const c of d.classes) if (c.homeRoomId === id) c.homeRoomId = null;
       for (const a of d.allocations) if (a.roomId === id) a.roomId = null;
+      for (const b of d.optionBlocks) for (const line of b.lines) for (const s of line.sets) if (s.roomId === id) s.roomId = null;
       break;
     case 'roomType':
       d.roomTypes = d.roomTypes.filter((x) => x.id !== id);
@@ -101,6 +125,14 @@ export function deleteEntity(d: Draft<Project>, kind: EntityKind, id: string): v
       d.bellSchedules = d.bellSchedules.filter((x) => x.id !== id);
       break;
   }
+}
+
+/** Removes sub-groups that no block set or allocation refers to any more. */
+export function pruneStudentGroups(d: Draft<Project>): void {
+  const used = new Set<string>();
+  for (const a of d.allocations) for (const g of a.groupIds) used.add(g);
+  for (const b of d.optionBlocks) for (const line of b.lines) for (const s of line.sets) used.add(s.groupId);
+  d.studentGroups = d.studentGroups.filter((g) => used.has(g.id));
 }
 
 /**
@@ -129,9 +161,24 @@ export function quickAddClasses(
   return created;
 }
 
-/** The simple matrix allocation for one class × subject (single class, not combined). */
-export function findCellAllocation(p: Pick<Project, 'allocations'>, classId: string, subjectId: string): Allocation | undefined {
-  return p.allocations.find((a) => a.subjectId === subjectId && a.groupIds.length === 1 && a.groupIds[0] === classId);
+type CellSource = Pick<Project, 'allocations' | 'mergedClasses'>;
+
+/** The merge that combines this class for this subject, if any. */
+export function mergeFor(p: Pick<Project, 'mergedClasses'>, classId: string, subjectId: string) {
+  return p.mergedClasses.find((m) => m.classIds.includes(classId) && !m.exceptSubjectIds.includes(subjectId));
+}
+
+/** Groups a matrix cell's allocation covers: the class alone, or all classes merged with it for this subject. */
+export function cellGroupIds(p: Pick<Project, 'mergedClasses'>, classId: string, subjectId: string): string[] {
+  return mergeFor(p, classId, subjectId)?.classIds ?? [classId];
+}
+
+const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
+
+/** The matrix allocation for class × subject (shared by all classes merged with it). */
+export function findCellAllocation(p: CellSource, classId: string, subjectId: string): Allocation | undefined {
+  const groups = cellGroupIds(p, classId, subjectId);
+  return p.allocations.find((a) => a.subjectId === subjectId && sameSet(a.groupIds, groups));
 }
 
 /**
@@ -152,7 +199,7 @@ export function setCellAllocation(
     return;
   }
   if (!alloc) {
-    d.allocations.push(makeAllocation({ subjectId, groupIds: [classId], periods, status: 'uncovered' }));
+    d.allocations.push(makeAllocation({ subjectId, groupIds: cellGroupIds(d, classId, subjectId), periods, status: 'uncovered' }));
     alloc = d.allocations[d.allocations.length - 1]!;
   }
   if (change.pattern) alloc.pattern = change.pattern;
@@ -172,9 +219,70 @@ export function setCellAllocation(
  * the "apply to whole grade" shortcut. Existing teachers in targets are kept.
  */
 export function copyClassPeriods(d: Draft<Project>, fromClassId: string, toClassIds: string[]): void {
-  const source = d.allocations.filter((a) => a.groupIds.length === 1 && a.groupIds[0] === fromClassId);
+  const source = d.subjects
+    .map((s) => findCellAllocation(d, fromClassId, s.id))
+    .filter((a): a is Draft<Allocation> => !!a)
+    .map((a) => ({ subjectId: a.subjectId, pattern: a.pattern.map((p) => ({ ...p })) }));
   for (const target of toClassIds) {
     if (target === fromClassId) continue;
     for (const a of source) setCellAllocation(d, target, a.subjectId, { pattern: a.pattern.map((p) => ({ ...p })) });
   }
+}
+
+// ------------------------------------------------------------ merged classes
+
+/**
+ * Merges classes for every subject except `exceptSubjectIds`. Existing
+ * per-class allocations of merged subjects collapse into one combined
+ * allocation (the first class's periods and teacher win).
+ */
+export function mergeClasses(d: Draft<Project>, input: { name: string; classIds: string[]; exceptSubjectIds: string[] }): string {
+  if (input.classIds.length < 2) throw new Error('Pick at least two classes to merge.');
+  const taken = d.mergedClasses.find((m) => m.classIds.some((c) => input.classIds.includes(c)));
+  if (taken) throw new Error(`A class is already in merge "${taken.name}".`);
+  const id = newId('mrg');
+  for (const subject of d.subjects) {
+    if (input.exceptSubjectIds.includes(subject.id)) continue;
+    const singles = input.classIds
+      .map((c) => d.allocations.find((a) => a.subjectId === subject.id && a.groupIds.length === 1 && a.groupIds[0] === c))
+      .filter((a): a is Draft<Allocation> => !!a);
+    const [keep, ...drop] = singles;
+    if (!keep) continue;
+    keep.groupIds = [...input.classIds];
+    d.allocations = d.allocations.filter((a) => !drop.includes(a));
+  }
+  d.mergedClasses.push(MergedClass.parse({ id, name: input.name, classIds: input.classIds, exceptSubjectIds: input.exceptSubjectIds }));
+  return id;
+}
+
+/** Splits a merge: each combined allocation becomes one copy per class (same teacher and periods). */
+export function unmergeClasses(d: Draft<Project>, mergeId: string): void {
+  const merge = d.mergedClasses.find((m) => m.id === mergeId);
+  if (!merge) return;
+  const combined = d.allocations.filter((a) => sameSet(a.groupIds, merge.classIds));
+  const copies = combined.flatMap((a) =>
+    merge.classIds.map((c) => ({ ...JSON.parse(JSON.stringify(a)), id: newId('alc'), groupIds: [c] }) as Allocation),
+  );
+  d.allocations = [...d.allocations.filter((a) => !combined.includes(a)), ...copies];
+  d.mergedClasses = d.mergedClasses.filter((m) => m.id !== mergeId);
+}
+
+/** Changes which subjects stay separate, re-merging allocations accordingly. */
+export function setMergeExceptions(d: Draft<Project>, mergeId: string, exceptSubjectIds: string[]): void {
+  const merge = d.mergedClasses.find((m) => m.id === mergeId);
+  if (!merge) return;
+  const { name, classIds } = merge;
+  unmergeClasses(d, mergeId);
+  const id = mergeClasses(d, { name, classIds: [...classIds], exceptSubjectIds });
+  // Keep the original id so UI selection survives.
+  d.mergedClasses.find((m) => m.id === id)!.id = mergeId;
+}
+
+// ------------------------------------------------------- multi-grade groups
+
+export function addMultiGradeGroup(d: Draft<Project>, input: { name: string; classIds: string[] }): void {
+  if (input.classIds.length < 2) throw new Error('Pick at least two classes.');
+  const taken = d.multiGradeGroups.find((g) => g.classIds.some((c) => input.classIds.includes(c)));
+  if (taken) throw new Error(`A class is already in multi-grade group "${taken.name}".`);
+  d.multiGradeGroups.push(MultiGradeGroup.parse({ id: newId('mgg'), ...input }));
 }

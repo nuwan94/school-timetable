@@ -406,9 +406,14 @@ src/
 
 **Progress**
 - **P0: done.** Live at https://nuwan.dev/school-timetable/.
-- **P1: in progress.**
-  - Done: setup wizard; sections, grades and classes (quick add); subjects (standard SL list); special rooms; teachers (roles and norms, paste from Excel, service data); bell-schedule editor (day overrides); allocation matrix (live class and teacher totals, covering/uncovered status, copy to grade, checks with suggested fixes, supply vs demand).
-  - Still to do: versioned grade templates, Excel paste for allocations, option blocks and student-group UI, multi-grade and merged class UI.
+- **P1: done.**
+  - Setup wizard; sections, grades and classes (quick add); subjects (standard SL list); special rooms; teachers (roles and norms, paste from Excel, service data); bell-schedule editor (day overrides).
+  - Allocation matrix: live class and teacher totals, covering/uncovered status, copy to grade, checks with suggested fixes, supply vs demand.
+  - Versioned curriculum templates: save from a class, apply to a grade, import/export.
+  - Excel paste for allocations, in list or grid layout.
+  - Option blocks with student groups: Religion, Aesthetics and Second National Language presets; teacher, room and student-count checks.
+  - Merged classes (with subjects taught separately) and multi-grade groups (teacher load counted once).
+  - Deferred to P7 (International): student-list import and the line-suggesting block builder.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 

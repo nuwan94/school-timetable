@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { PdfSpike } from '@/features/spike/PdfSpike';
 import { useProjectStore } from '@/store/projectStore';
 import { AllocationsStep } from './AllocationsStep';
+import { BlocksStep } from './BlocksStep';
 import { ClassesStep } from './ClassesStep';
 import { RoomsStep } from './RoomsStep';
 import { SchoolStep } from './SchoolStep';
@@ -18,6 +19,7 @@ const SCREENS: Record<StepId, () => JSX.Element> = {
   rooms: RoomsStep,
   teachers: TeachersStep,
   allocations: AllocationsStep,
+  blocks: BlocksStep,
 };
 
 const VIEW_KEY = 'timetable.view';

@@ -252,6 +252,8 @@ export const CurriculumTemplate = Named.extend({
       subjectCode: z.string(),
       amount: z.number().positive(),
       unit: LoadUnit,
+      /** Double periods within `amount` (periods unit only). */
+      doubles: z.number().int().nonnegative().default(0),
     }),
   ),
 });

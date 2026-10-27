@@ -120,6 +120,20 @@ export function findBrokenReferences(p: Project): string[] {
     for (const t of a.teacherIds) check(teachers.has(t), `Allocation ${a.id} refers to a missing teacher`);
     if (a.roomId) check(rooms.has(a.roomId), `Allocation ${a.id} refers to a missing room`);
   }
+  const studentGroups = ids(p.studentGroups);
+  for (const b of p.optionBlocks) {
+    for (const c of b.classIds) check(classes.has(c), `Option block "${b.name}" refers to a missing class`);
+    for (const l of b.lines)
+      for (const s of l.sets) {
+        check(subjects.has(s.subjectId), `Option block "${b.name}" has a group with a missing subject`);
+        check(studentGroups.has(s.groupId), `Option block "${b.name}" has a missing student group`);
+        for (const t of s.teacherIds) check(teachers.has(t), `Option block "${b.name}" refers to a missing teacher`);
+      }
+  }
+  for (const m of p.mergedClasses)
+    for (const c of m.classIds) check(classes.has(c), `Merge "${m.name}" refers to a missing class`);
+  for (const g of p.multiGradeGroups)
+    for (const c of g.classIds) check(classes.has(c), `Multi-grade group "${g.name}" refers to a missing class`);
   if (p.activeVersionId)
     check(
       p.versions.some((v) => v.id === p.activeVersionId),
