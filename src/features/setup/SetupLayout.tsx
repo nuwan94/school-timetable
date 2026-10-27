@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { CheckScreen } from '@/features/build/CheckScreen';
 import { EditScreen } from '@/features/build/EditScreen';
 import { GenerateScreen } from '@/features/build/GenerateScreen';
@@ -10,6 +9,7 @@ import { PrintScreen } from '@/features/print/PrintScreen';
 import { LedgerScreen } from '@/features/relief/LedgerScreen';
 import { TodayScreen } from '@/features/relief/TodayScreen';
 import { useProjectStore } from '@/store/projectStore';
+import { useUiStore, type BuildId, type View } from '@/store/uiStore';
 import { AllocationsStep } from './AllocationsStep';
 import { BlocksStep } from './BlocksStep';
 import { ClassesStep } from './ClassesStep';
@@ -18,9 +18,6 @@ import { SchoolStep } from './SchoolStep';
 import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
-
-type BuildId = 'check' | 'rules' | 'generate' | 'edit' | 'print' | 'today' | 'ledger' | 'changes' | 'calendar' | 'exams';
-type View = StepId | BuildId;
 
 const BUILD: { id: BuildId; label: string }[] = [
   { id: 'check', label: 'Check' },
@@ -51,41 +48,19 @@ const SCREENS: Record<StepId, () => JSX.Element> = {
   blocks: BlocksStep,
 };
 
-const VIEW_KEY = 'timetable.view';
-
-function initialView(): View {
-  try {
-    return (localStorage.getItem(VIEW_KEY) as View | null) ?? 'school';
-  } catch {
-    return 'school';
-  }
-}
-
 /** Setup wizard: a step list with progress ticks, the step screen, and Back/Next. */
 export function SetupLayout() {
   const project = useProjectStore((s) => s.project)!;
   const update = useProjectStore((s) => s.update);
-  const [view, setView] = useState<View>(initialView);
+  const view = useUiStore((s) => s.view);
+  const go = useUiStore((s) => s.go);
   const steps = visibleSteps(project);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(VIEW_KEY, view);
-    } catch {
-      /* storage unavailable: just don't remember the tab */
-    }
-  }, [view]);
 
   const build = [...BUILD, ...DAILY, ...YEAR].find((b) => b.id === view);
   const current = build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
   const doneCount = steps.filter((s) => s.done(project)).length;
-
-  const go = (v: View) => {
-    setView(v);
-    window.scrollTo({ top: 0 });
-  };
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-3 py-4 md:flex-row md:px-4">
