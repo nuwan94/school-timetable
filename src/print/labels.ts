@@ -52,6 +52,15 @@ const EN = {
   ground: 'Ground',
   notCovered: 'not covered',
   insteadOf: 'Instead of',
+  changeNotice: 'Timetable change notice',
+  before: 'Before',
+  now: 'Now',
+  noLesson: '—',
+  received: 'Received',
+  examTimetable: 'Term test timetable',
+  invigilation: 'Invigilation roster',
+  session: 'Session',
+  invigilator: 'Invigilator',
   mediumNames: { si: 'Sinhala', ta: 'Tamil', en: 'English', bilingual: 'Bilingual' },
 };
 
@@ -102,6 +111,15 @@ const SI: Labels = {
   ground: 'ක්‍රීඩාංගණය',
   notCovered: 'ආවරණය කර නැත',
   insteadOf: 'වෙනුවට',
+  changeNotice: 'කාලසටහන් වෙනස් කිරීමේ දැන්වීම',
+  before: 'පෙර',
+  now: 'දැන්',
+  noLesson: '—',
+  received: 'ලැබුණි',
+  examTimetable: 'වාර පරීක්ෂණ කාලසටහන',
+  invigilation: 'අධීක්ෂණ රාජකාරි ලේඛනය',
+  session: 'වාරය',
+  invigilator: 'අධීක්ෂක',
   mediumNames: { si: 'සිංහල', ta: 'දෙමළ', en: 'ඉංග්‍රීසි', bilingual: 'ද්විභාෂා' },
 };
 
@@ -150,6 +168,15 @@ const TA: Labels = {
   ground: 'மைதானம்',
   notCovered: 'ஒதுக்கப்படவில்லை',
   insteadOf: 'பதிலாக',
+  changeNotice: 'நேர அட்டவணை மாற்ற அறிவித்தல்',
+  before: 'முன்பு',
+  now: 'இப்போது',
+  noLesson: '—',
+  received: 'பெற்றுக்கொண்டேன்',
+  examTimetable: 'தவணைப் பரீட்சை நேர அட்டவணை',
+  invigilation: 'மேற்பார்வைக் கடமைப் பட்டியல்',
+  session: 'அமர்வு',
+  invigilator: 'மேற்பார்வையாளர்',
   mediumNames: { si: 'சிங்களம்', ta: 'தமிழ்', en: 'ஆங்கிலம்', bilingual: 'இருமொழி' },
 };
 

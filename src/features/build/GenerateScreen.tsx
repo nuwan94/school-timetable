@@ -1,22 +1,38 @@
 import { useMemo, useRef, useState } from 'react';
 import { classGrid, countGaps, lessonEntries, saveDraftVersion, teacherGrid } from '@/domain/timetable';
-import type { GenerateResult } from '@/solver';
+import type { GenerateOptions, GenerateResult } from '@/solver';
 import { checkTimetable } from '@/solver/checker';
 import { preflight } from '@/solver/preflight';
 import { runSolver, type Progress, type SolverRun } from '@/solver/runner';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader } from '@/ui/kit';
 import { TimetableGrid } from './TimetableGrid';
+import { WhatIf } from './WhatIf';
 
 /** Last run's details (unplaced reasons) survive switching screens, not reloads. */
 let lastRun: { versionId: string; result: GenerateResult } | null = null;
 
 const RELAXED_NOTE = 'rules relaxed';
 
+type Mode = 'fresh' | 'improve' | 'minimal' | 'some';
+
+const MODES: { value: Mode; label: string; help: string }[] = [
+  { value: 'fresh', label: 'New timetable', help: 'Arranges everything from scratch.' },
+  { value: 'improve', label: 'Improve the current one', help: 'Keeps it valid and moves lessons only where the rules get better.' },
+  { value: 'minimal', label: 'Keep it, change as little as possible', help: 'After a change in teachers or periods: fixes what no longer fits and leaves the rest.' },
+  { value: 'some', label: 'Redo only some classes', help: 'Everything else stays exactly where it is.' },
+];
+
+const TRY_ANOTHER_WARNING =
+  'This timetable has already been approved and shared. "Try another" rearranges everything.\n\nTo adjust it instead, choose "Keep it, change as little as possible". Continue anyway?';
+
 export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdit: () => void }) {
   const project = useProjectStore((s) => s.project)!;
   const update = useProjectStore((s) => s.update);
   const [relax, setRelax] = useState(false);
+  const shared = project.versions.some((v) => v.status !== 'draft');
+  const [mode, setMode] = useState<Mode>(() => (shared ? 'minimal' : 'fresh'));
+  const [someClasses, setSomeClasses] = useState<string[]>([]);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, rerender] = useState(0);
@@ -27,15 +43,27 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
   const version = project.versions.find((v) => v.id === project.activeVersionId);
   const last = lastRun && lastRun.versionId === version?.id ? lastRun.result : null;
 
-  const start = (seed: number) => {
+  const optionsFor = (m: Mode, seed: number): GenerateOptions => {
+    const current = version?.placements ?? [];
+    const locked = current.filter((pl) => pl.locked);
+    const base: GenerateOptions = { seed, relaxRules: relax, locked };
+    if (!version || m === 'fresh') return base;
+    if (m === 'improve' || m === 'minimal') return { ...base, start: { placements: current, mode: m } };
+    // Redo some classes: everything not touching them stays where it is.
+    const entries = lessonEntries(project, current);
+    const keep = new Set(entries.filter((e) => !e.classIds.some((c) => someClasses.includes(c))).map((e) => `${e.itemId}#${e.occurrence}`));
+    return { ...base, locked: current.filter((pl) => pl.locked || keep.has(`${pl.itemId}#${pl.occurrence}`)) };
+  };
+
+  const start = (seed: number, m: Mode = version ? mode : 'fresh') => {
     setError(null);
     setProgress({ placed: 0, total: pf.summary.lessons, iteration: 0 });
-    const locked = version?.placements.filter((pl) => pl.locked) ?? [];
-    const r = runSolver(project, { seed, relaxRules: relax, locked }, setProgress);
+    const r = runSolver(project, optionsFor(m, seed), setProgress);
     run.current = r;
     r.result
       .then((result) => {
-        const note = [`seed ${seed}`, relax ? RELAXED_NOTE : '', result.stats.stopped ? 'stopped early' : ''].filter(Boolean).join(', ');
+        const how = { fresh: '', improve: 'improved', minimal: 'minimal change', some: 'some classes redone' }[m];
+        const note = [how, `seed ${seed}`, relax ? RELAXED_NOTE : '', result.stats.stopped ? 'stopped early' : ''].filter(Boolean).join(', ');
         let id = '';
         update((d) => {
           id = saveDraftVersion(d, result.placements, note);
@@ -62,11 +90,23 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
         <div className="flex flex-wrap items-center gap-3">
           {!running ? (
             <>
-              <button className="btn btn-primary" onClick={() => start(1)} data-testid="generate">
-                {version ? 'Generate again' : 'Generate'}
+              <button
+                className="btn btn-primary"
+                onClick={() => start(1)}
+                data-testid="generate"
+                disabled={!!version && mode === 'some' && someClasses.length === 0}
+              >
+                {!version ? 'Generate' : { fresh: 'Generate new', improve: 'Improve', minimal: 'Update with least change', some: 'Redo these classes' }[mode]}
               </button>
-              {version && (
-                <button className="btn" onClick={() => start(nextSeed())} title="Same data, a different arrangement">
+              {version && mode === 'fresh' && (
+                <button
+                  className="btn"
+                  onClick={() => {
+                    if (shared && !confirm(TRY_ANOTHER_WARNING)) return;
+                    start(nextSeed());
+                  }}
+                  title="Same data, a different arrangement"
+                >
                   Try another
                 </button>
               )}
@@ -100,6 +140,40 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
           </span>
         </div>
 
+        {version && !running && (
+          <fieldset className="mt-4 grid gap-2 sm:grid-cols-2" aria-label="How to generate">
+            {MODES.map((m) => (
+              <label
+                key={m.value}
+                className={`flex cursor-pointer gap-2 rounded-md border p-2 text-sm ${mode === m.value ? 'border-teal-600 bg-teal-50' : 'border-slate-200'}`}
+              >
+                <input type="radio" name="gen-mode" className="mt-0.5" checked={mode === m.value} onChange={() => setMode(m.value)} />
+                <span>
+                  <span className="font-medium">{m.label}</span>
+                  <span className="block text-xs text-slate-600">{m.help}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+        {version && !running && mode === 'some' && (
+          <div className="mt-3 flex flex-wrap gap-1" aria-label="Classes to redo">
+            {project.classes.map((c) => {
+              const on = someClasses.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  aria-pressed={on}
+                  className={`rounded-full border px-2.5 py-1 text-sm ${on ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 bg-white'}`}
+                  onClick={() => setSomeClasses(on ? someClasses.filter((x) => x !== c.id) : [...someClasses, c.id])}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {running && (
           <div className="mt-4" role="status" aria-live="polite">
             <div className="h-2 overflow-hidden rounded bg-slate-200">
@@ -109,6 +183,7 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
               />
             </div>
             <p className="mt-1 text-xs text-slate-600">
+              {progress.phase === 'improving' ? 'Improving for the rules · ' : ''}
               {progress.placed} of {progress.total} lessons placed · step {progress.iteration}
             </p>
           </div>
@@ -121,6 +196,7 @@ export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdi
       </Card>
 
       {last && <RunResult result={last} />}
+      {version && !running && <WhatIf />}
       {version ? <Viewer /> : !running && <Empty>No timetable yet. Press Generate.</Empty>}
     </div>
   );
@@ -135,6 +211,11 @@ function RunResult({ result }: { result: GenerateResult }) {
           <b>{stats.placed}</b> of {stats.units} lessons placed
         </span>
         <span>{(stats.ms / 1000).toFixed(1)} s</span>
+        <span title="Lower is better: strength × number of times a preference is not met" data-testid="soft-score">
+          Rule penalty {stats.softBefore !== stats.softAfter ? `${stats.softBefore} → ` : ''}
+          <b>{stats.softAfter}</b>
+        </span>
+        {stats.moved !== null && <span data-testid="moved">{stats.moved} lesson(s) moved</span>}
         {stats.stopped && <span className="text-amber-800">Stopped early — showing the best found so far</span>}
         {result.relaxedRules && <span className="text-amber-800">Rules relaxed</span>}
         <span className={check.violations.length ? 'font-medium text-red-800' : 'text-teal-800'} data-testid="checker-status">

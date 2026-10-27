@@ -40,6 +40,7 @@ const absence = (teacherId: string, from: string, more: Partial<Absence> = {}): 
   slotIds: [],
   recurrence: null,
   reason: '',
+  coverTeacherId: null,
   ...more,
 });
 const withAbsences = (...list: Absence[]) => produce(p, (d) => void d.absences.push(...list));

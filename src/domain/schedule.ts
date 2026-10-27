@@ -61,6 +61,8 @@ export const TimetableVersion = z.object({
   note: z.string().default(''),
   createdAt: z.string(),
   placements: z.array(Placement).default([]),
+  /** The base version's lessons as they were when this version was made (who taught what, when) — for diffs and change notices. */
+  baseSnapshot: z.array(z.object({ key: z.string(), day: Weekday, slotIds: z.array(Id), teacherIds: z.array(Id), roomIds: z.array(Id) })).default([]),
 });
 export type TimetableVersion = z.infer<typeof TimetableVersion>;
 
@@ -85,6 +87,8 @@ export const Absence = z.object({
   slotIds: z.array(Id).default([]),
   recurrence: Recurrence.nullable().default(null),
   reason: z.string().default(''),
+  /** Long leave: the teacher who takes over (suggested first for relief). */
+  coverTeacherId: Id.nullable().default(null),
 });
 export type Absence = z.infer<typeof Absence>;
 
@@ -103,3 +107,32 @@ export const ReliefAssignment = z.object({
   note: z.string().default(''),
 });
 export type ReliefAssignment = z.infer<typeof ReliefAssignment>;
+
+// ------------------------------------------------------------------ term tests
+
+export const ExamSession = z.object({ id: Id, label: z.string(), start: z.number().int(), end: z.number().int() });
+export type ExamSession = z.infer<typeof ExamSession>;
+
+export const ExamPaper = z.object({
+  id: Id,
+  subjectId: Id,
+  classIds: z.array(Id),
+  date: IsoDate,
+  sessionId: Id,
+});
+export type ExamPaper = z.infer<typeof ExamPaper>;
+
+/** One supervisor in one exam room (the class's own room) for one paper. */
+export const Invigilation = z.object({ paperId: Id, classId: Id, teacherId: Id });
+export type Invigilation = z.infer<typeof Invigilation>;
+
+export const ExamSeries = z.object({
+  id: Id,
+  name: z.string(),
+  from: IsoDate,
+  to: IsoDate,
+  sessions: z.array(ExamSession),
+  papers: z.array(ExamPaper).default([]),
+  invigilation: z.array(Invigilation).default([]),
+});
+export type ExamSeries = z.infer<typeof ExamSeries>;

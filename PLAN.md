@@ -468,6 +468,32 @@ src/
     - one-tap assign, and Auto-assign all, which keeps both halves of a double with one teacher.
   - **Relief register** sheet (with a signature column), **relief slips** (8 per A4), a cropped WhatsApp image, PDF and Print.
   - **Relief ledger**: week, term and all-time counts, and days away; the term start date is a new optional setting.
+- **P5: done.**
+  - **Soft-rule scoring** for R1, R4–R8, R11–R15 and R23–R26, weighted by strength (low 1, medium 5, high 25, very high 100). Results are listed by rule (with examples) and by teacher.
+  - **Optimiser**: simulated annealing over moves and swaps. It runs after placing and never breaks a hard rule. Class-teacher period-1 hints are applied while placing.
+    - 18 classes: penalty 619 → 532 in about 1.4 s.
+    - 60 classes: 2331 → 1842 in about 4.7 s.
+  - **Rules screen**: turn rules on and off, set strength and settings, with a live report on the current timetable.
+  - **Generate modes**:
+    - New;
+    - Improve (never scores worse);
+    - Keep it, change as little as possible (minimal change);
+    - Redo only some classes.
+    - The default is minimal change once a timetable has been approved, and "Try another" warns first.
+  - **What if…?**: "can this teacher be free then?" gets a Yes/No, the lessons that would move, the teachers affected and the new penalty, before anything changes.
+  - **Mid-year changes** wizard:
+    - change types: a teacher leaves or transfers (load and class-teacher roles move), a new teacher joins, long leave with a named cover teacher (suggested first in relief), and exam classes leaving;
+    - updates the approved timetable with least change into a draft that keeps a snapshot of what it replaced;
+    - shows a before/now diff with the teachers and classes affected, then approval from the effective date.
+  - **Change notices**: one sheet per affected teacher in English, Sinhala or Tamil, with a "received" signature. Print & share has an "Only sheets that changed" filter.
+  - **Calendar**: add and edit dated events (classes away, teachers out, rooms taken, holidays). Daily relief reads them.
+  - **Term tests**:
+    - a paper grid by date and session;
+    - fair automatic invigilation: present teachers only, never for their own subject, one place at a time;
+    - clash checks: a class with two papers at once, an invigilator in two places, an absent invigilator, invigilating their own subject, a missing invigilator, a paper outside the dates;
+    - an exam timetable sheet and an invigilation roster sheet;
+    - an "Add to calendar" event so relief knows which classes are sitting papers.
+  - Not done: rule presets per pack beyond the defaults, and scoping rules to particular sections, classes or teachers in the UI.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 

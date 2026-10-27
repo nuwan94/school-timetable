@@ -79,7 +79,7 @@ export function TodayScreen({ onGenerate }: { onGenerate: () => void }) {
     });
   const markAway = (teacherId: string) =>
     editAbsences((d) => {
-      d.absences.push({ id: newId('abs'), teacherId, from: date, to: date, slotIds: [], recurrence: null, reason: '' });
+      d.absences.push({ id: newId('abs'), teacherId, from: date, to: date, slotIds: [], recurrence: null, reason: '', coverTeacherId: null });
     });
 
   const run = useCallback(
