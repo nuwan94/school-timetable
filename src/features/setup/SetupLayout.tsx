@@ -8,8 +8,10 @@ import { ExamsScreen } from '@/features/year/ExamsScreen';
 import { PrintScreen } from '@/features/print/PrintScreen';
 import { LedgerScreen } from '@/features/relief/LedgerScreen';
 import { TodayScreen } from '@/features/relief/TodayScreen';
+import type { ReactNode } from 'react';
 import { useProjectStore } from '@/store/projectStore';
 import { useUiStore, type BuildId, type View } from '@/store/uiStore';
+import { Icon, type IconName } from '@/ui/Icon';
 import { AllocationsStep } from './AllocationsStep';
 import { BlocksStep } from './BlocksStep';
 import { ClassesStep } from './ClassesStep';
@@ -19,24 +21,79 @@ import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
 
-const BUILD: { id: BuildId; label: string }[] = [
-  { id: 'check', label: 'Check' },
-  { id: 'rules', label: 'Rules' },
-  { id: 'generate', label: 'Generate' },
-  { id: 'edit', label: 'Edit' },
-  { id: 'print', label: 'Print & share' },
+interface NavLink {
+  id: BuildId;
+  label: string;
+  hint: string;
+  icon: IconName;
+}
+
+const BUILD: NavLink[] = [
+  { id: 'check', label: 'Check', hint: 'Find problems first', icon: 'checkCircle' },
+  { id: 'rules', label: 'Rules', hint: 'Balance and preferences', icon: 'sliders' },
+  { id: 'generate', label: 'Generate', hint: 'Build the timetable', icon: 'sparkle' },
+  { id: 'edit', label: 'Edit', hint: 'Move lessons by hand', icon: 'pen' },
+  { id: 'print', label: 'Print & share', hint: 'Sheets, PDF and PNG', icon: 'print' },
 ];
 
-const DAILY: { id: BuildId; label: string }[] = [
-  { id: 'today', label: 'Today — relief' },
-  { id: 'ledger', label: 'Relief ledger' },
+const DAILY: NavLink[] = [
+  { id: 'today', label: 'Today — relief', hint: 'Cover for absent teachers', icon: 'sun' },
+  { id: 'ledger', label: 'Relief ledger', hint: 'Who covered, kept fair', icon: 'book' },
 ];
 
-const YEAR: { id: BuildId; label: string }[] = [
-  { id: 'changes', label: 'Mid-year changes' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'exams', label: 'Term tests' },
+const YEAR: NavLink[] = [
+  { id: 'changes', label: 'Mid-year changes', hint: 'Leavers, joiners, long leave', icon: 'users' },
+  { id: 'calendar', label: 'Calendar', hint: 'Holidays and events', icon: 'calendar' },
+  { id: 'exams', label: 'Term tests', hint: 'Papers and invigilation', icon: 'clipboard' },
 ];
+
+/** Colours per group (full class names so Tailwind keeps them). */
+const TONES = {
+  teal: { head: 'text-teal-700', tile: 'bg-teal-50 text-teal-700', tileOn: 'bg-teal-700 text-white', on: 'bg-teal-50 ring-teal-600' },
+  amber: { head: 'text-amber-700', tile: 'bg-amber-50 text-amber-700', tileOn: 'bg-amber-500 text-white', on: 'bg-amber-50 ring-amber-500' },
+  violet: { head: 'text-violet-700', tile: 'bg-violet-50 text-violet-700', tileOn: 'bg-violet-600 text-white', on: 'bg-violet-50 ring-violet-500' },
+} as const;
+type Tone = keyof typeof TONES;
+
+function NavGroup({ title, icon, tone, meta, children }: { title: string; icon: IconName; tone: Tone; meta?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <div className="flex items-center gap-2 px-2 pb-1.5 pt-1">
+        <Icon name={icon} className={`h-4 w-4 ${TONES[tone].head}`} />
+        <span className={`text-xs font-bold uppercase tracking-wider ${TONES[tone].head}`}>{title}</span>
+        <span className="ml-auto">{meta}</span>
+      </div>
+      <ol className="space-y-0.5">{children}</ol>
+    </section>
+  );
+}
+
+function NavItem({ link, tone, active, onClick, extra }: { link: NavLink; tone: Tone; active: boolean; onClick: () => void; extra?: ReactNode }) {
+  const t = TONES[tone];
+  return (
+    <li>
+      <button
+        onClick={onClick}
+        aria-current={active ? 'page' : undefined}
+        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition ${active ? `ring-1 ${t.on}` : 'hover:bg-slate-50'}`}
+      >
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${active ? t.tileOn : t.tile}`}>
+          <Icon name={link.icon} className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+            {link.label}
+            {extra}
+          </span>
+          <span className="block truncate text-xs text-slate-500">{link.hint}</span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+const Count = ({ n }: { n: number }) =>
+  n > 0 ? <span className="rounded-full bg-violet-100 px-1.5 text-[10px] font-semibold text-violet-700">{n}</span> : null;
 
 const SCREENS: Record<StepId, () => JSX.Element> = {
   school: SchoolStep,
@@ -61,10 +118,17 @@ export function SetupLayout() {
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
   const doneCount = steps.filter((s) => s.done(project)).length;
+  const version = project.versions.find((v) => v.id === project.activeVersionId);
+  const badge = !version
+    ? { text: 'Not yet', cls: 'bg-slate-100 text-slate-600' }
+    : version.status === 'approved'
+      ? { text: 'Approved', cls: 'bg-emerald-100 text-emerald-800' }
+      : { text: 'Draft', cls: 'bg-amber-100 text-amber-800' };
+  const todayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-3 py-4 md:flex-row md:px-4">
-      <aside className="md:w-56 md:shrink-0">
+      <aside className="md:sticky md:top-[4.5rem] md:max-h-[calc(100vh-5.5rem)] md:w-64 md:shrink-0 md:overflow-y-auto md:pb-4 md:pr-1 [scrollbar-width:thin]">
         {/* Phone: compact select. Desktop: step list. */}
         <select className="field w-full md:hidden" value={view} onChange={(e) => go(e.target.value as View)} aria-label="Setup step">
           {steps.map((s, i) => (
@@ -95,11 +159,22 @@ export function SetupLayout() {
           </optgroup>
         </select>
 
-        <nav className="hidden md:block" aria-label="Setup steps">
-          <p className="label">
-            Setup · {doneCount}/{steps.length} done
-          </p>
-          <ol className="mt-2 space-y-1">
+        <nav className="hidden space-y-3 md:block" aria-label="Setup steps">
+          <NavGroup
+            title="Setup"
+            icon="school"
+            tone="teal"
+            meta={
+              <span className="text-xs font-semibold text-slate-500">
+                {doneCount}/{steps.length} done
+              </span>
+            }
+          >
+            <li className="px-2 pb-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+              </div>
+            </li>
             {steps.map((s, i) => {
               const done = s.done(project);
               const active = s.id === current?.id;
@@ -108,84 +183,74 @@ export function SetupLayout() {
                   <button
                     onClick={() => go(s.id)}
                     aria-current={active ? 'step' : undefined}
-                    className={`flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left ${
-                      active ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-100'
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition ${
+                      active ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-50'
                     }`}
                   >
                     <span
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                        done ? 'bg-teal-700 text-white' : 'border border-slate-300 text-slate-500'
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                        done ? 'bg-teal-700 text-white' : active ? 'bg-white text-teal-700 ring-1 ring-teal-600' : 'bg-slate-100 text-slate-500'
                       }`}
                       aria-label={done ? 'done' : undefined}
                     >
-                      {done ? '✓' : i + 1}
+                      {done ? <Icon name="check" className="h-4 w-4" /> : i + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium">{s.label}</span>
+                      <span className="block text-sm font-medium text-slate-800">{s.label}</span>
                       <span className="block truncate text-xs text-slate-500">{s.status(project)}</span>
                     </span>
                   </button>
                 </li>
               );
             })}
-          </ol>
-          <p className="label mt-5">Build</p>
-          <ol className="mt-2 space-y-1">
+          </NavGroup>
+
+          <NavGroup
+            title="Build"
+            icon="grid"
+            tone="teal"
+            meta={<span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}>{badge.text}</span>}
+          >
             {BUILD.map((b) => (
-              <li key={b.id}>
-                <button
-                  onClick={() => go(b.id)}
-                  aria-current={view === b.id ? 'page' : undefined}
-                  className={`w-full rounded-md px-2 py-1.5 text-left text-sm font-medium ${
-                    view === b.id ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-100'
-                  }`}
-                >
-                  {b.label}
-                  {b.id === 'generate' && project.activeVersionId && <span className="ml-1.5 text-xs font-normal text-slate-500">· draft ready</span>}
-                </button>
-              </li>
+              <NavItem key={b.id} link={b} tone="teal" active={view === b.id} onClick={() => go(b.id)} />
             ))}
-          </ol>
-          {(
-            [
-              ['Daily', DAILY],
-              ['Year', YEAR],
-            ] as const
-          ).map(([label, list]) => (
-            <div key={label}>
-              <p className="label mt-5">{label}</p>
-              <ol className="mt-2 space-y-1">
-                {list.map((b) => (
-                  <li key={b.id}>
-                    <button
-                      onClick={() => go(b.id)}
-                      aria-current={view === b.id ? 'page' : undefined}
-                      className={`w-full rounded-md px-2 py-1.5 text-left text-sm font-medium ${
-                        view === b.id ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-100'
-                      }`}
-                    >
-                      {b.label}
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-          <div className="mt-6 border-t border-slate-200 pt-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={project.simpleMode}
-                onChange={(e) =>
-                  update((d) => {
-                    d.simpleMode = e.target.checked;
-                  })
-                }
+          </NavGroup>
+
+          <NavGroup title="Daily" icon="sun" tone="amber" meta={<span className="text-xs font-medium text-slate-500">{todayLabel}</span>}>
+            {DAILY.map((b) => (
+              <NavItem key={b.id} link={b} tone="amber" active={view === b.id} onClick={() => go(b.id)} />
+            ))}
+          </NavGroup>
+
+          <NavGroup title="Year" icon="calendar" tone="violet">
+            {YEAR.map((b) => (
+              <NavItem
+                key={b.id}
+                link={b}
+                tone="violet"
+                active={view === b.id}
+                onClick={() => go(b.id)}
+                extra={b.id === 'calendar' ? <Count n={project.overlays.length} /> : b.id === 'exams' ? <Count n={project.exams.length} /> : null}
               />
-              Simple mode
-            </label>
-            <p className="mt-1 text-xs text-slate-500">Hides advanced fields. Nothing is deleted.</p>
-          </div>
+            ))}
+          </NavGroup>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-teal-700"
+              checked={project.simpleMode}
+              onChange={(e) =>
+                update((d) => {
+                  d.simpleMode = e.target.checked;
+                })
+              }
+            />
+            <span>
+              <span className="block text-sm font-medium">Simple mode</span>
+              <span className="block text-xs text-slate-500">Hides advanced fields. Nothing is deleted.</span>
+            </span>
+          </label>
         </nav>
       </aside>
 
