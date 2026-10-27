@@ -1,6 +1,4 @@
 import logo from '@/assets/logo.svg';
-import { sampleSchool } from '@/packs/sample';
-import { useProjectStore } from '@/store/projectStore';
 import { useUiStore } from '@/store/uiStore';
 import { Icon, type IconName } from '@/ui/Icon';
 import { InstallButton } from '@/ui/Install';
@@ -128,10 +126,9 @@ function Row({ n, row }: { n: number; row: [string, string][] }) {
 }
 
 export function StartScreen() {
-  const load = useProjectStore((s) => s.load);
   const setWizard = useUiStore((s) => s.setWizard);
   const { recovery, recover, dismiss } = useRecovery();
-  const trySample = () => load(sampleSchool(), { fileName: null, handle: null, dirty: true });
+  const trySample = () => setWizard(true, 'example');
 
   return (
     <div>
@@ -168,7 +165,7 @@ export function StartScreen() {
                 className="rounded-xl bg-white/15 px-5 py-3 font-semibold text-white ring-1 ring-white/40 backdrop-blur transition hover:bg-white/25"
                 onClick={trySample}
               >
-                Try a sample school
+                Try an example school
               </button>
             </div>
             <div className="mt-8 flex flex-wrap gap-2 text-sm">

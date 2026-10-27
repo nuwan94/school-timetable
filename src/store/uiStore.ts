@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { StepId } from '@/features/setup/steps';
 
-export type BuildId = 'check' | 'rules' | 'generate' | 'edit' | 'print' | 'today' | 'ledger' | 'changes' | 'calendar' | 'exams';
+export type BuildId =
+  'check' | 'rules' | 'generate' | 'edit' | 'print' | 'today' | 'ledger' | 'changes' | 'calendar' | 'exams' | 'returns' | 'workload' | 'duties';
 export type View = StepId | BuildId;
 
 const VIEW_KEY = 'timetable.view';
@@ -19,7 +20,9 @@ export interface UiState {
   view: View;
   go(view: View): void;
   wizardOpen: boolean;
-  setWizard(open: boolean): void;
+  /** Which page the wizard opens on. */
+  wizardStart: 'choose' | 'example';
+  setWizard(open: boolean, start?: 'choose' | 'example'): void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -34,5 +37,6 @@ export const useUiStore = create<UiState>()((set) => ({
     window.scrollTo({ top: 0 });
   },
   wizardOpen: false,
-  setWizard: (wizardOpen) => set({ wizardOpen }),
+  wizardStart: 'choose',
+  setWizard: (wizardOpen, wizardStart = 'choose') => set({ wizardOpen, wizardStart }),
 }));

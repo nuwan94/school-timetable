@@ -165,7 +165,7 @@ export function TodayScreen({ onGenerate }: { onGenerate: () => void }) {
                 ))}
               </ul>
             )}
-            <input className="field mb-2 min-h-11 w-full" placeholder={S.search} value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="field mb-2 min-h-11 w-full" aria-label={S.search} placeholder={S.search} value={query} onChange={(e) => setQuery(e.target.value)} />
             <div className="flex max-h-72 flex-wrap gap-1.5 overflow-y-auto" data-testid="teacher-chips">
               {present.map((t) => (
                 <button key={t.id} className="min-h-11 rounded-full border border-slate-300 bg-white px-3 text-sm hover:bg-slate-50" onClick={() => markAway(t.id)}>

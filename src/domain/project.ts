@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Id, IsoDate, LocalText, Pack } from './common';
+import { Id, IsoDate, LocalText, Medium, Pack } from './common';
 import {
   Allocation,
   CurriculumTemplate,
@@ -18,7 +18,7 @@ import {
   Subject,
   Teacher,
 } from './entities';
-import { Absence, ExamSeries, ReliefAssignment, RuleConfig, TimetableVersion } from './schedule';
+import { Absence, DutyRoster, ExamSeries, ReliefAssignment, RuleConfig, TimetableVersion } from './schedule';
 import { BellSchedule, CalendarOverlay, ExtraSession, Weekday } from './time';
 
 export const FILE_FORMAT = 'school-timetable';
@@ -41,6 +41,30 @@ export const Institute = z.object({
   gradeLabel: z.string().default('Grade'),
 });
 export type Institute = z.infer<typeof Institute>;
+
+/** Approved cadre (from the zonal office): teachers allowed per subject × medium. */
+export const CadreEntry = z.object({
+  subjectId: Id,
+  medium: Medium,
+  approved: z.number().int().nonnegative(),
+});
+export type CadreEntry = z.infer<typeof CadreEntry>;
+
+/** One column of a configurable return layout: a fixed key, the school's own heading, shown or hidden. */
+export const ReportColumn = z.object({
+  key: z.string(),
+  label: z.string(),
+  visible: z.boolean().default(true),
+});
+export type ReportColumn = z.infer<typeof ReportColumn>;
+
+export const ReportSettings = z.object({
+  /** Cadre return columns in the zone's order and wording. Empty = the generic layout. */
+  cadreColumns: z.array(ReportColumn).default([]),
+  /** Periods one teacher is expected to teach, to turn periods into teachers. Unset until the school enters it. */
+  periodsPerTeacher: z.number().int().positive().nullable().default(null),
+});
+export type ReportSettings = z.infer<typeof ReportSettings>;
 
 export const Project = z.object({
   format: z.literal(FILE_FORMAT),
@@ -82,6 +106,10 @@ export const Project = z.object({
   absences: z.array(Absence).default([]),
   relief: z.array(ReliefAssignment).default([]),
   exams: z.array(ExamSeries).default([]),
+
+  cadre: z.array(CadreEntry).default([]),
+  reports: ReportSettings.default({}),
+  dutyRosters: z.array(DutyRoster).default([]),
 });
 export type Project = z.infer<typeof Project>;
 /** Input shape (defaults optional) — handy for fixtures and pack builders. */
@@ -107,16 +135,13 @@ export function findBrokenReferences(p: Project): string[] {
     if (!ok) problems.push(msg);
   };
 
-  for (const s of p.sections)
-    check(schedules.has(s.bellScheduleId), `Section "${s.name}" uses a missing bell schedule`);
+  for (const s of p.sections) check(schedules.has(s.bellScheduleId), `Section "${s.name}" uses a missing bell schedule`);
   for (const g of p.grades) check(sections.has(g.sectionId), `Grade "${g.name}" has a missing section`);
   for (const c of p.classes) {
     check(grades.has(c.gradeId), `Class "${c.name}" has a missing grade`);
-    if (c.classTeacherId)
-      check(teachers.has(c.classTeacherId), `Class "${c.name}" has a missing class teacher`);
+    if (c.classTeacherId) check(teachers.has(c.classTeacherId), `Class "${c.name}" has a missing class teacher`);
   }
-  for (const g of p.studentGroups)
-    for (const c of g.classIds) check(classes.has(c), `Group "${g.name}" refers to a missing class`);
+  for (const g of p.studentGroups) for (const c of g.classIds) check(classes.has(c), `Group "${g.name}" refers to a missing class`);
   for (const a of p.allocations) {
     check(subjects.has(a.subjectId), `Allocation ${a.id} has a missing subject`);
     for (const g of a.groupIds) check(groups.has(g), `Allocation ${a.id} refers to a missing class/group`);
@@ -133,10 +158,8 @@ export function findBrokenReferences(p: Project): string[] {
         for (const t of s.teacherIds) check(teachers.has(t), `Option block "${b.name}" refers to a missing teacher`);
       }
   }
-  for (const m of p.mergedClasses)
-    for (const c of m.classIds) check(classes.has(c), `Merge "${m.name}" refers to a missing class`);
-  for (const g of p.multiGradeGroups)
-    for (const c of g.classIds) check(classes.has(c), `Multi-grade group "${g.name}" refers to a missing class`);
+  for (const m of p.mergedClasses) for (const c of m.classIds) check(classes.has(c), `Merge "${m.name}" refers to a missing class`);
+  for (const g of p.multiGradeGroups) for (const c of g.classIds) check(classes.has(c), `Multi-grade group "${g.name}" refers to a missing class`);
   if (p.activeVersionId)
     check(
       p.versions.some((v) => v.id === p.activeVersionId),
