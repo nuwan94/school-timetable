@@ -28,28 +28,22 @@ body {
   }
 }
 
-/* Print: only the element marked .print-root is printed. */
+/* Print: only the element marked .print-root (a direct child of body) is printed. */
 .print-root {
   display: none;
 }
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 10mm;
   }
   body {
     background: white;
   }
-  body * {
-    visibility: hidden;
-  }
-  .print-root,
-  .print-root * {
-    visibility: visible;
+  body > *:not(.print-root) {
+    display: none !important;
   }
   .print-root {
     display: block;
-    position: absolute;
-    inset: 0;
   }
 }

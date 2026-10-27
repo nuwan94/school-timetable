@@ -13,7 +13,7 @@ let lastRun: { versionId: string; result: GenerateResult } | null = null;
 
 const RELAXED_NOTE = 'rules relaxed';
 
-export function GenerateScreen({ onCheck }: { onCheck: () => void }) {
+export function GenerateScreen({ onCheck, onEdit }: { onCheck: () => void; onEdit: () => void }) {
   const project = useProjectStore((s) => s.project)!;
   const update = useProjectStore((s) => s.update);
   const [relax, setRelax] = useState(false);
@@ -30,7 +30,8 @@ export function GenerateScreen({ onCheck }: { onCheck: () => void }) {
   const start = (seed: number) => {
     setError(null);
     setProgress({ placed: 0, total: pf.summary.lessons, iteration: 0 });
-    const r = runSolver(project, { seed, relaxRules: relax }, setProgress);
+    const locked = version?.placements.filter((pl) => pl.locked) ?? [];
+    const r = runSolver(project, { seed, relaxRules: relax, locked }, setProgress);
     run.current = r;
     r.result
       .then((result) => {
@@ -73,6 +74,11 @@ export function GenerateScreen({ onCheck }: { onCheck: () => void }) {
           ) : (
             <button className="btn" onClick={() => run.current?.stop()} data-testid="stop">
               Stop
+            </button>
+          )}
+          {version && !running && (
+            <button className="btn" onClick={onEdit}>
+              Edit by hand →
             </button>
           )}
           <label className="flex items-center gap-2 text-sm" title="Treat once-per-day and daily-maximum rules as preferences">
@@ -214,7 +220,7 @@ function Viewer() {
           : `${teacherLessons} period(s) a week.`}{' '}
         Amber = no teacher yet (uncovered).
       </p>
-      {grid ? <TimetableGrid grid={grid} mode={who.startsWith('t:') ? 'teacher' : 'class'} nameOf={nameOf} /> : <Empty>Nothing to show.</Empty>}
+      {grid ? <TimetableGrid grid={grid} mode={who.startsWith('t:') ? 'teacher' : 'class'} nameOf={nameOf} teacherId={who.startsWith('t:') ? id : undefined} /> : <Empty>Nothing to show.</Empty>}
     </Card>
   );
 }

@@ -24,7 +24,7 @@ export interface LessonEntry {
   /** Subject code or block line label. */
   title: string;
   /** For block lines: "BUD · Perera / HIN · Rajan". */
-  parts: { subject: string; teacher: string; room: string }[];
+  parts: { subjectId: string; teacherIds: string[]; subject: string; teacher: string; room: string }[];
   uncovered: boolean;
   locked: boolean;
 }
@@ -79,6 +79,8 @@ export function lessonEntries(p: Project, placements: readonly Placement[]): Les
         title: subjectCode(alloc.subjectId),
         parts: [
           {
+            subjectId: alloc.subjectId,
+            teacherIds: alloc.status === 'uncovered' ? [] : [...alloc.teacherIds],
             subject: subjectCode(alloc.subjectId),
             teacher: alloc.status === 'uncovered' ? '' : alloc.teacherIds.map(teacherCode).join('/'),
             room: roomName(room),
@@ -93,7 +95,10 @@ export function lessonEntries(p: Project, placements: readonly Placement[]): Les
         teacherIds: [...new Set(line.sets.flatMap((s) => s.teacherIds))],
         roomIds: line.sets.map((s) => s.roomId).filter((r): r is string => !!r),
         title: line.label,
-        parts: line.sets.map((s) => ({ subject: subjectCode(s.subjectId), teacher: s.teacherIds.map(teacherCode).join('/'), room: roomName(s.roomId) })),
+        parts: line.sets.map((s) => ({
+          subjectId: s.subjectId,
+          teacherIds: [...s.teacherIds],
+          subject: subjectCode(s.subjectId), teacher: s.teacherIds.map(teacherCode).join('/'), room: roomName(s.roomId) })),
         uncovered: line.sets.some((s) => s.teacherIds.length === 0),
       });
     }
@@ -136,15 +141,15 @@ export function classGrid(p: Project, entries: LessonEntry[], classId: string): 
 
 /** One teacher's week, laid on the bell schedule of the classes they teach most. Cells match by clock time. */
 export function teacherGrid(p: Project, entries: LessonEntry[], teacherId: string): Grid | null {
-  const mine = entries.filter((e) => e.teacherIds.includes(teacherId));
-  const counts = new Map<string, number>();
-  for (const e of mine) {
-    const cls = p.classes.find((c) => c.id === e.classIds[0]);
-    const id = cls && scheduleForClass(p, cls)?.id;
-    if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
-  }
-  const scheduleId = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
-  const schedule = p.bellSchedules.find((b) => b.id === scheduleId) ?? p.bellSchedules[0];
+  return gridByClock(
+    p,
+    entries.filter((e) => e.teacherIds.includes(teacherId)),
+  );
+}
+
+/** A week grid for any set of lessons (teacher, room), matched to bell slots by clock time. */
+export function gridByClock(p: Project, mine: LessonEntry[]): Grid | null {
+  const schedule = mainSchedule(p, mine);
   if (!schedule) return null;
   const days = [...p.institute.workingDays];
   const cells = new Map<string, LessonEntry[]>();
@@ -154,6 +159,18 @@ export function teacherGrid(p: Project, entries: LessonEntry[], teacherId: strin
       if (hit.length) cells.set(`${day}|${s.id}`, hit);
     }
   return { days, rows: rowsFor(schedule, days), cells };
+}
+
+/** The bell schedule most of these lessons follow (or the first one). */
+export function mainSchedule(p: Project, entries: LessonEntry[] = []): BellSchedule | undefined {
+  const counts = new Map<string, number>();
+  for (const e of entries) {
+    const cls = p.classes.find((c) => c.id === e.classIds[0]);
+    const id = cls && scheduleForClass(p, cls)?.id;
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  const id = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return p.bellSchedules.find((b) => b.id === id) ?? p.bellSchedules[0];
 }
 
 /** Teaching periods in a class's week with no lesson. */
@@ -194,4 +211,39 @@ export function saveDraftVersion(d: Draft<Project>, placements: Placement[], not
   d.versions = [...d.versions.filter((v) => !(v.status === 'draft' && v.id === d.activeVersionId)), version];
   d.activeVersionId = version.id;
   return version.id;
+}
+
+/**
+ * Replaces the active version's placements. Editing an approved version
+ * first makes a draft copy of it, so the approved one stays as printed.
+ */
+export function setActivePlacements(d: Draft<Project>, placements: Placement[]): void {
+  const active = d.versions.find((v) => v.id === d.activeVersionId);
+  if (!active) return;
+  if (active.status !== 'draft') {
+    const copy: TimetableVersion = {
+      id: newId('ver'),
+      name: `${active.name} (edited)`,
+      status: 'draft',
+      effectiveFrom: null,
+      basedOnId: active.id,
+      note: active.note,
+      createdAt: new Date().toISOString(),
+      placements,
+    };
+    d.versions.push(copy);
+    d.activeVersionId = copy.id;
+    return;
+  }
+  active.placements = placements;
+}
+
+/** Marks the active draft approved; the previously approved version becomes superseded. */
+export function approveActiveVersion(d: Draft<Project>, effectiveFrom: string | null): void {
+  const active = d.versions.find((v) => v.id === d.activeVersionId);
+  if (!active || active.status !== 'draft') return;
+  for (const v of d.versions) if (v.status === 'approved') v.status = 'superseded';
+  active.status = 'approved';
+  active.effectiveFrom = effectiveFrom;
+  if (active.name.startsWith('Draft')) active.name = active.name.replace(/^Draft/, 'Timetable');
 }

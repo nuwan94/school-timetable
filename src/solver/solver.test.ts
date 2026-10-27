@@ -138,7 +138,11 @@ describe('preflight', () => {
   });
 
   it('warns when classes have no class teacher', () => {
-    const pf = preflight(slSchool(['A']));
+    const pf = preflight(
+      produce(slSchool(['A']), (d) => {
+        d.classes.forEach((c) => (c.classTeacherId = null));
+      }),
+    );
     expect(pf.warnings.some((w) => w.message.includes('class teacher'))).toBe(true);
   });
 });

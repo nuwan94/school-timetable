@@ -431,6 +431,32 @@ src/
   - A "Try a sample school" button on the start screen loads a Grades 6–11, 18-class sample. The same sample is used in tests.
   - Measured: 60 classes and about 2,050 lessons placed fully in about 0.5 s.
   - Soft-rule scoring (R1 class teacher in period 1, spreading, heavy subjects early) is not done yet; it goes with the optimiser pass.
+- **P3: done.** This is the first usable release.
+  - **Edit screen**:
+    - drag-to-move or click-to-move on a class or teacher grid;
+    - each target period is coloured green, amber (with the reason) or red (clash);
+    - clashes are allowed while editing, with a clash counter and a live conflict list;
+    - swap assistant: single swaps and 2-step chains, naming every teacher affected;
+    - lock, an unplaced-lessons tray, and undo/redo;
+    - Approve, which is blocked while there are clashes. Editing an approved timetable makes a new draft.
+  - Generate keeps locked lessons in place.
+  - **Sheets**, all in English, Sinhala or Tamil:
+    - class sheet, with the subject–teacher list;
+    - teacher sheet, with weekly and free-period totals;
+    - room sheet;
+    - master staff chart (A3 landscape, paginated, grouped by section);
+    - master class chart (one per day);
+    - free-period chart;
+    - section-wise class list.
+  - **Output**:
+    - Download PDF: image PDF, A4/A3 per sheet, 2× JPEG;
+    - Print through the browser, with named `@page` sizes;
+    - PNG of any one sheet;
+    - per-item PDFs in a zip;
+    - a self-contained HTML review bundle (fonts embedded, no scripts).
+  - The vector PDF path, @pdf-lib/fontkit and regenerator-runtime are removed, as the spike decided. The JS bundle went from 1.6 MB to 1.1 MB.
+  - Measured: about 340 KB and 1 s per page. Grayscale JPEG is a possible size follow-up.
+  - Not done: Playwright print snapshot tests, and a check of the browser Print dialog's pagination for the A3 master chart.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 
