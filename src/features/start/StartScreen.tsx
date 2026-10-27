@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Pack } from '@/domain/common';
 import { PACK_LABELS } from '@/packs';
+import { sampleSchool } from '@/packs/sample';
 import type { Snapshot } from '@/store/autosave';
 import { useProjectStore } from '@/store/projectStore';
 import { autosave } from '@/store/useAutosave';
@@ -104,6 +105,11 @@ export function StartScreen({ onOpen }: { onOpen: () => void }) {
           <p className="mt-2 text-sm text-slate-600">Open a .ttb file saved earlier.</p>
           <button className="btn mt-4" onClick={onOpen}>
             Open file…
+          </button>
+          <h2 className="mt-6 font-semibold">Just looking?</h2>
+          <p className="mt-2 text-sm text-slate-600">A filled-in school (Grades 6–11, 18 classes) to try Generate on.</p>
+          <button className="btn mt-4" onClick={() => load(sampleSchool(), { fileName: null, handle: null, dirty: true })}>
+            Try a sample school
           </button>
         </section>
       </div>

@@ -62,6 +62,14 @@ export function patternFrom(periods: number, doubles: number): Allocation['patte
   return out;
 }
 
+/**
+ * The lesson lengths a pattern expands to, in pattern order — e.g.
+ * [{2×1},{1×3}] → [2,1,1,1]. Index = placement `occurrence`.
+ */
+export function expandPattern(pattern: Allocation['pattern']): number[] {
+  return pattern.flatMap((p) => Array<number>(p.count).fill(p.length));
+}
+
 export function doublesIn(pattern: Allocation['pattern']): number {
   return pattern.filter((p) => p.length === 2).reduce((s, p) => s + p.count, 0);
 }
