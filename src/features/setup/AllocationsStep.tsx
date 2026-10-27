@@ -6,6 +6,7 @@ import { copyClassPeriods, findCellAllocation, setCellAllocation } from '@/domai
 import type { Project } from '@/domain/project';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, LevelBadge, NumberInput, PageHeader, Select } from '@/ui/kit';
+import { GradeTools, PasteAllocations, TemplateLibrary } from './AllocationTools';
 
 interface Cell {
   classId: string;
@@ -143,7 +144,7 @@ function MatrixCell({ alloc, subject, project, selected, onSelect }: { alloc?: A
         aria-pressed={selected}
         aria-label={`${subject.name}: ${periods ? `${periods} periods${teacher ? `, ${teacher.name}` : ', no teacher'}` : 'not taught'}`}
         title={alloc ? STATUS_LABEL[alloc.status] : 'Click to add'}
-        className={`flex h-12 w-full min-w-[58px] flex-col items-center justify-center px-1 text-center leading-tight ${
+        className={`relative flex h-12 w-full min-w-[58px] flex-col items-center justify-center px-1 text-center leading-tight ${
           alloc ? STATUS_STYLE[alloc.status] : 'text-slate-300 hover:bg-slate-50'
         } ${selected ? 'outline outline-2 -outline-offset-2 outline-teal-600' : ''}`}
       >
@@ -154,6 +155,14 @@ function MatrixCell({ alloc, subject, project, selected, onSelect }: { alloc?: A
               {doubles > 0 && <sup className="ml-0.5 text-[9px] font-normal text-slate-500">{doubles}D</sup>}
             </span>
             <span className="max-w-[64px] truncate text-[11px] text-slate-600">{teacher ? teacher.shortCode || teacher.name : '—'}</span>
+            {alloc.groupIds.length > 1 && (
+              <span
+                className="absolute right-0.5 top-0.5 rounded bg-indigo-100 px-0.5 text-[9px] font-semibold text-indigo-800"
+                title={`Taught together: ${alloc.groupIds.map((g) => project.classes.find((c) => c.id === g)?.name).join(' + ')}`}
+              >
+                M
+              </span>
+            )}
           </>
         ) : (
           '+'
@@ -172,11 +181,13 @@ export function AllocationsStep() {
   const [selected, setSelected] = useState<Cell | null>(null);
   const [showAllSubjects, setShowAllSubjects] = useState(true);
   const [loadSort, setLoadSort] = useState<'name' | 'load'>('load');
+  const [pasting, setPasting] = useState(false);
 
   const grade = grades.find((g) => g.id === gradeId) ?? grades[0];
   const classes = project.classes.filter((c) => c.gradeId === grade?.id);
   const usedSubjects = new Set(project.allocations.filter((a) => a.groupIds.some((g) => classes.some((c) => c.id === g))).map((a) => a.subjectId));
   const subjects = showAllSubjects ? project.subjects : project.subjects.filter((s) => usedSubjects.has(s.id));
+  const hasBlocks = project.optionBlocks.some((b) => b.classIds.some((c) => classes.some((x) => x.id === c)));
 
   if (project.classes.length === 0 || project.subjects.length === 0) {
     return (
@@ -231,6 +242,13 @@ export function AllocationsStep() {
         </label>
       </div>
 
+      {grade && <GradeTools grade={grade} classes={classes} onPaste={() => setPasting(true)} />}
+      {pasting && (
+        <div className="mb-4">
+          <PasteAllocations onDone={() => setPasting(false)} />
+        </div>
+      )}
+
       <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="border-collapse text-sm" data-testid="allocation-matrix">
@@ -243,6 +261,11 @@ export function AllocationsStep() {
                     {s.shortCode || s.name}
                   </th>
                 ))}
+                {hasBlocks && (
+                  <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500" title="Periods in option blocks">
+                    Blocks
+                  </th>
+                )}
                 <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500">Total</th>
                 <th className="border border-slate-200 bg-slate-50 px-2 py-1" />
               </tr>
@@ -265,6 +288,11 @@ export function AllocationsStep() {
                         onSelect={() => setSelected({ classId: c.id, subjectId: s.id })}
                       />
                     ))}
+                    {hasBlocks && (
+                      <td className="border border-slate-200 px-2 text-center text-sm tabular-nums text-indigo-800" title="Periods in option blocks">
+                        {total.blockPeriods || ''}
+                      </td>
+                    )}
                     <td className="border border-slate-200 px-2 text-center">
                       <LevelBadge level={total.level}>
                         {total.periods}/{total.capacity}
@@ -374,6 +402,10 @@ export function AllocationsStep() {
             </ul>
           )}
         </Card>
+      </div>
+
+      <div className="mt-4">
+        <TemplateLibrary />
       </div>
     </>
   );

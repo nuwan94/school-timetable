@@ -61,6 +61,8 @@ export function normFor(p: Project, t: Teacher): LoadNorm | null {
 export interface ClassTotal {
   classId: string;
   periods: number;
+  /** Of `periods`, how many come from option-block lines. */
+  blockPeriods: number;
   capacity: number;
   level: Level;
   uncovered: number;
@@ -74,12 +76,16 @@ export interface TeacherTotal {
   max: number | null;
   level: Level;
   covering: number;
+  /** Periods saved because multi-grade classes are taught together. */
+  multiGradeSaving: number;
 }
+
+const linePeriods = (l: { pattern: { length: number; count: number }[] }) => patternPeriods(l.pattern);
 
 export function classTotals(p: Project): Map<string, ClassTotal> {
   const out = new Map<string, ClassTotal>();
   for (const c of p.classes) {
-    out.set(c.id, { classId: c.id, periods: 0, capacity: classCapacity(p, c), level: 'none', uncovered: 0 });
+    out.set(c.id, { classId: c.id, periods: 0, blockPeriods: 0, capacity: classCapacity(p, c), level: 'none', uncovered: 0 });
   }
   for (const a of p.allocations) {
     const n = patternPeriods(a.pattern);
@@ -88,6 +94,18 @@ export function classTotals(p: Project): Map<string, ClassTotal> {
       if (!t) continue;
       t.periods += n;
       if (a.status === 'uncovered') t.uncovered += n;
+    }
+  }
+  // Each block line occupies every member class once, however many parallel sets it has.
+  for (const b of p.optionBlocks) {
+    for (const l of b.lines) {
+      const n = linePeriods(l);
+      for (const c of b.classIds) {
+        const t = out.get(c);
+        if (!t) continue;
+        t.periods += n;
+        t.blockPeriods += n;
+      }
     }
   }
   for (const t of out.values()) {
@@ -109,6 +127,7 @@ export function teacherTotals(p: Project): Map<string, TeacherTotal> {
       max: periodsNorm?.max ?? null,
       level: 'none',
       covering: 0,
+      multiGradeSaving: 0,
     });
   }
   for (const a of p.allocations) {
@@ -118,6 +137,39 @@ export function teacherTotals(p: Project): Map<string, TeacherTotal> {
       if (!t) continue;
       t.periods += n;
       if (a.status === 'covering') t.covering += n;
+    }
+  }
+  for (const b of p.optionBlocks) {
+    for (const l of b.lines) {
+      const n = linePeriods(l);
+      for (const s of l.sets) {
+        for (const id of s.teacherIds) {
+          const t = out.get(id);
+          if (t) t.periods += n;
+        }
+      }
+    }
+  }
+  // Multi-grade: one teacher holds the grouped classes at the same time, so
+  // their periods with those classes count once (the largest class share).
+  for (const g of p.multiGradeGroups) {
+    const perTeacher = new Map<string, Map<string, number>>();
+    for (const a of p.allocations) {
+      const classId = a.groupIds[0]!;
+      if (a.groupIds.length !== 1 || !g.classIds.includes(classId)) continue;
+      for (const id of a.teacherIds) {
+        const byClass = perTeacher.get(id) ?? new Map<string, number>();
+        byClass.set(classId, (byClass.get(classId) ?? 0) + patternPeriods(a.pattern));
+        perTeacher.set(id, byClass);
+      }
+    }
+    for (const [id, byClass] of perTeacher) {
+      const t = out.get(id);
+      if (!t || byClass.size < 2) continue;
+      const values = [...byClass.values()];
+      const saving = values.reduce((s, v) => s + v, 0) - Math.max(...values);
+      t.periods -= saving;
+      t.multiGradeSaving += saving;
     }
   }
   for (const t of out.values()) {
@@ -199,7 +251,49 @@ export function runChecks(p: Project): Checks {
     }
   }
 
-  const demand = [...classes.values()].reduce((s, c) => s + c.periods, 0);
+  // Option blocks: parallel sets need different teachers and rooms, groups need teachers.
+  for (const b of p.optionBlocks) {
+    const blockStudents = b.classIds.reduce((s, c) => s + (p.classes.find((x) => x.id === c)?.studentCount ?? 0), 0);
+    for (const l of b.lines) {
+      const where = `${b.name} / ${l.label}`;
+      if (l.sets.length === 0) issues.push({ severity: 'warning', message: `${where} has no groups yet.` });
+      const seenTeachers = new Map<string, number>();
+      const seenRooms = new Map<string, number>();
+      let groupStudents = 0;
+      for (const s of l.sets) {
+        for (const t of s.teacherIds) seenTeachers.set(t, (seenTeachers.get(t) ?? 0) + 1);
+        if (s.roomId) seenRooms.set(s.roomId, (seenRooms.get(s.roomId) ?? 0) + 1);
+        const group = p.studentGroups.find((g) => g.id === s.groupId);
+        groupStudents += group?.studentCount ?? 0;
+        if (s.teacherIds.length === 0)
+          issues.push({ severity: 'info', message: `${where}: ${group?.name ?? 'a group'} has no teacher yet.` });
+        for (const tid of s.teacherIds) {
+          const t = p.teachers.find((x) => x.id === tid);
+          if (t && group?.medium && t.media.length > 0 && !t.media.includes(group.medium))
+            issues.push({ severity: 'warning', message: `${where}: ${t.name} is not listed for ${group.name}'s medium.` });
+        }
+      }
+      for (const [tid, n] of seenTeachers)
+        if (n > 1) issues.push({ severity: 'error', message: `${where}: ${name(tid)} teaches ${n} groups at the same time.` });
+      for (const [rid, n] of seenRooms) {
+        const room = p.rooms.find((r) => r.id === rid);
+        if (room && n > room.concurrent)
+          issues.push({ severity: 'error', message: `${where}: ${room.name} is used by ${n} groups at once (holds ${room.concurrent}).` });
+      }
+      if (blockStudents > 0 && groupStudents > 0 && groupStudents !== blockStudents)
+        issues.push({
+          severity: 'warning',
+          message: `${where}: groups add up to ${groupStudents} students but the classes have ${blockStudents}.`,
+        });
+    }
+  }
+
+  // Teacher-periods the timetable needs: each allocation once (combined
+  // lessons need one teacher), each block set once, minus multi-grade overlap.
+  const demand =
+    p.allocations.reduce((s, a) => s + patternPeriods(a.pattern), 0) +
+    p.optionBlocks.reduce((s, b) => s + b.lines.reduce((x, l) => x + linePeriods(l) * l.sets.length, 0), 0) -
+    [...teachers.values()].reduce((s, t) => s + t.multiGradeSaving, 0);
   const supply = p.teachers
     .filter((t) => t.active && t.category !== 'vacancy')
     .reduce((s, t) => {

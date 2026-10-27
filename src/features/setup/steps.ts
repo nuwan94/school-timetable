@@ -1,7 +1,7 @@
 import type { Project } from '@/domain/project';
 import { teachingSlots } from '@/domain/time';
 
-export type StepId = 'school' | 'classes' | 'subjects' | 'rooms' | 'teachers' | 'allocations';
+export type StepId = 'school' | 'classes' | 'subjects' | 'rooms' | 'teachers' | 'allocations' | 'blocks';
 
 export interface Step {
   id: StepId;
@@ -55,6 +55,12 @@ export const STEPS: Step[] = [
       return `${p.classes.filter((c) => withAlloc.has(c.id)).length}/${p.classes.length} classes`;
     },
     done: (p) => p.classes.length > 0 && p.classes.every((c) => p.allocations.some((a) => a.groupIds.includes(c.id))),
+  },
+  {
+    id: 'blocks',
+    label: 'Option blocks',
+    status: (p) => (p.optionBlocks.length ? plural(p.optionBlocks.length, 'block') : 'Religion, aesthetics, baskets…'),
+    done: (p) => p.optionBlocks.length > 0,
   },
 ];
 

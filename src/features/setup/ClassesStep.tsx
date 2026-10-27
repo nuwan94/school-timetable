@@ -5,6 +5,7 @@ import { makeClass, makeSection } from '@/domain/factories';
 import { quickAddClasses } from '@/domain/mutations';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, NumberInput, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
+import { TaughtTogether } from './TaughtTogether';
 import { useDelete } from './useDelete';
 
 const MEDIUM_OPTIONS = (Object.keys(MEDIUM_LABELS) as SchoolClass['medium'][]).map((m) => ({ value: m, label: MEDIUM_LABELS[m] }));
@@ -293,6 +294,8 @@ export function ClassesStep() {
               </Card>
             );
           })}
+
+        {project.classes.length >= 2 && <TaughtTogether />}
       </div>
     </>
   );
