@@ -2,8 +2,8 @@
 
 A clash-free school timetable builder that runs as a frontend-only app in the browser. See [PLAN.md](PLAN.md).
 
-- **Use it online:** https://nuwan.dev/school-timetable/
-- **Offline copy:** download [timetable-offline.html](https://nuwan.dev/school-timetable/timetable-offline.html), copy it to any computer (a pendrive works), and open it in Chrome or Edge.
+- **Use it online:** https://timetable.nuwan.dev/
+- **Offline copy:** download [timetable-offline.html](https://timetable.nuwan.dev/timetable-offline.html), copy it to any computer (a pendrive works), and open it in Chrome or Edge.
 
 All data stays on your device. Nothing is uploaded. Projects are saved as `.ttb` files.
 

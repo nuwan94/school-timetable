@@ -405,7 +405,7 @@ src/
 | **P7 – International pack** (4 wks) | Student list import, board/level/tier, **block builder**, per-student checks, cross-Year sets, contact-hour targets, exam series, invigilation, student timetables, set lists, GLH and payroll reports, houses/CCAs → **v1.1** | v1.1 |
 
 **Progress**
-- **P0: done.** Live at https://nuwan.dev/school-timetable/.
+- **P0: done.** Live at https://timetable.nuwan.dev/.
 - **P1: done.**
   - Setup wizard; sections, grades and classes (quick add); subjects (standard SL list); special rooms; teachers (roles and norms, paste from Excel, service data); bell-schedule editor (day overrides).
   - Allocation matrix: live class and teacher totals, covering/uncovered status, copy to grade, checks with suggested fixes, supply vs demand.
