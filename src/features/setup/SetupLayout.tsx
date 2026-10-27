@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { CheckScreen } from '@/features/build/CheckScreen';
+import { GenerateScreen } from '@/features/build/GenerateScreen';
 import { PdfSpike } from '@/features/spike/PdfSpike';
 import { useProjectStore } from '@/store/projectStore';
 import { AllocationsStep } from './AllocationsStep';
@@ -10,7 +12,13 @@ import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
 
-type View = StepId | 'pdf';
+type BuildId = 'check' | 'generate';
+type View = StepId | BuildId | 'pdf';
+
+const BUILD: { id: BuildId; label: string }[] = [
+  { id: 'check', label: 'Check' },
+  { id: 'generate', label: 'Generate' },
+];
 
 const SCREENS: Record<StepId, () => JSX.Element> = {
   school: SchoolStep,
@@ -47,7 +55,8 @@ export function SetupLayout() {
     }
   }, [view]);
 
-  const current = view === 'pdf' ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
+  const build = BUILD.find((b) => b.id === view);
+  const current = view === 'pdf' || build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
   const index = current ? steps.indexOf(current) : -1;
   const Screen = current ? SCREENS[current.id] : null;
   const doneCount = steps.filter((s) => s.done(project)).length;
@@ -67,6 +76,13 @@ export function SetupLayout() {
               {i + 1}. {s.label} {s.done(project) ? '✓' : ''}
             </option>
           ))}
+          <optgroup label="Build">
+            {BUILD.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </optgroup>
           <option value="pdf">PDF test</option>
         </select>
 
@@ -104,6 +120,23 @@ export function SetupLayout() {
               );
             })}
           </ol>
+          <p className="label mt-5">Build</p>
+          <ol className="mt-2 space-y-1">
+            {BUILD.map((b) => (
+              <li key={b.id}>
+                <button
+                  onClick={() => go(b.id)}
+                  aria-current={view === b.id ? 'page' : undefined}
+                  className={`w-full rounded-md px-2 py-1.5 text-left text-sm font-medium ${
+                    view === b.id ? 'bg-teal-50 ring-1 ring-teal-600' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  {b.label}
+                  {b.id === 'generate' && project.activeVersionId && <span className="ml-1.5 text-xs font-normal text-slate-500">· draft ready</span>}
+                </button>
+              </li>
+            ))}
+          </ol>
           <div className="mt-6 border-t border-slate-200 pt-3">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -126,15 +159,27 @@ export function SetupLayout() {
       </aside>
 
       <main className="min-w-0 flex-1">
-        {Screen ? <Screen /> : <PdfSpike />}
+        {Screen ? (
+          <Screen />
+        ) : view === 'check' ? (
+          <CheckScreen onGenerate={() => go('generate')} />
+        ) : view === 'generate' ? (
+          <GenerateScreen onCheck={() => go('check')} />
+        ) : (
+          <PdfSpike />
+        )}
         {current && (
           <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
             <button className="btn" disabled={index <= 0} onClick={() => go(steps[index - 1]!.id)}>
               ← Back
             </button>
-            {index < steps.length - 1 && (
+            {index < steps.length - 1 ? (
               <button className="btn btn-primary" onClick={() => go(steps[index + 1]!.id)}>
                 Next: {steps[index + 1]!.label} →
+              </button>
+            ) : (
+              <button className="btn btn-primary" onClick={() => go('check')}>
+                Next: Check &amp; generate →
               </button>
             )}
           </div>

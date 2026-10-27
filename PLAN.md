@@ -414,6 +414,23 @@ src/
   - Option blocks with student groups: Religion, Aesthetics and Second National Language presets; teacher, room and student-count checks.
   - Merged classes (with subjects taught separately) and multi-grade groups (teacher load counted once).
   - Deferred to P7 (International): student-list import and the line-suggesting block builder.
+- **P2: done.**
+  - Solver: construction and conflict-directed repair. Covers clock-time clashes for classes, teachers and rooms; option-block lines; doubles that never cross a break; contracted days and availability; hard R4 and R12; seeded, so a run can be repeated.
+  - Runs in an inline web worker with progress and Stop, so it also works in the offline file.
+  - Shortage mode: low-priority lessons give way first, and empty periods become Self-study. A "Relax rules" option is available.
+  - Pre-flight checks with fixes:
+    - lessons with no possible time;
+    - once-per-day vs lesson count;
+    - daily maximum vs load and vs norm;
+    - mixed bell schedules;
+    - room capacity;
+    - blocks with little common time;
+    - missing class teachers.
+  - The independent checker re-verifies every run.
+  - Check and Generate screens, with a class/teacher grid viewer. Each run is stored as the active draft version.
+  - A "Try a sample school" button on the start screen loads a Grades 6–11, 18-class sample. The same sample is used in tests.
+  - Measured: 60 classes and about 2,050 lessons placed fully in about 0.5 s.
+  - Soft-rule scoring (R1 class teacher in period 1, spreading, heavy subjects early) is not done yet; it goes with the optimiser pass.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 
