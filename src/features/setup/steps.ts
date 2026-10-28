@@ -1,7 +1,7 @@
 import type { Project } from '@/domain/project';
 import { teachingSlots } from '@/domain/time';
 
-export type StepId = 'school' | 'classes' | 'subjects' | 'rooms' | 'teachers' | 'allocations' | 'blocks';
+export type StepId = 'school' | 'classes' | 'subjects' | 'rooms' | 'teachers' | 'allocations' | 'students' | 'blocks';
 
 export interface Step {
   id: StepId;
@@ -11,6 +11,8 @@ export interface Step {
   done: (p: Project) => boolean;
   /** Hidden in Simple mode. */
   advanced?: boolean;
+  /** Shown for the International pack, or once the school has a student list. */
+  students?: boolean;
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : word.endsWith('s') ? 'es' : 's'}`;
@@ -57,11 +59,20 @@ export const STEPS: Step[] = [
     done: (p) => p.classes.length > 0 && p.classes.every((c) => p.allocations.some((a) => a.groupIds.includes(c.id))),
   },
   {
+    id: 'students',
+    label: 'Students',
+    status: (p) => (p.students.length ? `${plural(p.students.length, 'student')}, ${plural(p.houses.length, 'house')}` : 'Import the list with choices'),
+    done: (p) => p.students.length > 0,
+    students: true,
+  },
+  {
     id: 'blocks',
     label: 'Option blocks',
-    status: (p) => (p.optionBlocks.length ? plural(p.optionBlocks.length, 'block') : 'Religion, aesthetics, baskets…'),
+    status: (p) =>
+      p.optionBlocks.length ? plural(p.optionBlocks.length, 'block') : p.pack === 'international' ? 'Options from student choices' : 'Religion, aesthetics, baskets…',
     done: (p) => p.optionBlocks.length > 0,
   },
 ];
 
-export const visibleSteps = (p: Project) => STEPS.filter((s) => !(p.simpleMode && s.advanced));
+export const visibleSteps = (p: Project) =>
+  STEPS.filter((s) => !(p.simpleMode && s.advanced) && (!s.students || p.pack === 'international' || p.students.length > 0));

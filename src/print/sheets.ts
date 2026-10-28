@@ -1,4 +1,5 @@
 import { scheduleForClass, teacherDays } from '@/domain/checks';
+import { studentEntries } from '@/domain/intlReports';
 import type { Project } from '@/domain/project';
 import type { TimetableVersion } from '@/domain/schedule';
 import { classGrid, gridByClock, lessonEntries, mainSchedule, teacherGrid, type Grid, type LessonEntry } from '@/domain/timetable';
@@ -27,7 +28,10 @@ export type SheetKind =
   | 'examTimetable'
   | 'invigilation'
   | 'dutyRoster'
-  | 'report';
+  | 'report'
+  | 'student'
+  | 'setList'
+  | 'blockChart';
 
 export interface Cell {
   lines: string[];
@@ -65,7 +69,7 @@ export const PAPER_MM: Record<Paper, { w: number; h: number }> = {
 };
 export const MARGIN_MM = 10;
 
-export const SHEET_KINDS: { kind: SheetKind; label: string; perItem: 'class' | 'teacher' | 'room' | null }[] = [
+export const SHEET_KINDS: { kind: SheetKind; label: string; perItem: 'class' | 'teacher' | 'room' | 'student' | null; students?: boolean }[] = [
   { kind: 'class', label: 'Class timetables', perItem: 'class' },
   { kind: 'teacher', label: 'Teacher timetables', perItem: 'teacher' },
   { kind: 'room', label: 'Room / lab timetables', perItem: 'room' },
@@ -74,6 +78,9 @@ export const SHEET_KINDS: { kind: SheetKind; label: string; perItem: 'class' | '
   { kind: 'free', label: 'Free-period chart', perItem: null },
   { kind: 'classList', label: 'Section-wise class list', perItem: null },
   { kind: 'changeNotice', label: 'Change notices (mid-year)', perItem: 'teacher' },
+  { kind: 'student', label: 'Student timetables', perItem: 'student', students: true },
+  { kind: 'setList', label: 'Set lists', perItem: null, students: true },
+  { kind: 'blockChart', label: 'Option block chart', perItem: null, students: true },
 ];
 
 export interface SheetOptions {
@@ -229,6 +236,108 @@ function classSheet(c: Ctx, classId: string): Sheet | null {
   });
   sheet.blocks.push({ type: 'sign', labels: [c.L.classTeacher, c.L.principal] });
   return sheet;
+}
+
+/** One student's week on the school letterhead: their class lessons and, in each block line, their own set. */
+function studentSheet(c: Ctx, studentId: string): Sheet | null {
+  const s = c.p.students.find((x) => x.id === studentId);
+  const grid = s && classGrid(c.p, studentEntries(c.p, c.entries, studentId), s.classId);
+  if (!s || !grid) return null;
+  const cls = c.p.classes.find((x) => x.id === s.classId);
+  const sheet = base(c, 'student', `student:${s.id}`, `student-${cls?.name ?? ''}-${s.name}`, 'A4P', `${c.L.studentTimetable} — ${s.name}`, '');
+  const tutor = cls?.classTeacherId ? c.teacher(cls.classTeacherId) : '';
+  const house = c.p.houses.find((h) => h.id === s.houseId)?.name;
+  sheet.subtitle = [
+    s.admissionNo && `${c.L.admissionNo}: ${s.admissionNo}`,
+    cls && `${c.L.form}: ${c.className(cls.id)}`,
+    tutor && `${c.L.formTutor}: ${tutor}`,
+    house && `${c.L.house}: ${house}`,
+  ]
+    .filter(Boolean)
+    .join('   ·   ');
+  sheet.blocks.push(
+    weekTable(c, grid, (lessons) => {
+      if (!lessons.length) return { lines: [c.L.selfStudy], muted: true };
+      return {
+        lines: lessons.flatMap((l) =>
+          l.parts.flatMap((pt) => [c.subject(pt.subjectId), [pt.teacherIds.map(c.teacher).join(' / '), pt.room].filter(Boolean).join(' · ')]),
+        ),
+      };
+    }),
+  );
+  sheet.blocks.push({ type: 'sign', labels: [c.L.formTutor, c.L.principal] });
+  return sheet;
+}
+
+const ROWS_PER_SET_PAGE = 34;
+
+/** A register for each teaching set: its students with form and house. */
+function setLists(c: Ctx): Sheet[] {
+  const out: Sheet[] = [];
+  for (const b of c.p.optionBlocks)
+    for (const l of b.lines)
+      for (const st of l.sets) {
+        const g = c.p.studentGroups.find((x) => x.id === st.groupId);
+        if (!g?.studentIds.length) continue;
+        const students = g.studentIds
+          .map((id) => c.p.students.find((x) => x.id === id))
+          .filter((x) => !!x)
+          .sort((a, z) => a.name.localeCompare(z.name));
+        for (let page = 0; page * ROWS_PER_SET_PAGE < students.length; page++) {
+          const sheet = base(c, 'setList', `set:${st.id}:${page}`, `set-${g.name}`, 'A4P', `${c.L.setList} — ${g.name}`, '');
+          sheet.subtitle = [c.subject(st.subjectId), `${b.name} · ${l.label}`, st.teacherIds.map(c.teacher).join(' / ')].filter(Boolean).join('   ·   ');
+          sheet.blocks.push({
+            type: 'table',
+            corner: '#',
+            head: [c.L.student, c.L.admissionNo, c.L.form, c.L.house],
+            compact: true,
+            rows: students.slice(page * ROWS_PER_SET_PAGE, (page + 1) * ROWS_PER_SET_PAGE).map((s, i) => ({
+              kind: 'row' as const,
+              head: { lines: [String(page * ROWS_PER_SET_PAGE + i + 1)] },
+              cells: [
+                { lines: [s.name] },
+                { lines: [s.admissionNo] },
+                { lines: [c.className(s.classId)] },
+                { lines: [c.p.houses.find((h) => h.id === s.houseId)?.name ?? ''] },
+              ],
+            })),
+          });
+          sheet.blocks.push({ type: 'facts', items: [[c.L.students, String(students.length)]] });
+          out.push(sheet);
+        }
+      }
+  return out;
+}
+
+/** Each option block as the chart students see: a row per line, its sets with teacher and size. */
+function blockCharts(c: Ctx): Sheet[] {
+  return c.p.optionBlocks
+    .filter((b) => b.lines.some((l) => l.sets.length))
+    .map((b) => {
+      const width = Math.max(...b.lines.map((l) => l.sets.length));
+      const sheet = base(c, 'blockChart', `block:${b.id}`, `blocks-${b.name}`, width > 3 ? 'A4L' : 'A4P', `${c.L.blockChart} — ${b.name}`, '');
+      sheet.subtitle = joinClassNames(b.classIds.map(c.className));
+      sheet.blocks.push({
+        type: 'table',
+        corner: c.L.line,
+        head: Array.from({ length: width }, (_, i) => `${c.L.set} ${i + 1}`),
+        rows: b.lines.map((l) => {
+          const periods = l.pattern.reduce((s, x) => s + x.length * x.count, 0);
+          return {
+            kind: 'row' as const,
+            head: { lines: [l.label, `${periods} ${c.L.periods.toLowerCase()}`] },
+            cells: Array.from({ length: width }, (_, i) => {
+              const st = l.sets[i];
+              if (!st) return { lines: [] };
+              const g = c.p.studentGroups.find((x) => x.id === st.groupId);
+              const n = g?.studentIds.length || g?.studentCount || 0;
+              return { lines: [c.subject(st.subjectId), `${g?.name ?? ''} (${n})`, st.teacherIds.map(c.teacherCode).join('/')] };
+            }),
+          };
+        }),
+      });
+      return sheet;
+    });
 }
 
 function teacherSheet(c: Ctx, teacherId: string): Sheet | null {
@@ -496,6 +605,17 @@ export function buildSheets(p: Project, version: TimetableVersion, kind: SheetKi
       return classList(c);
     case 'changeNotice':
       return changeNotices(p, version, opts.lang, opts.ids);
+    case 'student': {
+      const form = (id: string) => p.classes.find((x) => x.id === id)?.name ?? '';
+      const students = [...p.students]
+        .filter((s) => s.active)
+        .sort((a, b) => form(a.classId).localeCompare(form(b.classId), undefined, { numeric: true }) || a.name.localeCompare(b.name));
+      return pick(students).flatMap((x) => studentSheet(c, x.id) ?? []);
+    }
+    case 'setList':
+      return setLists(c);
+    case 'blockChart':
+      return blockCharts(c);
     case 'reliefRegister':
     case 'reliefSlips':
     case 'examTimetable':

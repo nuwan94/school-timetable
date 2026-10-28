@@ -38,6 +38,8 @@ export const Institute = z.object({
   termStart: IsoDate.nullable().default(null),
   workingDays: z.array(Weekday).min(1),
   printLanguage: z.enum(['en', 'si', 'ta']).default('en'),
+  /** Teaching weeks in the school year, to turn weekly contact time into hours a year. Null = not set. */
+  teachingWeeks: z.number().int().positive().nullable().default(null),
   gradeLabel: z.string().default('Grade'),
 });
 export type Institute = z.infer<typeof Institute>;
@@ -65,6 +67,20 @@ export const ReportSettings = z.object({
   periodsPerTeacher: z.number().int().positive().nullable().default(null),
 });
 export type ReportSettings = z.infer<typeof ReportSettings>;
+
+/** A co-curricular activity: a club or team with its teachers and students. */
+export const Cca = z.object({
+  id: Id,
+  name: z.string(),
+  day: Weekday.nullable().default(null),
+  start: z.number().int().min(0).max(24 * 60 - 1).nullable().default(null),
+  end: z.number().int().min(0).max(24 * 60 - 1).nullable().default(null),
+  place: z.string().default(''),
+  houseId: Id.nullable().default(null),
+  teacherIds: z.array(Id).default([]),
+  studentIds: z.array(Id).default([]),
+});
+export type Cca = z.infer<typeof Cca>;
 
 export const Project = z.object({
   format: z.literal(FILE_FORMAT),
@@ -110,6 +126,7 @@ export const Project = z.object({
   cadre: z.array(CadreEntry).default([]),
   reports: ReportSettings.default({}),
   dutyRosters: z.array(DutyRoster).default([]),
+  ccas: z.array(Cca).default([]),
 });
 export type Project = z.infer<typeof Project>;
 /** Input shape (defaults optional) — handy for fixtures and pack builders. */

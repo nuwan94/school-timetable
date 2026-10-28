@@ -36,7 +36,7 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
 
   // Mid-year versions remember the lessons they replaced: offer only the sheets that changed.
   const diff = useMemo(() => (version?.baseSnapshot.length ? diffVersion(project, version) : null), [project, version]);
-  const kinds = SHEET_KINDS.filter((k) => k.kind !== 'changeNotice' || diff);
+  const kinds = SHEET_KINDS.filter((k) => (k.kind !== 'changeNotice' || diff) && (!k.students || project.students.length > 0));
   const meta = kinds.find((k) => k.kind === kind) ?? kinds[0]!;
   const changedIds = useMemo(() => {
     if (!diff) return null;
@@ -51,6 +51,13 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
     if (meta.perItem === 'class') return keep([...project.classes].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
     if (meta.perItem === 'teacher') return keep(project.teachers.filter((t) => t.active || meta.kind === 'changeNotice').sort((a, b) => a.name.localeCompare(b.name)));
     if (meta.perItem === 'room') return keep(project.rooms);
+    if (meta.perItem === 'student') {
+      const form = (id: string) => project.classes.find((c) => c.id === id)?.name ?? '';
+      return project.students
+        .filter((s) => s.active)
+        .map((s) => ({ id: s.id, name: `${form(s.classId)} · ${s.name}` }))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    }
     return [];
   }, [meta, project, filterChanged, changedIds]);
   const sheets = useMemo(() => {
@@ -174,7 +181,7 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
 
           {meta.perItem && items.length > 0 && (
             <Card
-              title={`Which ${meta.perItem === 'class' ? 'classes' : meta.perItem === 'teacher' ? 'teachers' : 'rooms'}`}
+              title={`Which ${{ class: 'classes', teacher: 'teachers', room: 'rooms', student: 'students' }[meta.perItem]}`}
               actions={
                 <button className="text-xs text-teal-700 underline" onClick={() => setPicked(picked ? null : [])}>
                   {picked ? 'All' : 'Choose…'}

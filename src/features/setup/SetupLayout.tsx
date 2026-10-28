@@ -6,6 +6,7 @@ import { CalendarScreen } from '@/features/year/CalendarScreen';
 import { ChangesScreen } from '@/features/year/ChangesScreen';
 import { ExamsScreen } from '@/features/year/ExamsScreen';
 import { DutiesScreen } from '@/features/reports/DutiesScreen';
+import { IntlReportsScreen } from '@/features/reports/IntlReportsScreen';
 import { ReturnsScreen } from '@/features/reports/ReturnsScreen';
 import { WorkloadScreen } from '@/features/reports/WorkloadScreen';
 import { PrintScreen } from '@/features/print/PrintScreen';
@@ -20,6 +21,7 @@ import { BlocksStep } from './BlocksStep';
 import { ClassesStep } from './ClassesStep';
 import { RoomsStep } from './RoomsStep';
 import { SchoolStep } from './SchoolStep';
+import { StudentsStep } from './StudentsStep';
 import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
@@ -54,7 +56,12 @@ const REPORTS: NavLink[] = [
   { id: 'returns', label: 'Returns', hint: 'Cadre, deployment, surplus', icon: 'fileText' },
   { id: 'workload', label: 'Workload', hint: 'Load and relief fairness', icon: 'chart' },
   { id: 'duties', label: 'Duty rosters', hint: 'Interval and gate duty', icon: 'shield' },
+  { id: 'intl', label: 'International', hint: 'Contact hours, rooms, houses', icon: 'chart' },
 ];
+
+/** Returns are Sri Lankan; the International reports need the pack or a student list. */
+const reportsFor = (p: { pack: string; students: unknown[] }) =>
+  REPORTS.filter((r) => (r.id === 'returns' ? p.pack !== 'international' : r.id === 'intl' ? p.pack === 'international' || p.students.length > 0 : true));
 
 /** Colours per group (full class names so Tailwind keeps them). */
 const TONES = {
@@ -112,6 +119,7 @@ const SCREENS: Record<StepId, () => JSX.Element> = {
   rooms: RoomsStep,
   teachers: TeachersStep,
   allocations: AllocationsStep,
+  students: StudentsStep,
   blocks: BlocksStep,
 };
 
@@ -122,6 +130,7 @@ export function SetupLayout() {
   const view = useUiStore((s) => s.view);
   const go = useUiStore((s) => s.go);
   const steps = visibleSteps(project);
+  const reports = reportsFor(project);
 
   const build = [...BUILD, ...DAILY, ...YEAR, ...REPORTS].find((b) => b.id === view);
   const current = build ? null : (steps.find((s) => s.id === view) ?? steps[0]!);
@@ -168,7 +177,7 @@ export function SetupLayout() {
             ))}
           </optgroup>
           <optgroup label="Reports">
-            {REPORTS.map((b) => (
+            {reports.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
@@ -253,7 +262,7 @@ export function SetupLayout() {
           </NavGroup>
 
           <NavGroup title="Reports" icon="fileText" tone="sky">
-            {REPORTS.map((b) => (
+            {reports.map((b) => (
               <NavItem key={b.id} link={b} tone="sky" active={view === b.id} onClick={() => go(b.id)} />
             ))}
           </NavGroup>
@@ -290,6 +299,8 @@ export function SetupLayout() {
           <WorkloadScreen />
         ) : view === 'duties' ? (
           <DutiesScreen />
+        ) : view === 'intl' ? (
+          <IntlReportsScreen />
         ) : view === 'calendar' ? (
           <CalendarScreen />
         ) : view === 'exams' ? (

@@ -413,7 +413,7 @@ src/
   - Excel paste for allocations, in list or grid layout.
   - Option blocks with student groups: Religion, Aesthetics and Second National Language presets; teacher, room and student-count checks.
   - Merged classes (with subjects taught separately) and multi-grade groups (teacher load counted once).
-  - Deferred to P7 (International): student-list import and the line-suggesting block builder.
+  - Deferred to P7 (International): student-list import and the line-suggesting block builder (done in P7).
 - **P2: done.**
   - Solver: construction and conflict-directed repair. Covers clock-time clashes for classes, teachers and rooms; option-block lines; doubles that never cross a break; contracted days and availability; hard R4 and R12; seeded, so a run can be repeated.
   - Runs in an inline web worker with progress and Stop, so it also works in the offline file.
@@ -523,6 +523,30 @@ src/
     - no sideways scrolling on any screen at 375 px;
     - the offline single file runs the examples and the exports with no external requests.
   - PDF export no longer stalls in a background tab: the renderer falls back to a timer when animation frames are paused.
+- **P7: done.**
+  - **Students** (a setup step for the International pack, or once a school has a student list):
+    - import a pasted list (spreadsheet or CSV): admission no, name, form, house and subject choices, in any column order; new houses are created, unknown codes and forms are reported;
+    - re-importing updates students in place by admission number;
+    - edit forms, houses and choices; houses with colours; co-curricular activities with day, time, place, house, teacher and members.
+  - **Subjects** gain board, level, syllabus code, a weekly contact-time target, guided learning hours and course length. **Teachers** gain contract hours and an hourly rate. The school gains its number of teaching weeks.
+  - **Block builder** (in Option blocks):
+    - sets per subject from enrolment and the maximum set size;
+    - lines placed most-clashing first, then improved by moving and swapping sets, with seeded restarts;
+    - students filled into sets evenly;
+    - shows the lines, the students who cannot have every choice (with the subjects free in their spare lines), and a clash matrix;
+    - creates the block with every set's students listed. Forms may come from several Years, so sets can span Years.
+  - **Minimal change**: when a student's choices or form change, only that student moves between sets; the lines stay as they are.
+  - **Per-student checks**: the independent checker books every listed student, reports a student in two places at once, and a student in two sets of one line.
+  - **Sheets**: student timetables on the letterhead (batched, one per student), set lists per teaching group, and an option block chart.
+  - **International reports** (Reports → International), each with Excel, CSV and PDF:
+    - contact hours against the target and the board's GLH, per subject and teaching group;
+    - room utilisation;
+    - contract-hours compliance (teaching, duties and activities against the contract);
+    - visiting specialists' hours and amounts for a date range (school days, less absences and holidays);
+    - teaching sets, houses by year group with house lists, and activity rosters.
+  - Exam series and invigilation reuse the term tests from P5.
+  - **Example international school**: Years 7–13, IGCSE options for Years 10 and 11 and a sixth form taught across Years 12 and 13, all built from 244 students' choices. It includes expatriate contracts, a visiting music specialist, labs, houses and activities, and generates with no clashes.
+  - Sri Lankan returns are hidden for International projects.
 
 **v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
 
