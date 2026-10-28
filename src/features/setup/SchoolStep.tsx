@@ -2,7 +2,7 @@ import { newId } from '@/domain/common';
 import { WEEKDAYS, type Weekday } from '@/domain/time';
 import { PACK_LABELS } from '@/packs';
 import { useProjectStore } from '@/store/projectStore';
-import { Card, Chips, PageHeader, Select, TextInput } from '@/ui/kit';
+import { Card, Chips, NumberInput, PageHeader, Select, TextInput } from '@/ui/kit';
 import { BellScheduleEditor } from './BellScheduleEditor';
 
 const DAY_SHORT: Record<Weekday, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
@@ -65,6 +65,26 @@ export function SchoolStep() {
             {text('academicYear', 'Academic year', '2027')}
             {text('term', 'Term', 'Term 1')}
             {!project.simpleMode && text('gradeLabel', 'Call grades', 'Grade / Year')}
+            {project.pack === 'international' && (
+              <div>
+                <label className="label" htmlFor="inst-weeks">
+                  Teaching weeks a year
+                </label>
+                <NumberInput
+                  id="inst-weeks"
+                  value={institute.teachingWeeks}
+                  nullable
+                  min={1}
+                  max={52}
+                  placeholder="e.g. 36"
+                  onChange={(v) =>
+                    update((d) => {
+                      d.institute.teachingWeeks = v;
+                    })
+                  }
+                />
+              </div>
+            )}
             <div>
               <label className="label" htmlFor="inst-printlang">
                 Printed sheets in

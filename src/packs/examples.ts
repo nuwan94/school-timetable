@@ -8,11 +8,13 @@ import type { Project } from '@/domain/project';
 import type { Weekday } from '@/domain/time';
 import { createProject } from './index';
 import { finishExample } from './finish';
+import { internationalSchool } from './international';
 import { AESTHETIC_PERIODS, AESTHETICS, CORE, INITIALS, RELIGION_PERIODS, RELIGIONS, sampleSchool, SURNAMES } from './sample';
 
 /**
  * Example schools for the start wizard (PLAN.md §13 P6): a small primary
- * school (Simple pack) and Sri Lankan Type 2, 1C and 1AB schools. Each one
+ * school (Simple pack), Sri Lankan Type 2, 1C and 1AB schools, and an
+ * international school (P7). Each one
  * generates without clashes and fills in the returns with realistic data.
  * Figures are illustrative, not official allocations.
  */
@@ -293,6 +295,12 @@ export const EXAMPLES: Example[] = [
         },
         { shortBy: ['CMT', 'ICT', 'ENG'], overBy: ['CIV'] },
       ),
+  },
+  {
+    id: 'international',
+    name: 'International school',
+    summary: 'Years 7–13 Cambridge: IGCSE and A Level sets built from 244 students’ choices, houses and activities',
+    build: () => internationalSchool(),
   },
   {
     id: 'sample',

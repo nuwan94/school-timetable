@@ -62,6 +62,8 @@ export const StudentGroup = Named.extend({
   medium: Medium.nullable().default(null),
   /** Count-based membership (government default). Ignored when students are listed. */
   studentCount: z.number().int().nonnegative().default(0),
+  /** Listed members (International): every student in this set. Empty = count-based. */
+  studentIds: z.array(Id).default([]),
 });
 export type StudentGroup = z.infer<typeof StudentGroup>;
 
@@ -96,6 +98,12 @@ export const Subject = Named.extend({
   tier: z.string().default(''),
   /** Classes may be merged for this subject when short of teachers. */
   combinable: z.boolean().default(false),
+  /** Contact-time target in minutes per week (International). Null = no target. */
+  targetMinutes: z.number().int().positive().nullable().default(null),
+  /** Guided learning hours for the whole course, from the board's specification. */
+  glh: z.number().positive().nullable().default(null),
+  /** School years the course runs over (IGCSE and A Level usually 2). */
+  courseYears: z.number().int().positive().default(1),
 });
 export type Subject = z.infer<typeof Subject>;
 
@@ -186,6 +194,10 @@ export const Teacher = Named.extend({
   /** Specific blocked times (exceptions). */
   unavailable: z.array(TimeWindow).default([]),
   duties: z.array(DutyQuota).default([]),
+  /** Contracted working minutes per week (expatriate staff): teaching plus duties. */
+  contractMinutes: z.number().int().positive().nullable().default(null),
+  /** Hourly rate for visiting specialists' claims (any currency). */
+  hourlyRate: z.number().nonnegative().nullable().default(null),
 });
 export type Teacher = z.infer<typeof Teacher>;
 

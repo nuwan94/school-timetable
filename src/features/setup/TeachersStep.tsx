@@ -161,7 +161,7 @@ function PasteCard({ onDone }: { onDone: () => void }) {
 }
 
 /** Selected subjects as removable chips plus a compact "+ add" dropdown — stays one line high with many subjects. */
-function SubjectPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+export function SubjectPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const subjects = useProjectStore((s) => s.project!.subjects);
   const rest = subjects.filter((s) => !value.includes(s.id));
   return (
@@ -220,6 +220,23 @@ function TeacherDetails({ t }: { t: Teacher }) {
       {field('Department', <TextInput value={t.department} onChange={(v) => edit((x) => (x.department = v))} />)}
       {(t.category === 'attached' || t.category === 'visiting') &&
         field('Other school', <TextInput value={t.hostSchool} onChange={(v) => edit((x) => (x.hostSchool = v))} />)}
+      {project.pack === 'international' &&
+        field(
+          'Contract hours a week',
+          <NumberInput
+            value={t.contractMinutes === null ? null : t.contractMinutes / 60}
+            nullable
+            min={1}
+            max={60}
+            placeholder="Expatriate contracts"
+            onChange={(v) => edit((x) => (x.contractMinutes = v === null ? null : Math.round(v * 60)))}
+          />,
+        )}
+      {(t.category === 'visiting' || t.hourlyRate !== null) &&
+        field(
+          'Hourly rate (claims)',
+          <NumberInput value={t.hourlyRate} nullable min={0} max={1_000_000} onChange={(v) => edit((x) => (x.hourlyRate = v))} />,
+        )}
       {field(
         'Max periods/week (override)',
         <NumberInput

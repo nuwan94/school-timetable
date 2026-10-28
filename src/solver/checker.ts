@@ -3,6 +3,7 @@ import { expandPattern } from '@/domain/factories';
 import type { Project } from '@/domain/project';
 import { ruleAppliesToClass, ruleFor } from '@/domain/rules';
 import type { Placement } from '@/domain/schedule';
+import { membersOf } from '@/domain/students';
 import { slotsForDay, type Weekday } from '@/domain/time';
 
 /**
@@ -33,6 +34,8 @@ interface Item {
   lengths: number[];
   roomTypeId: string | null;
   multiGrade: string | null;
+  /** Listed students (International); empty when the school keeps no student list. */
+  studentIds: string[];
 }
 
 interface Booking {
@@ -45,7 +48,12 @@ interface Booking {
 export function checkTimetable(p: Project, placements: Placement[], opts: { relaxedRules?: boolean } = {}): CheckReport {
   const violations: Violation[] = [];
   const name = (id: string) =>
-    p.classes.find((x) => x.id === id)?.name ?? p.teachers.find((x) => x.id === id)?.name ?? p.rooms.find((x) => x.id === id)?.name ?? id;
+    p.classes.find((x) => x.id === id)?.name ??
+    p.teachers.find((x) => x.id === id)?.name ??
+    p.rooms.find((x) => x.id === id)?.name ??
+    p.students.find((x) => x.id === id)?.name ??
+    id;
+  const perStudent = p.students.length > 0;
 
   const classIdsOf = (ids: string[]) =>
     [...new Set(ids.flatMap((g) => (p.classes.some((c) => c.id === g) ? [g] : (p.studentGroups.find((s) => s.id === g)?.classIds ?? []))))];
@@ -62,12 +70,19 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
       lengths: expandPattern(a.pattern),
       roomTypeId: !a.roomId && subject?.roomTypeId && p.rooms.some((r) => r.roomTypeId === subject.roomTypeId) ? subject.roomTypeId : null,
       multiGrade: classIds.length === 1 ? (p.multiGradeGroups.find((g) => g.classIds.includes(classIds[0]!))?.id ?? null) : null,
+      studentIds: perStudent ? [...new Set(a.groupIds.flatMap((g) => membersOf(p, g)))] : [],
     });
   }
   for (const b of p.optionBlocks)
-    for (const l of b.lines)
-      if (l.sets.length)
-        items.set(l.id, {
+    for (const l of b.lines) {
+      if (!l.sets.length) continue;
+      const listed = perStudent ? l.sets.map((s) => p.studentGroups.find((g) => g.id === s.groupId)?.studentIds ?? []) : [];
+      // A student in two sets of one line would have to be in two places at once.
+      const inLine = new Map<string, number>();
+      for (const ids of listed) for (const id of ids) inLine.set(id, (inLine.get(id) ?? 0) + 1);
+      for (const [id, n] of inLine)
+        if (n > 1) violations.push({ kind: 'clash', message: `${name(id)} is in ${n} sets of ${b.name} · ${l.label}.` });
+      items.set(l.id, {
           label: `${b.name} · ${l.label}`,
           classIds: [...b.classIds],
           teacherIds: [...new Set(l.sets.flatMap((s) => s.teacherIds))],
@@ -76,7 +91,9 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
           lengths: expandPattern(l.pattern),
           roomTypeId: null,
           multiGrade: null,
+          studentIds: [...inLine.keys()],
         });
+    }
 
   const bookings = new Map<string, Booking[]>();
   const book = (res: string, day: Weekday, b: Booking) => bookings.set(`${res}|${day}`, [...(bookings.get(`${res}|${day}`) ?? []), b]);
@@ -132,6 +149,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
     }
     const rooms = [...item.roomIds, ...(pl.roomId && !item.roomIds.includes(pl.roomId) ? [pl.roomId] : [])];
     for (const r of rooms) book(`r:${r}`, pl.day, booking);
+    for (const s of item.studentIds) book(`s:${s}`, pl.day, booking);
     if (item.roomTypeId) {
       const room = p.rooms.find((r) => r.id === pl.roomId);
       if (!room || room.roomTypeId !== item.roomTypeId)
@@ -139,8 +157,10 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
     }
   }
 
-  // Overlaps per resource.
-  for (const [key, list] of bookings) {
+  // Overlaps per resource; students last, so a clash already reported for their class is not repeated per student.
+  const reported = new Set<string>();
+  const ordered = [...bookings].sort(([a], [b]) => Number(a.startsWith('s:')) - Number(b.startsWith('s:')));
+  for (const [key, list] of ordered) {
     const [res, day] = key.split('|') as [string, Weekday];
     const id = res.slice(2);
     const capacity = res.startsWith('r:') ? (p.rooms.find((r) => r.id === id)?.concurrent ?? 1) : 1;
@@ -151,6 +171,9 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
         ? overlapping.filter((b) => b === sorted[i] || !(b.multiGrade && b.multiGrade === sorted[i]!.multiGrade))
         : overlapping;
       if (relevant.length > capacity) {
+        const labels = `${day}|${[...new Set(relevant.map((b) => b.label))].sort().join('/')}`;
+        if (res.startsWith('s:') && reported.has(labels)) break;
+        reported.add(labels);
         violations.push({
           kind: 'clash',
           message: `${name(id)} is double-booked on ${day}: ${[...new Set(relevant.map((b) => b.label))].join(' / ')}.`,

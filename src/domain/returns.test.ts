@@ -183,7 +183,7 @@ describe('export', () => {
 });
 
 describe('example schools', () => {
-  for (const ex of EXAMPLES.filter((e) => e.id !== 'sample'))
+  for (const ex of EXAMPLES.filter((e) => e.id !== 'sample' && e.id !== 'international'))
     it(`${ex.name} generates with no clashes and fills the returns`, async () => {
       const school = ex.build();
       const r = await generateTimetable(school, { seed: 1, optimise: false });

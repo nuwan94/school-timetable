@@ -18,6 +18,7 @@ import type { OptionBlock } from '@/domain/entities';
 import { doublesIn, patternPeriods } from '@/domain/factories';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, LevelBadge, NumberInput, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
+import { BlockBuilderCard } from './BlockBuilderCard';
 import { ClassPicker, classNames } from './ClassPicker';
 import { confirmDialog } from '@/ui/dialogs';
 
@@ -349,6 +350,7 @@ export function BlocksStep() {
             </ul>
           </Card>
         )}
+        {project.students.length > 0 && <BlockBuilderCard />}
         <NewBlock />
       </div>
     </>

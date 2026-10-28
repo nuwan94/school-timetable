@@ -2,7 +2,20 @@ import { create } from 'zustand';
 import type { StepId } from '@/features/setup/steps';
 
 export type BuildId =
-  'check' | 'rules' | 'generate' | 'edit' | 'print' | 'today' | 'ledger' | 'changes' | 'calendar' | 'exams' | 'returns' | 'workload' | 'duties';
+  | 'check'
+  | 'rules'
+  | 'generate'
+  | 'edit'
+  | 'print'
+  | 'today'
+  | 'ledger'
+  | 'changes'
+  | 'calendar'
+  | 'exams'
+  | 'returns'
+  | 'workload'
+  | 'duties'
+  | 'intl';
 export type View = StepId | BuildId;
 
 const VIEW_KEY = 'timetable.view';

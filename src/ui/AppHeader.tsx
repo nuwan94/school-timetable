@@ -24,6 +24,7 @@ const BUILD_VIEWS: readonly string[] = [
   'returns',
   'workload',
   'duties',
+  'intl',
 ];
 
 /** Quick links in a project: where the timetable teacher goes most. */
