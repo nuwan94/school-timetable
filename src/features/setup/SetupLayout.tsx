@@ -25,6 +25,7 @@ import { StudentsStep } from './StudentsStep';
 import { visibleSteps, type StepId } from './steps';
 import { SubjectsStep } from './SubjectsStep';
 import { TeachersStep } from './TeachersStep';
+import { tx, dateLabel } from '@/i18n';
 
 interface NavLink {
   id: BuildId;
@@ -34,29 +35,29 @@ interface NavLink {
 }
 
 const BUILD: NavLink[] = [
-  { id: 'check', label: 'Check', hint: 'Find problems first', icon: 'checkCircle' },
-  { id: 'rules', label: 'Rules', hint: 'Balance and preferences', icon: 'sliders' },
-  { id: 'generate', label: 'Generate', hint: 'Build the timetable', icon: 'sparkle' },
-  { id: 'edit', label: 'Edit', hint: 'Move lessons by hand', icon: 'pen' },
-  { id: 'print', label: 'Print & share', hint: 'Sheets, PDF and PNG', icon: 'print' },
+  { id: 'check', get label() { return tx('Check'); }, get hint() { return tx('Find problems first'); }, icon: 'checkCircle' },
+  { id: 'rules', get label() { return tx('Rules'); }, get hint() { return tx('Balance and preferences'); }, icon: 'sliders' },
+  { id: 'generate', get label() { return tx('Generate'); }, get hint() { return tx('Build the timetable'); }, icon: 'sparkle' },
+  { id: 'edit', get label() { return tx('Edit'); }, get hint() { return tx('Move lessons by hand'); }, icon: 'pen' },
+  { id: 'print', get label() { return tx('Print & share'); }, get hint() { return tx('Sheets, PDF and PNG'); }, icon: 'print' },
 ];
 
 const DAILY: NavLink[] = [
-  { id: 'today', label: 'Today — relief', hint: 'Cover for absent teachers', icon: 'sun' },
-  { id: 'ledger', label: 'Relief ledger', hint: 'Who covered, kept fair', icon: 'book' },
+  { id: 'today', get label() { return tx('Today — relief'); }, get hint() { return tx('Cover for absent teachers'); }, icon: 'sun' },
+  { id: 'ledger', get label() { return tx('Relief ledger'); }, get hint() { return tx('Who covered, kept fair'); }, icon: 'book' },
 ];
 
 const YEAR: NavLink[] = [
-  { id: 'changes', label: 'Mid-year changes', hint: 'Leavers, joiners, long leave', icon: 'users' },
-  { id: 'calendar', label: 'Calendar', hint: 'Holidays and events', icon: 'calendar' },
-  { id: 'exams', label: 'Term tests', hint: 'Papers and invigilation', icon: 'clipboard' },
+  { id: 'changes', get label() { return tx('Mid-year changes'); }, get hint() { return tx('Leavers, joiners, long leave'); }, icon: 'users' },
+  { id: 'calendar', get label() { return tx('Calendar'); }, get hint() { return tx('Holidays and events'); }, icon: 'calendar' },
+  { id: 'exams', get label() { return tx('Term tests'); }, get hint() { return tx('Papers and invigilation'); }, icon: 'clipboard' },
 ];
 
 const REPORTS: NavLink[] = [
-  { id: 'returns', label: 'Returns', hint: 'Cadre, deployment, surplus', icon: 'fileText' },
-  { id: 'workload', label: 'Workload', hint: 'Load and relief fairness', icon: 'chart' },
-  { id: 'duties', label: 'Duty rosters', hint: 'Interval and gate duty', icon: 'shield' },
-  { id: 'intl', label: 'International', hint: 'Contact hours, rooms, houses', icon: 'chart' },
+  { id: 'returns', get label() { return tx('Returns'); }, get hint() { return tx('Cadre, deployment, surplus'); }, icon: 'fileText' },
+  { id: 'workload', get label() { return tx('Workload'); }, get hint() { return tx('Load and relief fairness'); }, icon: 'chart' },
+  { id: 'duties', get label() { return tx('Duty rosters'); }, get hint() { return tx('Interval and gate duty'); }, icon: 'shield' },
+  { id: 'intl', get label() { return tx('International'); }, get hint() { return tx('Contact hours, rooms, houses'); }, icon: 'chart' },
 ];
 
 /** Returns are Sri Lankan; the International reports need the pack or a student list. */
@@ -139,44 +140,44 @@ export function SetupLayout() {
   const doneCount = steps.filter((s) => s.done(project)).length;
   const version = project.versions.find((v) => v.id === project.activeVersionId);
   const badge = !version
-    ? { text: 'Not yet', cls: 'bg-slate-100 text-slate-600' }
+    ? { text: tx('Not yet'), cls: 'bg-slate-100 text-slate-600' }
     : version.status === 'approved'
-      ? { text: 'Approved', cls: 'bg-emerald-100 text-emerald-800' }
-      : { text: 'Draft', cls: 'bg-amber-100 text-amber-800' };
-  const todayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+      ? { text: tx('Approved'), cls: 'bg-emerald-100 text-emerald-800' }
+      : { text: tx('Draft'), cls: 'bg-amber-100 text-amber-800' };
+  const todayLabel = dateLabel(new Date(), { weekday: true });
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-3 py-4 md:flex-row md:px-4">
       <aside className="md:sticky md:top-[4.5rem] md:max-h-[calc(100vh-5.5rem)] md:w-64 md:shrink-0 md:overflow-y-auto md:pb-4 md:pr-1 [scrollbar-width:thin]">
         {/* Phone: compact select. Desktop: step list. */}
-        <select className="field w-full md:hidden" value={view} onChange={(e) => go(e.target.value as View)} aria-label="Setup step">
+        <select className="field w-full md:hidden" value={view} onChange={(e) => go(e.target.value as View)} aria-label={tx('Setup step')}>
           {steps.map((s, i) => (
             <option key={s.id} value={s.id}>
               {i + 1}. {s.label} {s.done(project) ? '✓' : ''}
             </option>
           ))}
-          <optgroup label="Build">
+          <optgroup label={tx('Build')}>
             {BUILD.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
             ))}
           </optgroup>
-          <optgroup label="Daily">
+          <optgroup label={tx('Daily')}>
             {DAILY.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
             ))}
           </optgroup>
-          <optgroup label="Year">
+          <optgroup label={tx('Year')}>
             {YEAR.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
               </option>
             ))}
           </optgroup>
-          <optgroup label="Reports">
+          <optgroup label={tx('Reports')}>
             {reports.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.label}
@@ -185,14 +186,14 @@ export function SetupLayout() {
           </optgroup>
         </select>
 
-        <nav className="hidden space-y-3 md:block" aria-label="Setup steps">
+        <nav className="hidden space-y-3 md:block" aria-label={tx('Setup steps')}>
           <NavGroup
-            title="Setup"
+            title={tx('Setup')}
             icon="school"
             tone="teal"
             meta={
               <span className="text-xs font-semibold text-slate-500">
-                {doneCount}/{steps.length} done
+                {tx('{doneCount}/{steps} done', { doneCount, steps: steps.length })}
               </span>
             }
           >
@@ -217,7 +218,7 @@ export function SetupLayout() {
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                         done ? 'bg-teal-700 text-white' : active ? 'bg-white text-teal-700 ring-1 ring-teal-600' : 'bg-slate-100 text-slate-500'
                       }`}
-                      aria-label={done ? 'done' : undefined}
+                      aria-label={done ? tx('done') : undefined}
                     >
                       {done ? <Icon name="check" className="h-4 w-4" /> : i + 1}
                     </span>
@@ -232,7 +233,7 @@ export function SetupLayout() {
           </NavGroup>
 
           <NavGroup
-            title="Build"
+            title={tx('Build')}
             icon="grid"
             tone="teal"
             meta={<span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}>{badge.text}</span>}
@@ -242,13 +243,13 @@ export function SetupLayout() {
             ))}
           </NavGroup>
 
-          <NavGroup title="Daily" icon="sun" tone="amber" meta={<span className="text-xs font-medium text-slate-500">{todayLabel}</span>}>
+          <NavGroup title={tx('Daily')} icon="sun" tone="amber" meta={<span className="text-xs font-medium text-slate-500">{todayLabel}</span>}>
             {DAILY.map((b) => (
               <NavItem key={b.id} link={b} tone="amber" active={view === b.id} onClick={() => go(b.id)} />
             ))}
           </NavGroup>
 
-          <NavGroup title="Year" icon="calendar" tone="violet">
+          <NavGroup title={tx('Year')} icon="calendar" tone="violet">
             {YEAR.map((b) => (
               <NavItem
                 key={b.id}
@@ -261,7 +262,7 @@ export function SetupLayout() {
             ))}
           </NavGroup>
 
-          <NavGroup title="Reports" icon="fileText" tone="sky">
+          <NavGroup title={tx('Reports')} icon="fileText" tone="sky">
             {reports.map((b) => (
               <NavItem key={b.id} link={b} tone="sky" active={view === b.id} onClick={() => go(b.id)} />
             ))}
@@ -279,8 +280,8 @@ export function SetupLayout() {
               }
             />
             <span>
-              <span className="block text-sm font-medium">Simple mode</span>
-              <span className="block text-xs text-slate-500">Hides advanced fields. Nothing is deleted.</span>
+              <span className="block text-sm font-medium">{tx('Simple mode')}</span>
+              <span className="block text-xs text-slate-500">{tx('Hides advanced fields. Nothing is deleted.')}</span>
             </span>
           </label>
         </nav>
@@ -321,15 +322,15 @@ export function SetupLayout() {
         {current && (
           <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
             <button className="btn" disabled={index <= 0} onClick={() => go(steps[index - 1]!.id)}>
-              ← Back
+              {tx('← Back')}
             </button>
             {index < steps.length - 1 ? (
               <button className="btn btn-primary" onClick={() => go(steps[index + 1]!.id)}>
-                Next: {steps[index + 1]!.label} →
+                {tx('Next: {label} →', { label: steps[index + 1]!.label })}
               </button>
             ) : (
               <button className="btn btn-primary" onClick={() => go('check')}>
-                Next: Check &amp; generate →
+                {tx('Next: Check & generate →')}
               </button>
             )}
           </div>

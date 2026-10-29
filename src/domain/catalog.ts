@@ -1,5 +1,6 @@
 import type { Pack } from './common';
 import type { Subject } from './entities';
+import { tx } from '@/i18n';
 
 /**
  * Starter subject list for Sri Lankan schools. Names only — NOT period
@@ -51,15 +52,44 @@ export const DEFAULT_ROLES: Record<Pack, string[]> = {
   international: ['Teacher', 'Head of Department', 'Head of Section', 'Principal'],
 };
 
-export const MEDIUM_LABELS = { si: 'Sinhala', ta: 'Tamil', en: 'English', bilingual: 'Bilingual' } as const;
+export const MEDIUM_LABELS = {
+  get si() {
+    return tx('Sinhala');
+  },
+  get ta() {
+    return tx('Tamil');
+  },
+  get en() {
+    return tx('English');
+  },
+  get bilingual() {
+    return tx('Bilingual');
+  },
+};
 
 export const CATEGORY_LABELS = {
-  permanent: 'Permanent',
-  contract: 'Contract',
-  attached: 'Attached / shared',
-  visiting: 'Visiting (hourly)',
-  developmentOfficer: 'Development Officer',
-  trainee: 'Trainee',
-  coach: 'Coach',
-  vacancy: 'Vacancy / TBA',
+  get permanent() {
+    return tx('Permanent');
+  },
+  get contract() {
+    return tx('Contract');
+  },
+  get attached() {
+    return tx('Attached / shared');
+  },
+  get visiting() {
+    return tx('Visiting (hourly)');
+  },
+  get developmentOfficer() {
+    return tx('Development Officer');
+  },
+  get trainee() {
+    return tx('Trainee');
+  },
+  get coach() {
+    return tx('Coach');
+  },
+  get vacancy() {
+    return tx('Vacancy / TBA');
+  },
 } as const;

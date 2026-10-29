@@ -3,18 +3,19 @@ import { newId } from '@/domain/common';
 import type { CalendarOverlay } from '@/domain/time';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, PageHeader, TextInput, TrashIcon } from '@/ui/kit';
+import { tx } from '@/i18n';
 
 type Kind = CalendarOverlay['kind'];
 
 export const OVERLAY_KINDS: { value: Kind; label: string }[] = [
-  { value: 'termTest', label: 'Term test' },
-  { value: 'mock', label: 'Mock exam' },
-  { value: 'examSeries', label: 'National exam (O/L, A/L, Grade 5)' },
-  { value: 'examCentre', label: 'School is an exam centre' },
-  { value: 'markingCamp', label: 'Marking camp' },
-  { value: 'sportsMeet', label: 'Sports meet / event' },
-  { value: 'holiday', label: 'Holiday / school closed' },
-  { value: 'other', label: 'Other' },
+  { value: 'termTest', get label() { return tx('Term test'); } },
+  { value: 'mock', get label() { return tx('Mock exam'); } },
+  { value: 'examSeries', get label() { return tx('National exam (O/L, A/L, Grade 5)'); } },
+  { value: 'examCentre', get label() { return tx('School is an exam centre'); } },
+  { value: 'markingCamp', get label() { return tx('Marking camp'); } },
+  { value: 'sportsMeet', get label() { return tx('Sports meet / event'); } },
+  { value: 'holiday', get label() { return tx('Holiday / school closed'); } },
+  { value: 'other', get label() { return tx('Other'); } },
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -72,7 +73,7 @@ export function CalendarScreen() {
     update((d) => {
       d.overlays.push({
         id,
-        name: 'New event',
+        name: tx('New event'),
         shortCode: '',
         local: {},
         active: true,
@@ -97,17 +98,16 @@ export function CalendarScreen() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Calendar">
-        Exams, sports meets, holidays and other dated events. The weekly timetable stays the same; on these dates daily relief knows which classes are
-        away, which teachers are out, and which rooms are taken.
+      <PageHeader title={tx('Calendar')}>
+        {tx('Exams, sports meets, holidays and other dated events. The weekly timetable stays the same; on these dates daily relief knows which classes are away, which teachers are out, and which rooms are taken.')}
       </PageHeader>
       <div>
         <button className="btn btn-primary" onClick={add} data-testid="overlay-add">
-          Add event
+          {tx('Add event')}
         </button>
       </div>
       {list.length === 0 ? (
-        <Empty>No events yet.</Empty>
+        <Empty>{tx('No events yet.')}</Empty>
       ) : (
         <ul className="space-y-2" data-testid="overlay-list">
           {list.map((o) => {
@@ -122,7 +122,7 @@ export function CalendarScreen() {
                       <span className="ml-2 text-sm text-slate-600">
                         {o.from === o.to ? o.from : `${o.from} – ${o.to}`} · {OVERLAY_KINDS.find((k) => k.value === o.kind)?.label}
                       </span>
-                      {on && <span className="ml-2 rounded bg-emerald-100 px-1.5 text-xs text-emerald-800">today</span>}
+                      {on && <span className="ml-2 rounded bg-emerald-100 px-1.5 text-xs text-emerald-800">{tx('today')}</span>}
                       <span className="block text-xs text-slate-500">
                         {[
                           o.removedGroupIds.length && `${o.removedGroupIds.length} class(es) away`,
@@ -134,7 +134,7 @@ export function CalendarScreen() {
                       </span>
                     </button>
                     <IconButton
-                      label={`Delete ${o.name}`}
+                      label={tx('Delete {name}', { name: o.name })}
                       danger
                       onClick={() => update((d) => void (d.overlays = d.overlays.filter((x) => x.id !== o.id)))}
                     >
@@ -145,16 +145,16 @@ export function CalendarScreen() {
                     <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
                       <div className="flex flex-wrap items-end gap-3">
                         <label className="text-sm">
-                          <span className="label">Name</span>
+                          <span className="label">{tx('Name')}</span>
                           <TextInput
                             className="w-56"
                             value={o.name}
                             onChange={(v) => edit(o.id, (x) => void (x.name = v || ' '))}
-                            aria-label="Event name"
+                            aria-label={tx('Event name')}
                           />
                         </label>
                         <label className="text-sm">
-                          <span className="label">Kind</span>
+                          <span className="label">{tx('Kind')}</span>
                           <select className="field w-60" value={o.kind} onChange={(e) => edit(o.id, (x) => void (x.kind = e.target.value as Kind))}>
                             {OVERLAY_KINDS.map((k) => (
                               <option key={k.value} value={k.value}>
@@ -164,7 +164,7 @@ export function CalendarScreen() {
                           </select>
                         </label>
                         <label className="text-sm">
-                          <span className="label">From</span>
+                          <span className="label">{tx('From')}</span>
                           <input
                             type="date"
                             className="field w-40"
@@ -178,7 +178,7 @@ export function CalendarScreen() {
                           />
                         </label>
                         <label className="text-sm">
-                          <span className="label">To</span>
+                          <span className="label">{tx('To')}</span>
                           <input
                             type="date"
                             className="field w-40"
@@ -191,19 +191,19 @@ export function CalendarScreen() {
                       {o.kind !== 'holiday' && (
                         <>
                           <Chips
-                            label="Classes away / sitting exams"
+                            label={tx('Classes away / sitting exams')}
                             items={sortedClasses}
                             value={o.removedGroupIds}
                             onChange={(v) => edit(o.id, (x) => void (x.removedGroupIds = v))}
                           />
                           <Chips
-                            label="Teachers out (e.g. marking camp)"
+                            label={tx('Teachers out (e.g. marking camp)')}
                             items={project.teachers.filter((t) => t.active)}
                             value={o.absentTeacherIds}
                             onChange={(v) => edit(o.id, (x) => void (x.absentTeacherIds = v))}
                           />
                           <Chips
-                            label="Rooms taken"
+                            label={tx('Rooms taken')}
                             items={project.rooms}
                             value={o.blockedRoomIds}
                             onChange={(v) => edit(o.id, (x) => void (x.blockedRoomIds = v))}
@@ -211,7 +211,7 @@ export function CalendarScreen() {
                         </>
                       )}
                       <label className="block text-sm">
-                        <span className="label">Note</span>
+                        <span className="label">{tx('Note')}</span>
                         <TextInput className="w-full" value={o.note} onChange={(v) => edit(o.id, (x) => void (x.note = v))} />
                       </label>
                     </div>

@@ -2,6 +2,7 @@ import type { LoadNorm, SchoolClass, Teacher } from './entities';
 import { patternPeriods } from './factories';
 import type { Project } from './project';
 import { teachingSlots, type BellSchedule, type Weekday } from './time';
+import { tx } from '@/i18n';
 
 /**
  * Live allocation checks (PLAN.md §4.3). Pure functions over a Project so the
@@ -216,22 +217,22 @@ export function runChecks(p: Project): Checks {
       );
       issues.push({
         severity: 'error',
-        message: `${teacher.name} has ${t.periods} periods (limit ${limit}).`,
-        fix: helper ? `Move ${excess} period(s) to ${name(helper.id)}, who has ${helper.spare} spare and teaches the same subject.` : undefined,
+        message: tx('{name} has {periods} periods (limit {limit}).', { name: teacher.name, periods: t.periods, limit }),
+        fix: helper ? tx('Move {excess} period(s) to {name}, who has {spare} spare and teaches the same subject.', { excess, name: name(helper.id), spare: helper.spare }) : undefined,
       });
     } else if (t.level === 'under') {
       issues.push({
         severity: 'warning',
-        message: `${teacher.name} has ${t.periods} periods, below the minimum of ${t.min}.`,
+        message: tx('{name} has {periods} periods, below the minimum of {min}.', { name: teacher.name, periods: t.periods, min: t.min }),
       });
     }
   }
 
   for (const c of classes.values()) {
     if (c.level === 'over')
-      issues.push({ severity: 'error', message: `${className(c.classId)} has ${c.periods} periods but only ${c.capacity} slots.` });
+      issues.push({ severity: 'error', message: tx('{className} has {periods} periods but only {capacity} slots.', { className: className(c.classId), periods: c.periods, capacity: c.capacity }) });
     else if (c.level === 'under')
-      issues.push({ severity: 'warning', message: `${className(c.classId)} has ${c.capacity - c.periods} empty period(s) (${c.periods}/${c.capacity}).` });
+      issues.push({ severity: 'warning', message: tx('{className} has {x} empty period(s) ({periods}/{capacity}).', { className: className(c.classId), x: c.capacity - c.periods, periods: c.periods, capacity: c.capacity }) });
   }
 
   for (const a of p.allocations) {
@@ -244,7 +245,7 @@ export function runChecks(p: Project): Checks {
         if (c && c.medium !== 'bilingual' && t.media.length > 0 && !t.media.includes(c.medium)) {
           issues.push({
             severity: 'warning',
-            message: `${t.name} teaches ${subject?.name ?? 'a subject'} to ${c.name} (${c.medium} medium) but is not listed for that medium.`,
+            message: tx('{name} teaches {x} to {name2} ({medium} medium) but is not listed for that medium.', { name: t.name, x: subject?.name ?? tx('a subject'), name2: c.name, medium: c.medium }),
           });
         }
       }
@@ -256,7 +257,7 @@ export function runChecks(p: Project): Checks {
     const blockStudents = b.classIds.reduce((s, c) => s + (p.classes.find((x) => x.id === c)?.studentCount ?? 0), 0);
     for (const l of b.lines) {
       const where = `${b.name} / ${l.label}`;
-      if (l.sets.length === 0) issues.push({ severity: 'warning', message: `${where} has no groups yet.` });
+      if (l.sets.length === 0) issues.push({ severity: 'warning', message: tx('{where} has no groups yet.', { where }) });
       const seenTeachers = new Map<string, number>();
       const seenRooms = new Map<string, number>();
       let groupStudents = 0;
@@ -266,24 +267,24 @@ export function runChecks(p: Project): Checks {
         const group = p.studentGroups.find((g) => g.id === s.groupId);
         groupStudents += group?.studentCount ?? 0;
         if (s.teacherIds.length === 0)
-          issues.push({ severity: 'info', message: `${where}: ${group?.name ?? 'a group'} has no teacher yet.` });
+          issues.push({ severity: 'info', message: tx('{where}: {x} has no teacher yet.', { where, x: group?.name ?? tx('a group') }) });
         for (const tid of s.teacherIds) {
           const t = p.teachers.find((x) => x.id === tid);
           if (t && group?.medium && t.media.length > 0 && !t.media.includes(group.medium))
-            issues.push({ severity: 'warning', message: `${where}: ${t.name} is not listed for ${group.name}'s medium.` });
+            issues.push({ severity: 'warning', message: tx('{where}: {name} is not listed for {name2}\'s medium.', { where, name: t.name, name2: group.name }) });
         }
       }
       for (const [tid, n] of seenTeachers)
-        if (n > 1) issues.push({ severity: 'error', message: `${where}: ${name(tid)} teaches ${n} groups at the same time.` });
+        if (n > 1) issues.push({ severity: 'error', message: tx('{where}: {name} teaches {n} groups at the same time.', { where, name: name(tid), n }) });
       for (const [rid, n] of seenRooms) {
         const room = p.rooms.find((r) => r.id === rid);
         if (room && n > room.concurrent)
-          issues.push({ severity: 'error', message: `${where}: ${room.name} is used by ${n} groups at once (holds ${room.concurrent}).` });
+          issues.push({ severity: 'error', message: tx('{where}: {name} is used by {n} groups at once (holds {concurrent}).', { where, name: room.name, n, concurrent: room.concurrent }) });
       }
       if (blockStudents > 0 && groupStudents > 0 && groupStudents !== blockStudents)
         issues.push({
           severity: 'warning',
-          message: `${where}: groups add up to ${groupStudents} students but the classes have ${blockStudents}.`,
+          message: tx('{where}: groups add up to {groupStudents} students but the classes have {blockStudents}.', { where, groupStudents, blockStudents }),
         });
     }
   }
@@ -302,11 +303,11 @@ export function runChecks(p: Project): Checks {
     }, 0);
   const uncoveredPeriods = [...classes.values()].reduce((s, c) => s + c.uncovered, 0);
   if (uncoveredPeriods > 0)
-    issues.push({ severity: 'info', message: `${uncoveredPeriods} period(s) have no teacher yet (uncovered / self-study).` });
+    issues.push({ severity: 'info', message: tx('{uncoveredPeriods} period(s) have no teacher yet (uncovered / self-study).', { uncoveredPeriods }) });
   if (demand > supply)
     issues.push({
       severity: 'error',
-      message: `Teacher shortage: classes need ${demand} teacher-periods but staff can give at most ${supply}. Short by ${demand - supply}.`,
+      message: tx('Teacher shortage: classes need {demand} teacher-periods but staff can give at most {supply}. Short by {x}.', { demand, supply, x: demand - supply }),
     });
 
   return { classes, teachers, demand, supply, uncoveredPeriods, issues };

@@ -28,15 +28,12 @@ import { SheetRenderer } from '@/print/SheetRenderer';
 import type { Sheet } from '@/print/sheets';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty } from '@/ui/kit';
-import { loadUiLang, saveUiLang, STRINGS } from './strings';
+import { STRINGS } from './strings';
+import { LANG_OPTIONS, tx, useLang } from '@/i18n';
 
 const todayIso = () => new Date().toLocaleDateString('en-CA');
 
-const LANG_BUTTONS: { value: Lang; label: string }[] = [
-  { value: 'en', label: 'EN' },
-  { value: 'si', label: 'සිං' },
-  { value: 'ta', label: 'தமி' },
-];
+const LANG_BUTTONS: { value: Lang; label: string }[] = LANG_OPTIONS.map((o) => ({ value: o.value, label: o.short }));
 
 type Job = { kind: 'pdf' | 'png' | 'print'; sheets: Sheet[]; name: string };
 
@@ -51,15 +48,12 @@ export function TodayScreen({ onGenerate }: { onGenerate: () => void }) {
   const project = useProjectStore((s) => s.project)!;
   const update = useProjectStore((s) => s.update);
   const [date, setDate] = useState(todayIso);
-  const [lang, setLangState] = useState<Lang>(() => loadUiLang(project.institute.printLanguage));
+  const lang = useLang((s) => s.lang);
+  const setLang = useLang((s) => s.setLang);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const S = STRINGS[lang];
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    saveUiLang(l);
-  };
 
   const ctx = useMemo(() => dayContext(project, date), [project, date]);
   const needs = useMemo(() => coverNeeds(project, ctx), [project, ctx]);
@@ -108,7 +102,7 @@ export function TodayScreen({ onGenerate }: { onGenerate: () => void }) {
     <div className="mx-auto max-w-3xl space-y-4" lang={lang}>
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-xl font-bold">{S.title}</h1>
-        <div className="flex rounded-md border border-slate-300 bg-white p-0.5" role="group" aria-label="Language">
+        <div className="flex rounded-md border border-slate-300 bg-white p-0.5" role="group" aria-label={tx('Language')}>
           {LANG_BUTTONS.map((b) => (
             <button
               key={b.value}
@@ -126,7 +120,7 @@ export function TodayScreen({ onGenerate }: { onGenerate: () => void }) {
         <button className="btn min-h-11 min-w-11" aria-label={S.prevDay} onClick={() => setDate(addDays(date, -1))}>
           ‹
         </button>
-        <input type="date" className="field min-h-11 flex-1" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Date" />
+        <input type="date" className="field min-h-11 flex-1" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label={tx('Date')} />
         <button className="btn min-h-11 min-w-11" aria-label={S.nextDay} onClick={() => setDate(addDays(date, 1))}>
           ›
         </button>

@@ -4,6 +4,8 @@ import { useProjectStore } from '@/store/projectStore';
 import { Card, Chips, IconButton, TextInput, TrashIcon } from '@/ui/kit';
 import { ClassPicker, classNames } from './ClassPicker';
 import { confirmDialog } from '@/ui/dialogs';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 type Kind = 'merge' | 'multigrade';
 
@@ -35,13 +37,19 @@ export function TaughtTogether() {
   };
 
   return (
-    <Card title="Classes taught together">
+    <Card title={tx('Classes taught together')}>
       <p className="mb-3 text-sm text-slate-600">
-        <strong>Merged classes</strong>: few students, so two classes sit together for every subject except the ones you tick (they then appear as one
-        shared cell in Who teaches what).
+        <Rich
+          text={tx(
+            '<b>Merged classes</b>: few students, so two classes sit together for every subject except the ones you tick (they then appear as one shared cell in Who teaches what).',
+          )}
+        />
         <br />
-        <strong>Multi-grade</strong>: one teacher holds several grades in one room at the same time, each doing its own lesson — their periods count
-        once in the teacher's load.
+        <Rich
+          text={tx(
+            '<b>Multi-grade</b>: one teacher holds several grades in one room at the same time, each doing its own lesson — their periods count once in the teacher’s load.',
+          )}
+        />
       </p>
 
       {project.mergedClasses.length + project.multiGradeGroups.length > 0 && (
@@ -49,9 +57,9 @@ export function TaughtTogether() {
           {project.mergedClasses.map((m) => (
             <li key={m.id} className="rounded-md border border-indigo-200 bg-indigo-50/50 p-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-indigo-100 px-1.5 text-xs font-semibold text-indigo-800">Merged</span>
+                <span className="rounded bg-indigo-100 px-1.5 text-xs font-semibold text-indigo-800">{tx('Merged')}</span>
                 <TextInput
-                  aria-label="Merge name"
+                  aria-label={tx('Merge name')}
                   value={m.name}
                   onChange={(v) =>
                     update((d) => {
@@ -64,17 +72,17 @@ export function TaughtTogether() {
                 <button
                   className="btn ml-auto"
                   onClick={async () =>
-                    (await confirmDialog(`Separate ${m.name}?`, {
-                      text: 'Each class keeps a copy of the shared lessons.',
-                      confirmText: 'Separate',
+                    (await confirmDialog(tx('Separate {name}?', { name: m.name }), {
+                      text: tx('Each class keeps a copy of the shared lessons.'),
+                      confirmText: tx('Separate'),
                     })) && update((d) => unmergeClasses(d, m.id))
                   }
                 >
-                  Separate
+                  {tx('Separate')}
                 </button>
               </div>
               <div className="mt-2">
-                <p className="mb-1 text-xs text-slate-600">Taught separately (tick subjects):</p>
+                <p className="mb-1 text-xs text-slate-600">{tx('Taught separately (tick subjects):')}</p>
                 <Chips
                   size="sm"
                   value={m.exceptSubjectIds}
@@ -86,9 +94,9 @@ export function TaughtTogether() {
           ))}
           {project.multiGradeGroups.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-2 rounded-md border border-amber-200 bg-amber-50/50 p-2">
-              <span className="rounded bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">Multi-grade</span>
+              <span className="rounded bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">{tx('Multi-grade')}</span>
               <TextInput
-                aria-label="Group name"
+                aria-label={tx('Group name')}
                 value={g.name}
                 onChange={(v) =>
                   update((d) => {
@@ -100,7 +108,7 @@ export function TaughtTogether() {
               <span className="text-sm text-slate-600">{classNames(project, g.classIds)}</span>
               <span className="ml-auto">
                 <IconButton
-                  label={`Remove ${g.name}`}
+                  label={tx('Remove {name}', { name: g.name })}
                   danger
                   onClick={() =>
                     update((d) => {
@@ -119,16 +127,16 @@ export function TaughtTogether() {
       <div className="rounded-md bg-slate-50 p-3">
         <div className="mb-2 flex flex-wrap gap-3 text-sm">
           <label className="flex items-center gap-1.5">
-            <input type="radio" name="tt-kind" checked={kind === 'merge'} onChange={() => setKind('merge')} /> Merge classes
+            <input type="radio" name="tt-kind" checked={kind === 'merge'} onChange={() => setKind('merge')} /> {tx('Merge classes')}
           </label>
           <label className="flex items-center gap-1.5">
-            <input type="radio" name="tt-kind" checked={kind === 'multigrade'} onChange={() => setKind('multigrade')} /> Multi-grade group
+            <input type="radio" name="tt-kind" checked={kind === 'multigrade'} onChange={() => setKind('multigrade')} /> {tx('Multi-grade group')}
           </label>
         </div>
         <ClassPicker value={classIds} onChange={setClassIds} />
         <div className="mt-2 flex items-center gap-3">
           <button className="btn btn-primary" disabled={classIds.length < 2} onClick={add}>
-            {kind === 'merge' ? 'Merge' : 'Group'} {classIds.length >= 2 ? classNames(project, classIds) : 'classes'}
+            {kind === 'merge' ? tx('Merge') : tx('Group')} {classIds.length >= 2 ? classNames(project, classIds) : tx('classes')}
           </button>
           {error && <span className="text-sm text-red-800">{error}</span>}
         </div>

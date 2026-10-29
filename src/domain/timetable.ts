@@ -5,6 +5,7 @@ import type { Placement, TimetableVersion } from './schedule';
 import { slotsForDay, teachingSlots, type BellSchedule, type BellSlot, type Weekday } from './time';
 import type { Draft } from 'immer';
 import { newId } from './common';
+import { tx, dateLabel } from '@/i18n';
 
 /**
  * Turns placements into displayable lessons and per-class / per-teacher grids.
@@ -200,7 +201,7 @@ export function saveDraftVersion(d: Draft<Project>, placements: Placement[], not
   const active = d.versions.find((v) => v.id === d.activeVersionId);
   const version: TimetableVersion = {
     id: newId('ver'),
-    name: `Draft ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
+    name: tx('Draft {date}', { date: dateLabel(new Date()) }),
     status: 'draft',
     effectiveFrom: null,
     basedOnId: active?.status === 'approved' ? active.id : (active?.basedOnId ?? null),

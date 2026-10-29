@@ -8,6 +8,8 @@ import { useProjectStore } from '@/store/projectStore';
 import { confirmDialog } from '@/ui/dialogs';
 import { Card, Empty, IconButton, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
 import { SubjectPicker } from './TeachersStep';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const EXAMPLE = `Adm No\tName\tForm\tHouse\tSubjects
 2401\tAmaya Perera\t10A\tKandy\tIPHY ICHE IBIO ICS
@@ -23,14 +25,12 @@ function ImportCard({ onDone }: { onDone: () => void }) {
   const existing = new Set(project.students.map((s) => s.admissionNo).filter(Boolean));
   const updates = ready.filter((r) => r.admissionNo && existing.has(r.admissionNo)).length;
   return (
-    <Card title="Import students" className="mb-4">
+    <Card title={tx('Import students')} className="mb-4">
       <p className="mb-2 text-sm text-slate-600">
-        Copy the list from your admissions system or a spreadsheet and paste it here: admission no, name, form, house, then the subjects each student
-        chose (codes, names or syllabus codes — one per column or several in one cell). A header row may name the columns in any order. Students
-        already in the list (same admission no) are updated, not added twice.
+        {tx('Copy the list from your admissions system or a spreadsheet and paste it here: admission no, name, form, house, then the subjects each student chose (codes, names or syllabus codes — one per column or several in one cell). A header row may name the columns in any order. Students already in the list (same admission no) are updated, not added twice.')}
       </p>
       <textarea
-        aria-label="Student list"
+        aria-label={tx('Student list')}
         className="field h-40 w-full font-mono text-xs"
         placeholder={EXAMPLE}
         value={text}
@@ -39,17 +39,17 @@ function ImportCard({ onDone }: { onDone: () => void }) {
       {preview && (
         <div className="mt-2 space-y-1 text-sm" data-testid="import-preview">
           <p>
-            <strong>{ready.length}</strong> student{ready.length === 1 ? '' : 's'} ready
-            {updates ? ` (${updates} already listed, will be updated)` : ''}
-            {preview.newHouses.length ? ` · new houses: ${preview.newHouses.join(', ')}` : ''}
+            <Rich text={ready.length === 1 ? tx('<b>1</b> student ready') : tx('<b>{n}</b> students ready', { n: ready.length })} />
+            {updates ? tx(' ({updates} already listed, will be updated)', { updates }) : ''}
+            {preview.newHouses.length ? tx(' · new houses: {join}', { join: preview.newHouses.join(', ') }) : ''}
           </p>
-          {unknown.length > 0 && <p className="text-amber-800">Subject codes not found (ignored): {unknown.join(', ')}</p>}
+          {unknown.length > 0 && <p className="text-amber-800">{tx('Subject codes not found (ignored): {join}', { join: unknown.join(', ') })}</p>}
           {preview.problems.slice(0, 6).map((p) => (
             <p key={p} className="text-red-700">
               {p}
             </p>
           ))}
-          {preview.problems.length > 6 && <p className="text-red-700">…and {preview.problems.length - 6} more.</p>}
+          {preview.problems.length > 6 && <p className="text-red-700">{tx('…and {x} more.', { x: preview.problems.length - 6 })}</p>}
         </div>
       )}
       <div className="mt-3 flex gap-2">
@@ -68,10 +68,10 @@ function ImportCard({ onDone }: { onDone: () => void }) {
             onDone();
           }}
         >
-          Import {ready.length} student{ready.length === 1 ? '' : 's'}
+          {ready.length === 1 ? tx('Import 1 student') : tx('Import {n} students', { n: ready.length })}
         </button>
         <button className="btn" onClick={onDone}>
-          Cancel
+          {tx('Cancel')}
         </button>
       </div>
     </Card>
@@ -83,29 +83,29 @@ function HousesCard() {
   const update = useProjectStore((s) => s.update);
   return (
     <Card
-      title="Houses"
+      title={tx('Houses')}
       actions={
         <button
           className="btn"
           onClick={() =>
             update((d) => {
-              d.houses.push(House.parse({ id: newId('house'), name: `House ${d.houses.length + 1}` }));
+              d.houses.push(House.parse({ id: newId('house'), name: tx('House {x}', { x: d.houses.length + 1 }) }));
             })
           }
         >
-          + House
+          {tx('+ House')}
         </button>
       }
     >
       {project.houses.length === 0 ? (
-        <Empty>No houses. They are created when you import students with a house column, or add them here.</Empty>
+        <Empty>{tx('No houses. They are created when you import students with a house column, or add them here.')}</Empty>
       ) : (
         <ul className="space-y-1">
           {project.houses.map((h) => (
             <li key={h.id} className="flex items-center gap-2">
               <input
                 type="color"
-                aria-label={`${h.name} colour`}
+                aria-label={tx('{name} colour', { name: h.name })}
                 value={h.colour}
                 onChange={(e) =>
                   update((d) => {
@@ -115,7 +115,7 @@ function HousesCard() {
                 className="h-7 w-7 cursor-pointer rounded border border-slate-300"
               />
               <TextInput
-                aria-label="House name"
+                aria-label={tx('House name')}
                 value={h.name}
                 onChange={(v) =>
                   update((d) => {
@@ -124,14 +124,14 @@ function HousesCard() {
                 }
                 className="w-40"
               />
-              <span className="text-xs text-slate-500">{project.students.filter((s) => s.houseId === h.id).length} students</span>
+              <span className="text-xs text-slate-500">{tx('{length} students', { length: project.students.filter((s) => s.houseId === h.id).length })}</span>
               <IconButton
-                label={`Delete ${h.name}`}
+                label={tx('Delete {name}', { name: h.name })}
                 danger
                 onClick={() =>
-                  void confirmDialog(`Delete ${h.name} house?`, {
-                    text: 'Students in it will have no house.',
-                    confirmText: 'Delete',
+                  void confirmDialog(tx('Delete {name} house?', { name: h.name }), {
+                    text: tx('Students in it will have no house.'),
+                    confirmText: tx('Delete'),
                     danger: true,
                   }).then(
                     (ok) =>
@@ -167,11 +167,11 @@ function CcaCard() {
       fn(d.ccas.find((x) => x.id === id)!);
     });
   const teacherOptions = [{ value: '', label: '—' }, ...project.teachers.filter((t) => t.active).map((t) => ({ value: t.id, label: t.name }))];
-  const houseOptions = [{ value: '', label: 'All houses' }, ...project.houses.map((h) => ({ value: h.id, label: h.name }))];
+  const houseOptions = [{ value: '', label: tx('All houses') }, ...project.houses.map((h) => ({ value: h.id, label: h.name }))];
   const time = (m: number | null) => (m === null ? '' : formatClock(m));
   return (
     <Card
-      title="Co-curricular activities"
+      title={tx('Co-curricular activities')}
       actions={
         <button
           className="btn"
@@ -179,7 +179,7 @@ function CcaCard() {
             update((d) => {
               d.ccas.push({
                 id: newId('cca'),
-                name: 'New activity',
+                name: tx('New activity'),
                 day: null,
                 start: null,
                 end: null,
@@ -191,25 +191,25 @@ function CcaCard() {
             })
           }
         >
-          + Activity
+          {tx('+ Activity')}
         </button>
       }
     >
       {project.ccas.length === 0 ? (
-        <Empty>Clubs, teams and house meetings. Their rosters print from Reports → International.</Empty>
+        <Empty>{tx('Clubs, teams and house meetings. Their rosters print from Reports → International.')}</Empty>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="text-left text-xs uppercase text-slate-500">
-                <th className="py-1 pr-2">Activity</th>
-                <th className="py-1 pr-2">Day</th>
-                <th className="py-1 pr-2">From</th>
-                <th className="py-1 pr-2">To</th>
-                <th className="py-1 pr-2">Where</th>
-                <th className="py-1 pr-2">House</th>
-                <th className="py-1 pr-2">Teacher</th>
-                <th className="py-1 pr-2">Students</th>
+                <th className="py-1 pr-2">{tx('Activity')}</th>
+                <th className="py-1 pr-2">{tx('Day')}</th>
+                <th className="py-1 pr-2">{tx('From')}</th>
+                <th className="py-1 pr-2">{tx('To')}</th>
+                <th className="py-1 pr-2">{tx('Where')}</th>
+                <th className="py-1 pr-2">{tx('House')}</th>
+                <th className="py-1 pr-2">{tx('Teacher')}</th>
+                <th className="py-1 pr-2">{tx('Students')}</th>
                 <th />
               </tr>
             </thead>
@@ -218,11 +218,11 @@ function CcaCard() {
                 <Fragment key={c.id}>
                   <tr>
                     <td className="py-1 pr-2">
-                      <TextInput aria-label="Activity name" value={c.name} onChange={(v) => edit(c.id, (x) => (x.name = v))} className="w-44" />
+                      <TextInput aria-label={tx('Activity name')} value={c.name} onChange={(v) => edit(c.id, (x) => (x.name = v))} className="w-44" />
                     </td>
                     <td className="py-1 pr-2">
                       <Select
-                        aria-label="Day"
+                        aria-label={tx('Day')}
                         value={c.day ?? ''}
                         options={DAY_OPTIONS}
                         onChange={(v) => edit(c.id, (x) => (x.day = (v || null) as Weekday | null))}
@@ -233,7 +233,7 @@ function CcaCard() {
                       <td key={k} className="py-1 pr-2">
                         <input
                           type="time"
-                          aria-label={k === 'start' ? 'Starts' : 'Ends'}
+                          aria-label={k === 'start' ? tx('Starts') : tx('Ends')}
                           className="field w-28"
                           value={time(c[k])}
                           onChange={(e) => edit(c.id, (x) => (x[k] = e.target.value ? parseClock(e.target.value) : null))}
@@ -241,11 +241,11 @@ function CcaCard() {
                       </td>
                     ))}
                     <td className="py-1 pr-2">
-                      <TextInput aria-label="Where" value={c.place} onChange={(v) => edit(c.id, (x) => (x.place = v))} className="w-28" />
+                      <TextInput aria-label={tx('Where')} value={c.place} onChange={(v) => edit(c.id, (x) => (x.place = v))} className="w-28" />
                     </td>
                     <td className="py-1 pr-2">
                       <Select
-                        aria-label="House"
+                        aria-label={tx('House')}
                         value={c.houseId ?? ''}
                         options={houseOptions}
                         onChange={(v) => edit(c.id, (x) => (x.houseId = v || null))}
@@ -254,7 +254,7 @@ function CcaCard() {
                     </td>
                     <td className="py-1 pr-2">
                       <Select
-                        aria-label="Teacher in charge"
+                        aria-label={tx('Teacher in charge')}
                         value={c.teacherIds[0] ?? ''}
                         options={teacherOptions}
                         onChange={(v) =>
@@ -270,7 +270,7 @@ function CcaCard() {
                     </td>
                     <td className="py-1 text-right">
                       <IconButton
-                        label={`Delete ${c.name}`}
+                        label={tx('Delete {name}', { name: c.name })}
                         danger
                         onClick={() =>
                           update((d) => {
@@ -287,9 +287,9 @@ function CcaCard() {
                       <td colSpan={9} className="bg-slate-50 p-3">
                         <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
                           <Select
-                            aria-label="Form"
+                            aria-label={tx('Form')}
                             value={form}
-                            options={[{ value: '', label: 'Choose a form…' }, ...project.classes.map((x) => ({ value: x.id, label: x.name }))]}
+                            options={[{ value: '', label: tx('Choose a form…') }, ...project.classes.map((x) => ({ value: x.id, label: x.name }))]}
                             onChange={setForm}
                             className="w-44"
                           />
@@ -304,7 +304,7 @@ function CcaCard() {
                                 })
                               }
                             >
-                              Whole form on/off
+                              {tx('Whole form on/off')}
                             </button>
                           )}
                         </div>
@@ -367,22 +367,20 @@ export function StudentsStep() {
 
   return (
     <>
-      <PageHeader title="Students">
-        For schools that timetable sets from students&apos; own subject choices. Import the list, then build option blocks from the choices; each set
-        then lists its students, and the timetable is checked so that no student is in two places at once. Changing a student&apos;s choices moves
-        only that student between sets.
+      <PageHeader title={tx('Students')}>
+        {tx('For schools that timetable sets from students\' own subject choices. Import the list, then build option blocks from the choices; each set then lists its students, and the timetable is checked so that no student is in two places at once. Changing a student\'s choices moves only that student between sets.')}
       </PageHeader>
 
       {importing ? <ImportCard onDone={() => setImporting(false)} /> : null}
 
       <Card
-        title={`Students (${project.students.length})`}
+        title={tx('Students ({students})', { students: project.students.length })}
         className="mb-4"
         actions={
           <>
             {!importing && (
               <button className="btn" onClick={() => setImporting(true)}>
-                Import / update from a list
+                {tx('Import / update from a list')}
               </button>
             )}
             <button
@@ -390,37 +388,37 @@ export function StudentsStep() {
               disabled={!project.classes.length}
               onClick={() =>
                 update((d) => {
-                  d.students.push(Student.parse({ id: newId('stu'), name: 'New student', classId: form || d.classes[0]!.id }));
+                  d.students.push(Student.parse({ id: newId('stu'), name: tx('New student'), classId: form || d.classes[0]!.id }));
                 })
               }
             >
-              + Student
+              {tx('+ Student')}
             </button>
           </>
         }
       >
         <div className="mb-3 flex flex-wrap gap-2">
           <Select
-            aria-label="Show form"
+            aria-label={tx('Show form')}
             value={form}
-            options={[{ value: '', label: 'All forms' }, ...classOptions]}
+            options={[{ value: '', label: tx('All forms') }, ...classOptions]}
             onChange={setForm}
             className="w-40"
           />
-          <TextInput aria-label="Search students" placeholder="Search name or admission no" value={query} onChange={setQuery} className="w-64" />
+          <TextInput aria-label={tx('Search students')} placeholder={tx('Search name or admission no')} value={query} onChange={setQuery} className="w-64" />
         </div>
         {list.length === 0 ? (
-          <Empty>{project.students.length ? 'No students match.' : 'No students yet. Paste your list above.'}</Empty>
+          <Empty>{project.students.length ? tx('No students match.') : tx('No students yet. Paste your list above.')}</Empty>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-slate-500">
-                  <th className="py-1 pr-2">Adm. no</th>
-                  <th className="py-1 pr-2">Name</th>
-                  <th className="py-1 pr-2">Form</th>
-                  <th className="py-1 pr-2">House</th>
-                  <th className="py-1 pr-2">Subject choices</th>
+                  <th className="py-1 pr-2">{tx('Adm. no')}</th>
+                  <th className="py-1 pr-2">{tx('Name')}</th>
+                  <th className="py-1 pr-2">{tx('Form')}</th>
+                  <th className="py-1 pr-2">{tx('House')}</th>
+                  <th className="py-1 pr-2">{tx('Subject choices')}</th>
                   <th />
                 </tr>
               </thead>
@@ -431,18 +429,18 @@ export function StudentsStep() {
                     <tr key={s.id} className="align-top">
                       <td className="py-1 pr-2">
                         <TextInput
-                          aria-label="Admission number"
+                          aria-label={tx('Admission number')}
                           value={s.admissionNo}
                           onChange={(v) => edit(s.id, (x) => (x.admissionNo = v))}
                           className="w-20"
                         />
                       </td>
                       <td className="py-1 pr-2">
-                        <TextInput aria-label="Student name" value={s.name} onChange={(v) => edit(s.id, (x) => (x.name = v))} className="w-48" />
+                        <TextInput aria-label={tx('Student name')} value={s.name} onChange={(v) => edit(s.id, (x) => (x.name = v))} className="w-48" />
                       </td>
                       <td className="py-1 pr-2">
                         <Select
-                          aria-label="Form"
+                          aria-label={tx('Form')}
                           value={s.classId}
                           options={classOptions}
                           onChange={(v) => edit(s.id, (x) => (x.classId = v), true)}
@@ -451,7 +449,7 @@ export function StudentsStep() {
                       </td>
                       <td className="py-1 pr-2">
                         <Select
-                          aria-label="House"
+                          aria-label={tx('House')}
                           value={s.houseId ?? ''}
                           options={houseOptions}
                           onChange={(v) => edit(s.id, (x) => (x.houseId = v || null))}
@@ -474,18 +472,18 @@ export function StudentsStep() {
                         />
                         {missing.length > 0 && (
                           <p className="mt-1 text-xs text-red-700" data-testid="student-missing">
-                            No set fits alongside the others: {missing.map(subjectCode).join(', ')}
+                            {tx('No set fits alongside the others: {join}', { join: missing.map(subjectCode).join(', ') })}
                           </p>
                         )}
                       </td>
                       <td className="py-1 text-right">
                         <IconButton
-                          label={`Delete ${s.name}`}
+                          label={tx('Delete {name}', { name: s.name })}
                           danger
                           onClick={() =>
-                            void confirmDialog(`Delete ${s.name}?`, {
-                              text: 'They are taken out of every set and activity.',
-                              confirmText: 'Delete',
+                            void confirmDialog(tx('Delete {name}?', { name: s.name }), {
+                              text: tx('They are taken out of every set and activity.'),
+                              confirmText: tx('Delete'),
                               danger: true,
                             }).then((ok) => ok && update((d) => removeStudent(d, s.id)))
                           }
@@ -500,7 +498,7 @@ export function StudentsStep() {
             </table>
             {list.length > shown && (
               <button className="btn mt-2" onClick={() => setShown(shown + PAGE * 2)}>
-                Show more ({list.length - shown} left)
+                {tx('Show more ({x} left)', { x: list.length - shown })}
               </button>
             )}
           </div>

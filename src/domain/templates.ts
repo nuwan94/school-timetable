@@ -7,6 +7,7 @@ import { doublesIn, patternFrom, patternPeriods } from './factories';
 import { findCellAllocation, setCellAllocation } from './mutations';
 import type { Project } from './project';
 import { teachingSlots } from './time';
+import { tx } from '@/i18n';
 
 /**
  * Grade curriculum templates: "Grade 6 = Maths 6, Science 5 …", versioned by
@@ -88,9 +89,9 @@ export function parseTemplateFile(text: string): CurriculumTemplate[] {
   try {
     json = JSON.parse(text);
   } catch {
-    throw new Error('This is not a template file (not valid JSON).');
+    throw new Error(tx('This is not a template file (not valid JSON).'));
   }
   const result = TemplateFile.safeParse(json);
-  if (!result.success) throw new Error('This is not a valid timetable template file.');
+  if (!result.success) throw new Error(tx('This is not a valid timetable template file.'));
   return result.data.templates.map((t) => ({ ...t, id: newId('tpl') }));
 }

@@ -4,6 +4,7 @@ import type { Project } from './project';
 import { dayContext, isAbsentAt, type DayContext } from './relief';
 import type { ExamPaper, ExamSeries, ExamSession, Invigilation } from './schedule';
 import { classIdsOfGroups } from './timetable';
+import { joinAnd, tx } from '@/i18n';
 
 /**
  * Term-test mode (PLAN.md §8.5): a paper grid by date and session, fair
@@ -12,8 +13,8 @@ import { classIdsOfGroups } from './timetable';
  */
 
 export const DEFAULT_SESSIONS: Omit<ExamSession, 'id'>[] = [
-  { label: 'Morning', start: 8 * 60, end: 10 * 60 },
-  { label: 'Mid-day', start: 10 * 60 + 30, end: 12 * 60 + 30 },
+  { get label() { return tx('Morning'); }, start: 8 * 60, end: 10 * 60 },
+  { get label() { return tx('Mid-day'); }, start: 10 * 60 + 30, end: 12 * 60 + 30 },
 ];
 
 export function makeExamSeries(input: { name: string; from: string; to: string }): ExamSeries {
@@ -119,7 +120,7 @@ export function examClashes(p: Project, series: ExamSeries): ExamClash[] {
     if (pp.date < series.from || pp.date > series.to)
       out.push({
         kind: 'outsideDates',
-        message: `${sub(pp.subjectId)} on ${pp.date} is outside ${series.from} – ${series.to}`,
+        message: tx('{sub} on {date} is outside {from} – {to}', { sub: sub(pp.subjectId), date: pp.date, from: series.from, to: series.to }),
         paperIds: [pp.id],
       });
     for (const c of pp.classIds) {
@@ -131,7 +132,7 @@ export function examClashes(p: Project, series: ExamSeries): ExamClash[] {
     if (list.length > 1)
       out.push({
         kind: 'classTwice',
-        message: `${cls(k.split('|')[2]!)} has ${list.map((x) => sub(x.subjectId)).join(' and ')} at the same time (${at(list[0]!)})`,
+        message: tx('{cls} has {join} at the same time ({at})', { cls: cls(k.split('|')[2]!), join: joinAnd(list.map((x) => sub(x.subjectId))), at: at(list[0]!) }),
         paperIds: list.map((x) => x.id),
       });
 
@@ -146,13 +147,13 @@ export function examClashes(p: Project, series: ExamSeries): ExamClash[] {
     if (s && isAbsentAt(ctx(pp.date), i.teacherId, s))
       out.push({
         kind: 'invigilatorAbsent',
-        message: `${tea(i.teacherId)} is absent on ${pp.date} but invigilates ${cls(i.classId)}`,
+        message: tx('{tea} is absent on {date} but invigilates {cls}', { tea: tea(i.teacherId), date: pp.date, cls: cls(i.classId) }),
         paperIds: [pp.id],
       });
     if (ownTeachers(p, pp.subjectId, i.classId).has(i.teacherId))
       out.push({
         kind: 'ownSubject',
-        message: `${tea(i.teacherId)} invigilates their own ${sub(pp.subjectId)} paper for ${cls(i.classId)}`,
+        message: tx('{tea} invigilates their own {sub} paper for {cls}', { tea: tea(i.teacherId), sub: sub(pp.subjectId), cls: cls(i.classId) }),
         paperIds: [pp.id],
       });
   }
@@ -160,7 +161,7 @@ export function examClashes(p: Project, series: ExamSeries): ExamClash[] {
     if (list.length > 1)
       out.push({
         kind: 'invigilatorTwice',
-        message: `${tea(k.split('|')[2]!)} invigilates ${list.map((i) => cls(i.classId)).join(' and ')} at the same time`,
+        message: tx('{tea} invigilates {join} at the same time', { tea: tea(k.split('|')[2]!), join: joinAnd(list.map((i) => cls(i.classId))) }),
         paperIds: [...new Set(list.map((i) => i.paperId))],
       });
   for (const pp of series.papers)
@@ -168,7 +169,7 @@ export function examClashes(p: Project, series: ExamSeries): ExamClash[] {
       if (!series.invigilation.some((i) => i.paperId === pp.id && i.classId === c))
         out.push({
           kind: 'noInvigilator',
-          message: `${sub(pp.subjectId)} ${cls(c)} (${at(pp)}) has no invigilator`,
+          message: tx('{sub} {cls} ({at}) has no invigilator', { sub: sub(pp.subjectId), cls: cls(c), at: at(pp) }),
           paperIds: [pp.id],
         });
   return out;

@@ -9,6 +9,7 @@ import { SheetRenderer } from '@/print/SheetRenderer';
 import type { Sheet } from '@/print/sheets';
 import '@/print/sheet.css';
 import { Icon } from './Icon';
+import { tx } from '@/i18n';
 
 /** Export buttons for one or more tables: CSV (first table), Excel (all, one sheet each) and PDF. */
 export function ExportButtons({ project, tables, pdf, label = '' }: { project: Project; tables: ReportTable[]; pdf?: Sheet[]; label?: string }) {
@@ -20,11 +21,11 @@ export function ExportButtons({ project, tables, pdf, label = '' }: { project: P
   return (
     <div className="flex flex-wrap gap-2">
       <button className="btn" onClick={() => downloadBlob(tablesToXlsx(tables), `${base}.xlsx`)} data-testid={`export-xlsx-${tid}`}>
-        <Icon name="download" className="h-4 w-4" /> Excel
+        <Icon name="download" className="h-4 w-4" /> {tx('Excel')}
       </button>
       {tables.length === 1 && (
         <button className="btn" onClick={() => downloadBlob(tableToCsv(first), `${base}.csv`)} data-testid={`export-csv-${tid}`}>
-          <Icon name="download" className="h-4 w-4" /> CSV
+          <Icon name="download" className="h-4 w-4" /> {tx('CSV')}
         </button>
       )}
       <button
@@ -33,7 +34,7 @@ export function ExportButtons({ project, tables, pdf, label = '' }: { project: P
         onClick={() => setPrinting(pdf ?? tables.flatMap((t) => reportSheets(project, t, { sign: true })))}
         data-testid={`export-pdf-${tid}`}
       >
-        <Icon name="print" className="h-4 w-4" /> {printing ? 'Making PDF…' : 'PDF'}
+        <Icon name="print" className="h-4 w-4" /> {printing ? tx('Making PDF…') : tx('PDF')}
       </button>
       {printing && (
         <SheetRenderer
@@ -65,7 +66,7 @@ export function ReportView({ project, table, actions }: { project: Project; tabl
         </div>
       </div>
       {table.rows.length === 0 ? (
-        <p className="p-6 text-center text-sm text-slate-500">Nothing to show yet.</p>
+        <p className="p-6 text-center text-sm text-slate-500">{tx('Nothing to show yet.')}</p>
       ) : (
         <div className="max-h-[70vh] overflow-auto">
           <table className="w-full border-collapse text-sm">

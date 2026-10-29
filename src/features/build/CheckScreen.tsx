@@ -3,11 +3,13 @@ import type { Issue } from '@/domain/checks';
 import { preflight } from '@/solver/preflight';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, PageHeader, Select } from '@/ui/kit';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const PRIORITY = [
-  { value: 'core', label: 'Core' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'low', label: 'Low' },
+  { value: 'core', get label() { return tx('Core'); } },
+  { value: 'normal', get label() { return tx('Normal'); } },
+  { value: 'low', get label() { return tx('Low'); } },
 ] as const;
 
 const TONE = {
@@ -45,52 +47,54 @@ export function CheckScreen({ onGenerate }: { onGenerate: () => void }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Check before generating">
-        Problems listed here would stop lessons from being placed. Errors must be fixed (or the lessons will stay unplaced); warnings are worth a
-        look.
+      <PageHeader title={tx('Check before generating')}>
+        {tx('Problems listed here would stop lessons from being placed. Errors must be fixed (or the lessons will stay unplaced); warnings are worth a look.')}
       </PageHeader>
 
       <Card>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-          <Stat label="Lessons to place" value={pf.summary.lessons} />
-          <Stat label="Classes" value={pf.summary.classes} />
-          <Stat label="Teachers" value={pf.summary.teachers} />
-          <Stat label="Periods needed / teachers can give" value={`${pf.summary.demand} / ${pf.summary.supply}`} warn={pf.shortage} />
+          <Stat label={tx('Lessons to place')} value={pf.summary.lessons} />
+          <Stat label={tx('Classes')} value={pf.summary.classes} />
+          <Stat label={tx('Teachers')} value={pf.summary.teachers} />
+          <Stat label={tx('Periods needed / teachers can give')} value={`${pf.summary.demand} / ${pf.summary.supply}`} warn={pf.shortage} />
           <div className="ml-auto flex items-center gap-3">
             {pf.errors.length === 0 ? (
               <span className="text-sm font-medium text-teal-800" data-testid="preflight-status">
-                ✓ Ready to generate
+                {tx('✓ Ready to generate')}
               </span>
             ) : (
               <span className="text-sm font-medium text-red-800" data-testid="preflight-status">
-                {pf.errors.length} problem{pf.errors.length === 1 ? '' : 's'} to fix
+                {pf.errors.length === 1 ? tx('1 problem to fix') : tx('{n} problems to fix', { n: pf.errors.length })}
               </span>
             )}
             <button className="btn btn-primary" onClick={onGenerate}>
-              Go to Generate →
+              {tx('Go to Generate →')}
             </button>
           </div>
         </div>
       </Card>
 
-      <IssueList title="Must fix" issues={pf.errors} tone="error" />
-      <IssueList title="Worth checking" issues={pf.warnings} tone="warning" />
-      <IssueList title="For information" issues={pf.info} tone="info" />
+      <IssueList title={tx('Must fix')} issues={pf.errors} tone="error" />
+      <IssueList title={tx('Worth checking')} issues={pf.warnings} tone="warning" />
+      <IssueList title={tx('For information')} issues={pf.info} tone="info" />
 
-      <Card title={pf.shortage ? 'Teacher shortage — what gives way first' : 'If there are not enough teachers'}>
+      <Card title={pf.shortage ? tx('Teacher shortage — what gives way first') : tx('If there are not enough teachers')}>
         <p className="mb-3 max-w-3xl text-sm text-slate-600">
           {pf.shortage
-            ? 'More periods are needed than the teachers can give, so not every lesson will fit. '
-            : 'Everything should fit. If it ever does not, '}
-          the timetable is still made: <b>Low</b> priority subjects are left out first, then <b>Normal</b>; <b>Core</b> subjects are kept as
-          long as possible. Lessons with no teacher yet are placed as “uncovered”, and empty periods show as <i>Self-study</i>.
+            ? tx('More periods are needed than the teachers can give, so not every lesson will fit. ')
+            : tx('Everything should fit. If it ever does not, ')}
+          <Rich
+            text={tx(
+              'the timetable is still made: <b>Low</b> priority subjects are left out first, then <b>Normal</b>; <b>Core</b> subjects are kept as long as possible. Lessons with no teacher yet are placed as “uncovered”, and empty periods show as <i>Self-study</i>.',
+            )}
+          />
         </p>
         <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
           {subjects.map((s) => (
             <label key={s.id} className="flex items-center justify-between gap-3 text-sm">
               <span className="truncate">{s.name}</span>
               <Select
-                aria-label={`${s.name} priority`}
+                aria-label={tx('{name} priority', { name: s.name })}
                 value={s.priority}
                 options={PRIORITY}
                 className="w-28"

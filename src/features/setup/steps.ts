@@ -1,5 +1,6 @@
 import type { Project } from '@/domain/project';
 import { teachingSlots } from '@/domain/time';
+import { tx } from '@/i18n';
 
 export type StepId = 'school' | 'classes' | 'subjects' | 'rooms' | 'teachers' | 'allocations' | 'students' | 'blocks';
 
@@ -15,61 +16,66 @@ export interface Step {
   students?: boolean;
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : word.endsWith('s') ? 'es' : 's'}`;
 
 export const STEPS: Step[] = [
   {
     id: 'school',
-    label: 'School & bells',
-    status: (p) => (p.institute.name ? p.institute.name : 'Name not set'),
+    get label() { return tx('School & bells'); },
+    status: (p) => (p.institute.name ? p.institute.name : tx('Name not set')),
     done: (p) => !!p.institute.name && p.bellSchedules.some((b) => teachingSlots(b, 'mon').length > 0),
   },
   {
     id: 'classes',
-    label: 'Classes',
-    status: (p) => plural(p.classes.length, 'class'),
+    get label() { return tx('Classes'); },
+    status: (p) => (p.classes.length === 1 ? tx('1 class') : tx('{n} classes', { n: p.classes.length })),
     done: (p) => p.classes.length > 0,
   },
   {
     id: 'subjects',
-    label: 'Subjects',
-    status: (p) => plural(p.subjects.length, 'subject'),
+    get label() { return tx('Subjects'); },
+    status: (p) => (p.subjects.length === 1 ? tx('1 subject') : tx('{n} subjects', { n: p.subjects.length })),
     done: (p) => p.subjects.length > 0,
   },
   {
     id: 'rooms',
-    label: 'Special rooms',
-    status: (p) => (p.rooms.length ? plural(p.rooms.length, 'room') : 'Optional'),
+    get label() { return tx('Special rooms'); },
+    status: (p) => (p.rooms.length ? (p.rooms.length === 1 ? tx('1 room') : tx('{n} rooms', { n: p.rooms.length })) : tx('Optional')),
     done: (p) => p.rooms.length > 0,
     advanced: true,
   },
   {
     id: 'teachers',
-    label: 'Teachers',
-    status: (p) => plural(p.teachers.length, 'teacher'),
+    get label() { return tx('Teachers'); },
+    status: (p) => (p.teachers.length === 1 ? tx('1 teacher') : tx('{n} teachers', { n: p.teachers.length })),
     done: (p) => p.teachers.length > 0,
   },
   {
     id: 'allocations',
-    label: 'Who teaches what',
+    get label() { return tx('Who teaches what'); },
     status: (p) => {
       const withAlloc = new Set(p.allocations.flatMap((a) => a.groupIds));
-      return `${p.classes.filter((c) => withAlloc.has(c.id)).length}/${p.classes.length} classes`;
+      return tx('{done}/{n} classes', { done: p.classes.filter((c) => withAlloc.has(c.id)).length, n: p.classes.length });
     },
     done: (p) => p.classes.length > 0 && p.classes.every((c) => p.allocations.some((a) => a.groupIds.includes(c.id))),
   },
   {
     id: 'students',
-    label: 'Students',
-    status: (p) => (p.students.length ? `${plural(p.students.length, 'student')}, ${plural(p.houses.length, 'house')}` : 'Import the list with choices'),
+    get label() { return tx('Students'); },
+    status: (p) => (p.students.length
+        ? `${(p.students.length === 1 ? tx('1 student') : tx('{n} students', { n: p.students.length }))}, ${(p.houses.length === 1 ? tx('1 house') : tx('{n} houses', { n: p.houses.length }))}`
+        : tx('Import the list with choices')),
     done: (p) => p.students.length > 0,
     students: true,
   },
   {
     id: 'blocks',
-    label: 'Option blocks',
+    get label() { return tx('Option blocks'); },
     status: (p) =>
-      p.optionBlocks.length ? plural(p.optionBlocks.length, 'block') : p.pack === 'international' ? 'Options from student choices' : 'Religion, aesthetics, baskets…',
+      p.optionBlocks.length
+        ? (p.optionBlocks.length === 1 ? tx('1 block') : tx('{n} blocks', { n: p.optionBlocks.length }))
+        : p.pack === 'international'
+          ? tx('Options from student choices')
+          : tx('Religion, aesthetics, baskets…'),
     done: (p) => p.optionBlocks.length > 0,
   },
 ];

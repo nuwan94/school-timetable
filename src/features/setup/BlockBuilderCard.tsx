@@ -4,6 +4,8 @@ import { choicesOn } from '@/domain/students';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Chips, NumberInput, TextInput } from '@/ui/kit';
 import { ClassPicker } from './ClassPicker';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -41,10 +43,9 @@ export function BlockBuilderCard() {
   const stale = () => setPlan(null);
 
   return (
-    <Card title="Build a block from student choices" className="border-teal-200">
+    <Card title={tx('Build a block from student choices')} className="border-teal-200">
       <p className="mb-3 text-sm text-slate-600">
-        Pick the forms (from one Year or several — sets may span Years) and the option subjects. The builder works out how many sets each subject
-        needs, puts them in lines so that as many students as possible get every subject they chose, and fills each set evenly.
+        {tx('Pick the forms (from one Year or several — sets may span Years) and the option subjects. The builder works out how many sets each subject needs, puts them in lines so that as many students as possible get every subject they chose, and fills each set evenly.')}
       </p>
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <ClassPicker
@@ -54,13 +55,13 @@ export function BlockBuilderCard() {
             setSubjectIds(null);
             stale();
           }}
-          label="Students from these forms"
+          label={tx('Students from these forms')}
         />
         <div className="space-y-3">
           <div>
-            <span className="label">Option subjects ({students} students)</span>
+            <span className="label">{tx('Option subjects ({students} students)', { students })}</span>
             {chosen.length === 0 ? (
-              <p className="text-sm text-slate-500">{classIds.length ? 'No option choices in these forms.' : 'Choose forms first.'}</p>
+              <p className="text-sm text-slate-500">{classIds.length ? tx('No option choices in these forms.') : tx('Choose forms first.')}</p>
             ) : (
               <Chips
                 size="sm"
@@ -79,19 +80,19 @@ export function BlockBuilderCard() {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label>
-              <span className="label">Max set size</span>
+              <span className="label">{tx('Max set size')}</span>
               <NumberInput value={maxSetSize} min={1} max={60} onChange={(v) => (setMaxSetSize(v ?? 22), stale())} />
             </label>
             <label>
-              <span className="label">Lines</span>
-              <NumberInput value={lines} nullable min={1} max={12} placeholder="Auto" onChange={(v) => (setLines(v), stale())} />
+              <span className="label">{tx('Lines')}</span>
+              <NumberInput value={lines} nullable min={1} max={12} placeholder={tx('Auto')} onChange={(v) => (setLines(v), stale())} />
             </label>
             <label>
-              <span className="label">Periods per line</span>
+              <span className="label">{tx('Periods per line')}</span>
               <NumberInput value={periods} min={1} max={20} onChange={(v) => setPeriods(v ?? 1)} />
             </label>
             <label>
-              <span className="label">of which doubles</span>
+              <span className="label">{tx('of which doubles')}</span>
               <NumberInput value={doubles} min={0} max={Math.floor(periods / 2)} onChange={(v) => setDoubles(v ?? 0)} />
             </label>
           </div>
@@ -101,7 +102,7 @@ export function BlockBuilderCard() {
             onClick={() => setPlan(planBlock(project, { classIds, subjectIds: picked, maxSetSize, lines }))}
             data-testid="suggest-lines"
           >
-            Suggest lines
+            {tx('Suggest lines')}
           </button>
         </div>
       </div>
@@ -109,11 +110,11 @@ export function BlockBuilderCard() {
       {plan && (
         <div className="mt-4 space-y-4 border-t border-slate-100 pt-4" data-testid="block-plan">
           <p className="text-sm">
-            <strong>{plan.lines}</strong> lines, <strong>{plan.sets.length}</strong> sets.{' '}
+            <Rich text={tx('<b>{lines}</b> lines, <b>{sets}</b> sets.', { lines: plan.lines, sets: plan.sets.length })} />{' '}
             {plan.unsatisfied.length === 0 ? (
-              <span className="font-medium text-emerald-700">Every student gets all their choices.</span>
+              <span className="font-medium text-emerald-700">{tx('Every student gets all their choices.')}</span>
             ) : (
-              <span className="font-medium text-amber-800">{plan.unsatisfied.length} student(s) cannot have every choice — see below.</span>
+              <span className="font-medium text-amber-800">{tx('{unsatisfied} student(s) cannot have every choice — see below.', { unsatisfied: plan.unsatisfied.length })}</span>
             )}
           </p>
           <div className="overflow-x-auto">
@@ -121,7 +122,7 @@ export function BlockBuilderCard() {
               <tbody>
                 {Array.from({ length: plan.lines }, (_, line) => (
                   <tr key={line}>
-                    <th className="whitespace-nowrap py-1 pr-3 text-left text-xs font-semibold uppercase text-slate-500">Line {LETTERS[line]}</th>
+                    <th className="whitespace-nowrap py-1 pr-3 text-left text-xs font-semibold uppercase text-slate-500">{tx('Line {x}', { x: LETTERS[line] })}</th>
                     <td className="py-1">
                       <div className="flex flex-wrap gap-1">
                         {plan.sets
@@ -144,26 +145,26 @@ export function BlockBuilderCard() {
 
           {plan.unsatisfied.length > 0 && (
             <div>
-              <h3 className="mb-1 text-sm font-semibold">Students who cannot have every choice</h3>
+              <h3 className="mb-1 text-sm font-semibold">{tx('Students who cannot have every choice')}</h3>
               <ul className="max-h-48 space-y-0.5 overflow-y-auto text-sm" data-testid="unsatisfied">
                 {plan.unsatisfied.map((u) => {
                   const s = project.students.find((x) => x.id === u.studentId);
                   return (
                     <li key={u.studentId}>
-                      <span className="font-medium">{s?.name}</span>: no room for {u.missing.map(code).join(', ')}
+                      <Rich text={tx('<b>{name}</b>: no room for {subjects}', { name: s?.name, subjects: u.missing.map(code).join(', ') })} />
                       {u.alternatives.length > 0 && (
-                        <span className="text-slate-500"> — could take {u.alternatives.map(code).join(' or ')} instead</span>
+                        <span className="text-slate-500"> {tx('— could take {subjects} instead', { subjects: u.alternatives.map(code).join(tx(' or ')) })}</span>
                       )}
                     </li>
                   );
                 })}
               </ul>
-              <p className="mt-1 text-xs text-slate-500">Try another line, a larger set size, or ask these students to change a choice.</p>
+              <p className="mt-1 text-xs text-slate-500">{tx('Try another line, a larger set size, or ask these students to change a choice.')}</p>
             </div>
           )}
 
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-teal-800">Clash matrix — students taking both subjects</summary>
+            <summary className="cursor-pointer text-sm font-medium text-teal-800">{tx('Clash matrix — students taking both subjects')}</summary>
             <div className="mt-2 overflow-x-auto">
               <table className="border-collapse text-xs tabular-nums" data-testid="clash-matrix">
                 <thead>
@@ -191,7 +192,7 @@ export function BlockBuilderCard() {
                             key={b}
                             className={`border border-slate-100 px-1.5 py-1 text-center ${a === b ? 'bg-slate-100 font-semibold' : n && sameLine ? 'bg-red-100 text-red-800' : n ? 'bg-teal-50' : 'text-slate-300'}`}
                             title={
-                              a === b ? 'Students taking this subject' : sameLine && n ? 'Only on the same line: these students clash' : undefined
+                              a === b ? tx('Students taking this subject') : sameLine && n ? tx('Only on the same line: these students clash') : undefined
                             }
                           >
                             {n || '·'}
@@ -207,8 +208,8 @@ export function BlockBuilderCard() {
 
           <div className="flex flex-wrap items-end gap-2">
             <label className="w-72">
-              <span className="label">Block name</span>
-              <TextInput value={name} onChange={setName} placeholder="e.g. Year 10 IGCSE options" />
+              <span className="label">{tx('Block name')}</span>
+              <TextInput value={name} onChange={setName} placeholder={tx('e.g. Year 10 IGCSE options')} />
             </label>
             <button
               className="btn btn-primary"
@@ -224,7 +225,7 @@ export function BlockBuilderCard() {
                 setSubjectIds(null);
               }}
             >
-              Create block with {plan.sets.length} sets
+              {tx('Create block with {sets} sets', { sets: plan.sets.length })}
             </button>
           </div>
         </div>

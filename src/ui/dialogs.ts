@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { tx } from '@/i18n';
 
 /**
  * In-app dialogs (SweetAlert2) in place of the browser's confirm / alert /
@@ -41,8 +42,8 @@ export async function confirmDialog(title: string, opts: ConfirmOptions = {}): P
     icon: opts.danger ? 'warning' : 'question',
     iconColor: opts.danger ? '#dc2626' : '#0f766e',
     showCancelButton: true,
-    confirmButtonText: opts.confirmText ?? 'OK',
-    cancelButtonText: opts.cancelText ?? 'Cancel',
+    confirmButtonText: opts.confirmText ?? tx('OK'),
+    cancelButtonText: opts.cancelText ?? tx('Cancel'),
     customClass: opts.danger ? { ...CLASSES, confirmButton: DANGER } : CLASSES,
   });
   return r.isConfirmed;
@@ -50,8 +51,8 @@ export async function confirmDialog(title: string, opts: ConfirmOptions = {}): P
 
 /** Unsaved-changes guard used before replacing or closing the project. */
 export const confirmDiscard = (action: string) =>
-  confirmDialog('You have unsaved changes', {
-    text: `${action} anyway? An autosave copy is kept, so you can recover it from the start page.`,
+  confirmDialog(tx('You have unsaved changes'), {
+    text: tx('{action} anyway? An autosave copy is kept, so you can recover it from the start page.', { action }),
     confirmText: action,
     danger: true,
   });
@@ -63,7 +64,7 @@ export async function alertDialog(title: string, text?: string, kind: 'error' | 
     text,
     icon: kind,
     iconColor: kind === 'error' ? '#dc2626' : '#0f766e',
-    confirmButtonText: 'OK',
+    confirmButtonText: tx('OK'),
   });
 }
 
@@ -79,7 +80,7 @@ export async function promptDialog(
     inputValue: opts.value ?? '',
     inputPlaceholder: opts.placeholder,
     showCancelButton: true,
-    confirmButtonText: opts.confirmText ?? 'OK',
+    confirmButtonText: opts.confirmText ?? tx('OK'),
     inputValidator: (v) => (opts.required && !v.trim() ? 'Please enter a value.' : null),
   });
   return r.isConfirmed ? (r.value ?? '') : null;

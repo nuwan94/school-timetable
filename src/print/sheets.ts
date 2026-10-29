@@ -6,6 +6,7 @@ import { classGrid, gridByClock, lessonEntries, mainSchedule, teacherGrid, type 
 import { formatClock, slotsForDay, teachingSlots } from '@/domain/time';
 import { changeNotices } from './changeSheets';
 import { dayName, LABELS, localName, type Lang } from './labels';
+import { tx } from '@/i18n';
 
 /**
  * Printable sheets as plain data (PLAN.md §9.2). One renderer draws every
@@ -70,17 +71,17 @@ export const PAPER_MM: Record<Paper, { w: number; h: number }> = {
 export const MARGIN_MM = 10;
 
 export const SHEET_KINDS: { kind: SheetKind; label: string; perItem: 'class' | 'teacher' | 'room' | 'student' | null; students?: boolean }[] = [
-  { kind: 'class', label: 'Class timetables', perItem: 'class' },
-  { kind: 'teacher', label: 'Teacher timetables', perItem: 'teacher' },
-  { kind: 'room', label: 'Room / lab timetables', perItem: 'room' },
-  { kind: 'masterStaff', label: 'Master chart — staff room', perItem: null },
-  { kind: 'masterClassDay', label: 'Master chart — classes by day', perItem: null },
-  { kind: 'free', label: 'Free-period chart', perItem: null },
-  { kind: 'classList', label: 'Section-wise class list', perItem: null },
-  { kind: 'changeNotice', label: 'Change notices (mid-year)', perItem: 'teacher' },
-  { kind: 'student', label: 'Student timetables', perItem: 'student', students: true },
-  { kind: 'setList', label: 'Set lists', perItem: null, students: true },
-  { kind: 'blockChart', label: 'Option block chart', perItem: null, students: true },
+  { kind: 'class', get label() { return tx('Class timetables'); }, perItem: 'class' },
+  { kind: 'teacher', get label() { return tx('Teacher timetables'); }, perItem: 'teacher' },
+  { kind: 'room', get label() { return tx('Room / lab timetables'); }, perItem: 'room' },
+  { kind: 'masterStaff', get label() { return tx('Master chart — staff room'); }, perItem: null },
+  { kind: 'masterClassDay', get label() { return tx('Master chart — classes by day'); }, perItem: null },
+  { kind: 'free', get label() { return tx('Free-period chart'); }, perItem: null },
+  { kind: 'classList', get label() { return tx('Section-wise class list'); }, perItem: null },
+  { kind: 'changeNotice', get label() { return tx('Change notices (mid-year)'); }, perItem: 'teacher' },
+  { kind: 'student', get label() { return tx('Student timetables'); }, perItem: 'student', students: true },
+  { kind: 'setList', get label() { return tx('Set lists'); }, perItem: null, students: true },
+  { kind: 'blockChart', get label() { return tx('Option block chart'); }, perItem: null, students: true },
 ];
 
 export interface SheetOptions {

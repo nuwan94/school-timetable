@@ -7,12 +7,14 @@ import { useProjectStore } from '@/store/projectStore';
 import { useUiStore } from '@/store/uiStore';
 import { Card, IconButton, NumberInput, PageHeader, Select, TextInput, TrashIcon, UpIcon, DownIcon } from '@/ui/kit';
 import { ExportButtons, ReportView } from '@/ui/ReportView';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 type Tab = 'cadre' | 'deployment' | 'surplus';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'cadre', label: 'Cadre return' },
-  { id: 'deployment', label: 'Teacher deployment' },
-  { id: 'surplus', label: 'Surplus & deficit' },
+  { id: 'cadre', get label() { return tx('Cadre return'); } },
+  { id: 'deployment', get label() { return tx('Teacher deployment'); } },
+  { id: 'surplus', get label() { return tx('Surplus & deficit'); } },
 ];
 const MEDIA: { value: Medium; label: string }[] = (['si', 'ta', 'en'] as const).map((m) => ({ value: m, label: MEDIUM_LABELS[m] }));
 
@@ -28,11 +30,11 @@ export function ReturnsScreen() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Returns">
-        Returns for the zonal office, worked out from your teachers and the allocations. Download each as Excel, CSV or PDF.
+      <PageHeader title={tx('Returns')}>
+        {tx('Returns for the zonal office, worked out from your teachers and the allocations. Download each as Excel, CSV or PDF.')}
       </PageHeader>
 
-      <div role="tablist" aria-label="Returns" className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+      <div role="tablist" aria-label={tx('Returns')} className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -51,11 +53,18 @@ export function ReturnsScreen() {
 
       {missing > 0 && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
-          {missing} teacher(s) have no appointment subject or medium, so they are left out of the cadre and surplus counts.{' '}
-          <button className="font-medium underline" onClick={() => go('teachers')}>
-            Add them in Teachers
-          </button>
-          .
+          <Rich
+            text={tx('{missing} teacher(s) have no appointment subject or medium, so they are left out of the cadre and surplus counts. <link>Add them in Teachers</link>.', {
+              missing,
+            })}
+            tags={{
+              link: (c) => (
+                <button className="font-medium underline" onClick={() => go('teachers')}>
+                  {c}
+                </button>
+              ),
+            }}
+          />
         </p>
       )}
 
@@ -88,16 +97,16 @@ function ApprovedCadre() {
     });
   return (
     <Card
-      title="Approved cadre"
+      title={tx('Approved cadre')}
       actions={
         <>
           {project.cadre.length === 0 && (
             <button
               className="btn"
               onClick={fill}
-              title="One row per subject and medium your teachers are appointed to, approved = how many there are now"
+              title={tx('One row per subject and medium your teachers are appointed to, approved = how many there are now')}
             >
-              Start from current staff
+              {tx('Start from current staff')}
             </button>
           )}
           <button
@@ -115,16 +124,16 @@ function ApprovedCadre() {
               })
             }
           >
-            + Add subject
+            {tx('+ Add subject')}
           </button>
         </>
       }
     >
       <p className="mb-3 text-sm text-slate-600">
-        Enter the figures from the approved cadre letter. Actual numbers come from each teacher's appointment subject and medium.
+        {tx('Enter the figures from the approved cadre letter. Actual numbers come from each teacher\'s appointment subject and medium.')}
       </p>
       {project.cadre.length === 0 ? (
-        <p className="text-sm text-slate-500">No approved figures yet.</p>
+        <p className="text-sm text-slate-500">{tx('No approved figures yet.')}</p>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3" data-testid="cadre-list">
           {project.cadre.map((c, i) => (
@@ -133,28 +142,28 @@ function ApprovedCadre() {
               className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 p-2 sm:flex-nowrap"
             >
               <Select
-                aria-label="Subject"
+                aria-label={tx('Subject')}
                 value={c.subjectId}
                 options={subjects}
                 onChange={(v) => update((d) => void (d.cadre[i]!.subjectId = v))}
                 className="min-w-0 flex-1 basis-full sm:basis-0"
               />
               <Select
-                aria-label="Medium"
+                aria-label={tx('Medium')}
                 value={c.medium}
                 options={MEDIA}
                 onChange={(v) => update((d) => void (d.cadre[i]!.medium = v))}
                 className="w-24"
               />
               <NumberInput
-                aria-label="Approved"
+                aria-label={tx('Approved')}
                 value={c.approved}
                 min={0}
                 onChange={(v) => update((d) => void (d.cadre[i]!.approved = v ?? 0))}
                 className="w-16"
               />
               <IconButton
-                label={`Remove ${project.subjects.find((s) => s.id === c.subjectId)?.name ?? ''}`}
+                label={tx('Remove {x}', { x: project.subjects.find((s) => s.id === c.subjectId)?.name ?? '' })}
                 danger
                 onClick={() => update((d) => void d.cadre.splice(i, 1))}
               >
@@ -181,9 +190,9 @@ function CadreLayout() {
   };
   return (
     <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <summary className="cursor-pointer font-semibold">Layout for your zone</summary>
+      <summary className="cursor-pointer font-semibold">{tx('Layout for your zone')}</summary>
       <p className="mt-2 text-sm text-slate-600">
-        Rename, reorder or hide columns to match your zonal office's form. The Excel, CSV and PDF follow this layout.
+        {tx('Rename, reorder or hide columns to match your zonal office\'s form. The Excel, CSV and PDF follow this layout.')}
       </p>
       <ol className="mt-3 space-y-1.5" data-testid="cadre-layout">
         {cols.map((c, i) => (
@@ -191,22 +200,22 @@ function CadreLayout() {
             <input
               type="checkbox"
               className="accent-teal-700"
-              aria-label={`Show ${c.label}`}
+              aria-label={tx('Show {label}', { label: c.label })}
               checked={c.visible}
               onChange={(e) => set(cols.map((x, j) => (j === i ? { ...x, visible: e.target.checked } : x)))}
             />
             <TextInput
-              aria-label={`Heading for ${c.key}`}
+              aria-label={tx('Heading for {label}', { label: c.label })}
               value={c.label}
               onChange={(v) => set(cols.map((x, j) => (j === i ? { ...x, label: v } : x)))}
               className="w-56"
             />
             <span className="text-xs text-slate-400">{CADRE_COLUMNS.find((d) => d.key === c.key)?.label}</span>
             <span className="ml-auto flex gap-1">
-              <IconButton label={`Move ${c.label} up`} onClick={() => i > 0 && move(i, -1)}>
+              <IconButton label={tx('Move {label} up', { label: c.label })} onClick={() => i > 0 && move(i, -1)}>
                 <UpIcon />
               </IconButton>
-              <IconButton label={`Move ${c.label} down`} onClick={() => i < cols.length - 1 && move(i, 1)}>
+              <IconButton label={tx('Move {label} down', { label: c.label })} onClick={() => i < cols.length - 1 && move(i, 1)}>
                 <DownIcon />
               </IconButton>
             </span>
@@ -214,7 +223,7 @@ function CadreLayout() {
         ))}
       </ol>
       <button className="btn mt-3" onClick={() => set([])}>
-        Reset to the generic layout
+        {tx('Reset to the generic layout')}
       </button>
     </details>
   );
@@ -231,9 +240,9 @@ function Surplus() {
       <Card>
         <div className="flex flex-wrap items-end gap-4">
           <label className="block">
-            <span className="label">Periods per teacher</span>
+            <span className="label">{tx('Periods per teacher')}</span>
             <NumberInput
-              aria-label="Periods per teacher"
+              aria-label={tx('Periods per teacher')}
               data-testid="periods-per-teacher"
               value={per}
               nullable
@@ -243,8 +252,7 @@ function Surplus() {
             />
           </label>
           <p className="max-w-xl text-sm text-slate-600">
-            The weekly teaching load your zone expects from one teacher, from the current circular. It turns periods into teachers. The app does not
-            assume a figure.
+            {tx('The weekly teaching load your zone expects from one teacher, from the current circular. It turns periods into teachers. The app does not assume a figure.')}
           </p>
           {per && request.rows.length > 0 && (
             <div className="ml-auto">
@@ -252,9 +260,9 @@ function Surplus() {
                 project={project}
                 tables={[request]}
                 label="request-for-teachers"
-                pdf={reportSheets(project, request, { sign: true, meta: ['Subject-wise deficit, attached to the request for teachers.'] })}
+                pdf={reportSheets(project, request, { sign: true, meta: [tx('Subject-wise deficit, attached to the request for teachers.')] })}
               />
-              <p className="mt-1 text-right text-xs text-slate-500">Request for teachers ({request.rows.length} subject(s) short)</p>
+              <p className="mt-1 text-right text-xs text-slate-500">{tx('Request for teachers ({rows} subject(s) short)', { rows: request.rows.length })}</p>
             </div>
           )}
         </div>

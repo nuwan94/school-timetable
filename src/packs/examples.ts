@@ -10,6 +10,7 @@ import { createProject } from './index';
 import { finishExample } from './finish';
 import { internationalSchool } from './international';
 import { AESTHETIC_PERIODS, AESTHETICS, CORE, INITIALS, RELIGION_PERIODS, RELIGIONS, sampleSchool, SURNAMES } from './sample';
+import { tx } from '@/i18n';
 
 /**
  * Example schools for the start wizard (PLAN.md §13 P6): a small primary
@@ -231,8 +232,12 @@ const VISITING_TAMIL: Partial<Parameters<typeof makeTeacher>[0]> = {
 export const EXAMPLES: Example[] = [
   {
     id: 'primary',
-    name: 'Small primary school',
-    summary: 'Simple pack · Grades 1–5, one class each, class teachers plus a visiting Tamil teacher',
+    get name() {
+      return tx('Small primary school');
+    },
+    get summary() {
+      return tx('Simple pack · Grades 1–5, one class each, class teachers plus a visiting Tamil teacher');
+    },
     build: () =>
       example(
         'simple',
@@ -247,8 +252,12 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: 'type2',
-    name: 'Type 2 school',
-    summary: 'Grades 1–11, one class each (11 classes)',
+    get name() {
+      return tx('Type 2 school');
+    },
+    get summary() {
+      return tx('Grades 1–11, one class each (11 classes)');
+    },
     build: () =>
       example(
         'sl-gov',
@@ -264,8 +273,12 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: '1c',
-    name: '1C school',
-    summary: 'Grades 6–13: two classes per grade, A/L Arts and Commerce (16 classes)',
+    get name() {
+      return tx('1C school');
+    },
+    get summary() {
+      return tx('Grades 6–13: two classes per grade, A/L Arts and Commerce (16 classes)');
+    },
     build: () =>
       example(
         'sl-gov',
@@ -281,8 +294,12 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: '1ab',
-    name: '1AB school',
-    summary: 'Grades 6–13: three classes per grade, A/L Bio, Maths, Commerce and Arts (26 classes)',
+    get name() {
+      return tx('1AB school');
+    },
+    get summary() {
+      return tx('Grades 6–13: three classes per grade, A/L Bio, Maths, Commerce and Arts (26 classes)');
+    },
     build: () =>
       example(
         'sl-gov',
@@ -298,14 +315,22 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: 'international',
-    name: 'International school',
-    summary: 'Years 7–13 Cambridge: IGCSE and A Level sets built from 244 students’ choices, houses and activities',
+    get name() {
+      return tx('International school');
+    },
+    get summary() {
+      return tx('Years 7–13 Cambridge: IGCSE and A Level sets built from 244 students’ choices, houses and activities');
+    },
     build: () => internationalSchool(),
   },
   {
     id: 'sample',
-    name: 'Sample Maha Vidyalaya',
-    summary: 'Grades 6–11 × 3 classes: the quick demo used in the guides',
+    get name() {
+      return tx('Sample Maha Vidyalaya');
+    },
+    get summary() {
+      return tx('Grades 6–11 × 3 classes: the quick demo used in the guides');
+    },
     build: () => sampleSchool(),
   },
 ];

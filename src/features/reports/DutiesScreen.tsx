@@ -10,10 +10,11 @@ import { useProjectStore } from '@/store/projectStore';
 import { confirmDialog } from '@/ui/dialogs';
 import { Card, Chips, Empty, IconButton, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
 import { ExportButtons } from '@/ui/ReportView';
+import { tx } from '@/i18n';
 
 const DAY_LABELS: Record<Weekday, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
 const LANGS: { value: Lang; label: string }[] = [
-  { value: 'en', label: 'English' },
+  { value: 'en', get label() { return tx('English'); } },
   { value: 'si', label: 'සිංහල' },
   { value: 'ta', label: 'தமிழ்' },
 ];
@@ -63,8 +64,8 @@ export function DutiesScreen() {
         id: 'duty',
         title: roster.name,
         columns: [
-          { key: 'session', label: 'Session' },
-          { key: 'post', label: 'Place' },
+          { key: 'session', label: tx('Session') },
+          { key: 'post', label: tx('Place') },
           ...roster.days.map((d) => ({ key: d, label: DAY_LABELS[d] })),
         ],
         rows: roster.sessions.flatMap((s) =>
@@ -81,16 +82,15 @@ export function DutiesScreen() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Duty rosters">
-        Interval and gate duty for the week. Auto-fill shares duties evenly, skips visiting staff and coaches, and never puts anyone on duty during
-        their lesson or another duty.
+      <PageHeader title={tx('Duty rosters')}>
+        {tx('Interval and gate duty for the week. Auto-fill shares duties evenly, skips visiting staff and coaches, and never puts anyone on duty during their lesson or another duty.')}
       </PageHeader>
 
       <Card>
         <div className="flex flex-wrap items-center gap-2">
           {project.dutyRosters.length > 0 && (
             <Select
-              aria-label="Duty roster"
+              aria-label={tx('Duty roster')}
               value={roster?.id ?? ''}
               options={project.dutyRosters.map((r) => ({ value: r.id, label: r.name }))}
               onChange={setSelected}
@@ -99,41 +99,41 @@ export function DutiesScreen() {
             />
           )}
           <button className="btn btn-primary" onClick={() => create('interval')} data-testid="duty-new-interval">
-            + Interval duty
+            {tx('+ Interval duty')}
           </button>
           <button className="btn" onClick={() => create('gate')} data-testid="duty-new-gate">
-            + Gate duty
+            {tx('+ Gate duty')}
           </button>
           <button className="btn" onClick={() => create('other')}>
-            + Other
+            {tx('+ Other')}
           </button>
           {roster && (
             <button
               className="btn ml-auto"
               onClick={async () => {
-                if (!(await confirmDialog(`Delete ${roster.name}?`, { confirmText: 'Delete', danger: true }))) return;
+                if (!(await confirmDialog(tx('Delete {name}?', { name: roster.name }), { confirmText: tx('Delete'), danger: true }))) return;
                 update((d) => void (d.dutyRosters = d.dutyRosters.filter((x) => x.id !== roster.id)));
                 setSelected(null);
               }}
             >
-              Delete roster
+              {tx('Delete roster')}
             </button>
           )}
         </div>
       </Card>
 
       {!roster ? (
-        <Empty>No duty rosters yet. Start with interval or gate duty.</Empty>
+        <Empty>{tx('No duty rosters yet. Start with interval or gate duty.')}</Empty>
       ) : (
         <>
-          <Card title="Roster">
+          <Card title={tx('Roster')}>
             <div className="grid gap-4 lg:grid-cols-2">
               <label className="block">
-                <span className="label">Name</span>
+                <span className="label">{tx('Name')}</span>
                 <TextInput value={roster.name} onChange={(v) => edit((r) => void (r.name = v))} />
               </label>
               <div>
-                <span className="label">Days</span>
+                <span className="label">{tx('Days')}</span>
                 <Chips
                   value={roster.days}
                   options={project.institute.workingDays.map((d) => ({ value: d, label: DAY_LABELS[d] }))}
@@ -141,7 +141,7 @@ export function DutiesScreen() {
                 />
               </div>
               <div>
-                <span className="label">Places</span>
+                <span className="label">{tx('Places')}</span>
                 <div className="flex flex-wrap items-center gap-1.5" data-testid="duty-posts">
                   {roster.posts.map((post) => (
                     <span
@@ -150,7 +150,7 @@ export function DutiesScreen() {
                     >
                       {post}
                       <button
-                        aria-label={`Remove ${post}`}
+                        aria-label={tx('Remove {post}', { post })}
                         className="rounded-full px-1 text-teal-700 hover:bg-teal-100"
                         onClick={() =>
                           edit((r) => {
@@ -172,27 +172,27 @@ export function DutiesScreen() {
                       setNewPost('');
                     }}
                   >
-                    <TextInput aria-label="New place" placeholder="Add a place" value={newPost} onChange={setNewPost} className="w-36" />
+                    <TextInput aria-label={tx('New place')} placeholder={tx('Add a place')} value={newPost} onChange={setNewPost} className="w-36" />
                     <button className="btn" type="submit">
-                      Add
+                      {tx('Add')}
                     </button>
                   </form>
                 </div>
               </div>
               <div>
-                <span className="label">Sessions</span>
+                <span className="label">{tx('Sessions')}</span>
                 <ul className="space-y-1.5">
                   {roster.sessions.map((s) => (
                     <li key={s.id} className="flex flex-wrap items-center gap-2">
                       <TextInput
-                        aria-label="Session name"
+                        aria-label={tx('Session name')}
                         value={s.label}
                         onChange={(v) => edit((r) => void (r.sessions.find((x) => x.id === s.id)!.label = v))}
                         className="w-32"
                       />
                       <input
                         type="time"
-                        aria-label={`${s.label} starts`}
+                        aria-label={tx('{label} starts', { label: s.label })}
                         className="field w-28"
                         value={formatClock(s.start)}
                         onChange={(e) => edit((r) => void (r.sessions.find((x) => x.id === s.id)!.start = toClock(e.target.value)))}
@@ -200,13 +200,13 @@ export function DutiesScreen() {
                       <span className="text-slate-400">–</span>
                       <input
                         type="time"
-                        aria-label={`${s.label} ends`}
+                        aria-label={tx('{label} ends', { label: s.label })}
                         className="field w-28"
                         value={formatClock(s.end)}
                         onChange={(e) => edit((r) => void (r.sessions.find((x) => x.id === s.id)!.end = toClock(e.target.value)))}
                       />
                       <IconButton
-                        label={`Remove ${s.label}`}
+                        label={tx('Remove {label}', { label: s.label })}
                         danger
                         onClick={() =>
                           edit((r) => {
@@ -222,16 +222,16 @@ export function DutiesScreen() {
                 </ul>
                 <button
                   className="btn mt-2"
-                  onClick={() => edit((r) => void r.sessions.push({ id: newId('dses'), label: 'Session', start: 12 * 60, end: 12 * 60 + 30 }))}
+                  onClick={() => edit((r) => void r.sessions.push({ id: newId('dses'), label: tx('Session'), start: 12 * 60, end: 12 * 60 + 30 }))}
                 >
-                  + Session
+                  {tx('+ Session')}
                 </button>
               </div>
             </div>
           </Card>
 
           <Card
-            title="Who is on duty"
+            title={tx('Who is on duty')}
             actions={
               <>
                 <button
@@ -239,23 +239,23 @@ export function DutiesScreen() {
                   onClick={() => edit((r) => void (r.assignments = autoAssignDuties(project, r)))}
                   data-testid="duty-auto"
                 >
-                  Auto-fill
+                  {tx('Auto-fill')}
                 </button>
                 <button className="btn" onClick={() => edit((r) => void (r.assignments = []))}>
-                  Clear
+                  {tx('Clear')}
                 </button>
               </>
             }
           >
             <p className="mb-3 text-xs text-slate-500">
-              The number after each name is their duties per week on all rosters. Auto-fill keeps the cells you have set.
+              {tx('The number after each name is their duties per week on all rosters. Auto-fill keeps the cells you have set.')}
             </p>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm" data-testid="duty-grid">
                 <thead>
                   <tr>
                     <th scope="col" className="px-2 py-1.5 text-left text-xs font-semibold text-slate-500">
-                      Place
+                      {tx('Place')}
                     </th>
                     {roster.days.map((d) => (
                       <th key={d} scope="col" className="px-2 py-1.5 text-left text-xs font-semibold text-slate-500">
@@ -299,7 +299,7 @@ export function DutiesScreen() {
             </div>
             {clashes.length === 0 ? (
               <p className="mt-3 text-sm font-medium text-emerald-700" data-testid="duty-ok">
-                ✓ No clashes, every place covered.
+                {tx('✓ No clashes, every place covered.')}
               </p>
             ) : (
               <ul className="mt-3 list-disc space-y-0.5 pl-5 text-sm text-red-900" data-testid="duty-clashes">
@@ -309,7 +309,7 @@ export function DutiesScreen() {
               </ul>
             )}
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-              <Select aria-label="Print language" value={lang} options={LANGS} onChange={setLang} className="w-28" />
+              <Select aria-label={tx('Print language')} value={lang} options={LANGS} onChange={setLang} className="w-28" />
               {table && <ExportButtons project={project} tables={[table]} label={roster.name} pdf={[dutyRosterSheet(project, roster, lang)]} />}
             </div>
           </Card>

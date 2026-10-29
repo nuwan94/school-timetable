@@ -1,6 +1,7 @@
 import type { Model, Position, Unit } from './model';
 import { mulberry32 } from './rng';
 import { SolverState, type Placed } from './state';
+import { tx } from '@/i18n';
 
 /**
  * Construction + conflict-directed repair (PLAN.md §5.1, step 1).
@@ -170,13 +171,15 @@ export async function solve(model: Model, opts: SolveOptions = {}, hooks: SolveH
 
 /** Why a unit could not be placed: the most common blockers across its possible positions. */
 export function explain(state: SolverState, u: Unit): string {
-  if (u.positions.length === 0) return u.noPositionReason ?? 'no possible time';
+  if (u.positions.length === 0) return u.noPositionReason ?? tx('no possible time');
   const counts = new Map<string, number>();
   for (const pos of u.positions) {
     const c = state.conflicts(u, pos);
     for (const r of new Set(c.reasons)) counts.set(r, (counts.get(r) ?? 0) + 1);
   }
-  if (counts.size === 0) return 'ran out of time while repairing — try Generate again or allow more time';
+  if (counts.size === 0) return tx('ran out of time while repairing — try Generate again or allow more time');
   const top = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 3);
-  return `no free time — ${top.map(([r, n]) => `${r} (${n} of ${u.positions.length} times)`).join(', ')}`;
+  return tx('no free time — {reasons}', {
+    reasons: top.map(([r, n]) => tx('{reason} ({n} of {total} times)', { reason: r, n, total: u.positions.length })).join(', '),
+  });
 }

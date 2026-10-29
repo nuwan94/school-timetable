@@ -344,7 +344,7 @@ It runs in a Web Worker and shows live progress. Pressing Stop keeps the best re
   - about 5 rules;
   - generate, print, relief.
   Target: **set up in under 1 hour**.
-- **UI languages in v1**: English for every screen, plus **Sinhala and Tamil for the Simple-mode screens, Today/Relief, and View & Print**. Full translation of every screen comes later.
+- **UI languages**: English, Sinhala and Tamil for every screen (P8), picked from the header and remembered on the device. Printed sheets keep their own print language.
 - **Responsive design**: Today/Relief and all the viewing screens are built mobile-first. Setup and the editor are built for laptops but still work on tablets.
 - Autosave after every change, so power cuts don't lose work. A crash-recovery snapshot is offered on the next start.
 
@@ -403,6 +403,7 @@ src/
 | **P5 – Rules, versions, calendar** (3 wks) | Rule presets per pack, optimisation, minimal-change, what-if, mid-year wizard, diffs, change notices, overlays, term-test supervision roster | Quality, plus support for the whole year |
 | **P6 – SL returns and polish** (1.5 wks) | Cadre and deployment returns (configurable layout), surplus/deficit, duty rosters, example schools → **v1.0** | v1.0 |
 | **P7 – International pack** (4 wks) | Student list import, board/level/tier, **block builder**, per-student checks, cross-Year sets, contact-hour targets, exam series, invigilation, student timetables, set lists, GLH and payroll reports, houses/CCAs → **v1.1** | v1.1 |
+| **P8 – Full UI translation** | Sinhala and Tamil for every screen, dialog, check and report, chosen from the header | Whole app in all three languages |
 
 **Progress**
 - **P0: done.** Live at https://timetable.nuwan.dev/.
@@ -547,8 +548,15 @@ src/
   - Exam series and invigilation reuse the term tests from P5.
   - **Example international school**: Years 7–13, IGCSE options for Years 10 and 11 and a sixth form taught across Years 12 and 13, all built from 244 students' choices. It includes expatriate contracts, a visiting music specialist, labs, houses and activities, and generates with no clashes.
   - Sri Lankan returns are hidden for International projects.
+- **P8: done.**
+  - A language switch in the header (English, සිංහල, தமிழ்) translates every screen, dialog, solver and pre-flight message, check, report heading and status. The choice is kept on the device and is separate from the print language.
+  - English text stays in the code as the key (`tx('…')`); Sinhala and Tamil live in `src/i18n/dict/`. Text with no entry falls back to English. Placeholders are filled after translating, so word order can change.
+  - A test scans the source for every marked text and fails if either dictionary is missing one, has an unused entry, or drops a placeholder (about 1,300 entries).
+  - Dates are built from the dictionaries, because Chrome ships no Sinhala date names. Durations, counts and the defaults a new school starts with (bell slot names) follow the UI language.
+  - School data (names, subject names, codes) stays as entered.
+  - Checked in Sinhala and Tamil on every screen, and at 375 px in Tamil (the longest labels) with no sideways scrolling.
 
-**v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, full UI translation, parent portal.
+**v2 ideas**: Week A/B and multi-day cycles, custom rule builder, cloud sync with a read-only link for teachers, parent portal.
 
 ---
 

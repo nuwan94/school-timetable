@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { ledgerRows } from '@/domain/relief';
-import type { Lang } from '@/print/labels';
 import { useProjectStore } from '@/store/projectStore';
 import { Card } from '@/ui/kit';
-import { loadUiLang, STRINGS } from './strings';
+import { STRINGS } from './strings';
+import { useLang } from '@/i18n';
 
 /** Relief fairness: how many reliefs each teacher has taken this week and term. */
 export function LedgerScreen() {
   const project = useProjectStore((s) => s.project)!;
   const update = useProjectStore((s) => s.update);
-  const [lang] = useState<Lang>(() => loadUiLang(project.institute.printLanguage));
+  const lang = useLang((s) => s.lang);
   const [date] = useState(() => new Date().toLocaleDateString('en-CA'));
   const S = STRINGS[lang];
   const rows = useMemo(() => ledgerRows(project, date), [project, date]);

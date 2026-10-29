@@ -5,6 +5,7 @@ import { STRENGTH_WEIGHT, type RuleConfig } from '@/domain/schedule';
 import { slotsForDay, type BellSchedule, type Weekday } from '@/domain/time';
 import type { Model, Unit } from './model';
 import type { Placed } from './state';
+import { dayShort, tx } from '@/i18n';
 
 /**
  * Soft-rule scoring (PLAN.md §4.2). Penalty = strength weight × number of
@@ -26,7 +27,6 @@ interface Layout {
   afterBreak: Set<number>;
 }
 
-const DAY = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
 function layoutOf(schedule: BellSchedule, day: Weekday): Layout {
   const afterBreak = new Set<number>();
@@ -157,32 +157,32 @@ export class SoftScorer {
 
       const r6 = u.heavy ? this.on('R6', classId) : null;
       const per = layout.get(at.pos.day)?.periods ?? 8;
-      if (r6) total += this.hit(sink, 'R6', r6.w, at.pos.periodIndex >= Math.ceil(per / 2) ? 1 : 0, () => `${u.label} after mid-day (${DAY[at.pos.day]})`, { classId });
+      if (r6) total += this.hit(sink, 'R6', r6.w, at.pos.periodIndex >= Math.ceil(per / 2) ? 1 : 0, () => tx('{label} after mid-day ({day})', { label: u.label, day: dayShort(at.pos.day) }), { classId });
       const r7 = this.activity.has(u.subjectKey) ? this.on('R7', classId) : null;
       if (r7) {
         const bad = at.pos.periodIndex === 0 || !!layout.get(at.pos.day)?.afterBreak.has(at.pos.periodIndex);
-        total += this.hit(sink, 'R7', r7.w, bad ? 1 : 0, () => `${u.label} in P1 or right after a break (${DAY[at.pos.day]})`, { classId });
+        total += this.hit(sink, 'R7', r7.w, bad ? 1 : 0, () => tx('{label} in P1 or right after a break ({day})', { label: u.label, day: dayShort(at.pos.day) }), { classId });
       }
     }
-    const subjectName = (k: string) => this.names.get(k) ?? 'block';
+    const subjectName = (k: string) => this.names.get(k) ?? tx('block');
     for (const [key, s] of bySubject) {
       const r4 = this.on('R4', classId);
       if (r4) {
         const max = numParam(r4.rule, 'maxPerDay', 1);
         let extra = 0;
         for (const n of s.days.values()) extra += Math.max(0, n - max);
-        total += this.hit(sink, 'R4', r4.w, extra, () => `${cname()} has ${subjectName(key)} more than ${max}× a day`, { classId });
+        total += this.hit(sink, 'R4', r4.w, extra, () => tx('{cls} has {subject} more than {max}× a day', { cls: cname(), subject: subjectName(key), max }), { classId });
       }
       const r5 = this.on('R5', classId);
       if (r5) {
         const ideal = Math.min(s.lessons, this.days.length);
-        total += this.hit(sink, 'R5', r5.w, ideal - s.days.size, () => `${cname()} ${subjectName(key)} on only ${s.days.size} day(s)`, { classId });
+        total += this.hit(sink, 'R5', r5.w, ideal - s.days.size, () => tx('{cls} {subject} on only {n} day(s)', { cls: cname(), subject: subjectName(key), n: s.days.size }), { classId });
       }
       const r8 = this.on('R8', classId);
       if (r8) {
         let same = 0;
         for (const n of s.starts.values()) same += Math.max(0, n - 2);
-        total += this.hit(sink, 'R8', r8.w, same, () => `${cname()} ${subjectName(key)} in the same period on 3+ days`, { classId });
+        total += this.hit(sink, 'R8', r8.w, same, () => tx('{cls} {subject} in the same period on 3+ days', { cls: cname(), subject: subjectName(key) }), { classId });
       }
     }
 
@@ -195,7 +195,7 @@ export class SoftScorer {
         const at = placed.get(u.key);
         if (at && at.pos.periodIndex === 0 && u.teacherIds.includes(ct)) have++;
       }
-      total += this.hit(sink, 'R1', r1.w, want - have, () => `${cname()}: class teacher takes P1 on ${have} of ${want} days`, { classId, teacherId: ct });
+      total += this.hit(sink, 'R1', r1.w, want - have, () => tx('{cls}: class teacher takes P1 on {have} of {want} days', { cls: cname(), have, want }), { classId, teacherId: ct });
     }
     return total;
   }
@@ -227,7 +227,7 @@ export class SoftScorer {
       const r12 = this.teacherOn('R12', teacherId);
       if (r12) {
         const max = numParam(r12.rule, 'maxPerDay', 7);
-        total += this.hit(sink, 'R12', r12.w, occ.size - max, () => `${tname()} teaches ${occ.size} periods on ${DAY[d]} (max ${max})`, { teacherId });
+        total += this.hit(sink, 'R12', r12.w, occ.size - max, () => tx('{name} teaches {n} periods on {day} (max {max})', { name: tname(), n: occ.size, day: dayShort(d), max }), { teacherId });
       }
       const r11 = this.teacherOn('R11', teacherId);
       if (r11) {
@@ -239,21 +239,21 @@ export class SoftScorer {
           run = occ.has(i) ? run + 1 : 0;
           if (run > max) excess++;
         }
-        total += this.hit(sink, 'R11', r11.w, excess, () => `${tname()} has more than ${max} periods in a row on ${DAY[d]}`, { teacherId });
+        total += this.hit(sink, 'R11', r11.w, excess, () => tx('{name} has more than {max} periods in a row on {day}', { name: tname(), max, day: dayShort(d) }), { teacherId });
       }
       const r13 = this.visiting.has(teacherId) ? null : this.teacherOn('R13', teacherId);
       if (r13) {
         let single = 0;
         for (let i = first + 1; i < last; i++) if (!occ.has(i) && occ.has(i - 1) && occ.has(i + 1)) single++;
-        total += this.hit(sink, 'R13', r13.w, single, () => `${tname()} has a single free period between lessons on ${DAY[d]}`, { teacherId });
+        total += this.hit(sink, 'R13', r13.w, single, () => tx('{name} has a single free period between lessons on {day}', { name: tname(), day: dayShort(d) }), { teacherId });
       }
       const r15 = this.teacherOn('R15', teacherId);
-      if (r15) total += this.hit(sink, 'R15', r15.w, occ.size >= L.periods ? 1 : 0, () => `${tname()} has no free period on ${DAY[d]}`, { teacherId });
+      if (r15) total += this.hit(sink, 'R15', r15.w, occ.size >= L.periods ? 1 : 0, () => tx('{name} has no free period on {day}', { name: tname(), day: dayShort(d) }), { teacherId });
       const r25 = this.visiting.has(teacherId) ? this.teacherOn('R25', teacherId) : null;
       if (r25) {
         let holes = 0;
         for (let i = first; i <= last; i++) if (!occ.has(i)) holes++;
-        total += this.hit(sink, 'R25', r25.w, holes, () => `${tname()} (visiting) waits ${holes} free period(s) on ${DAY[d]}`, { teacherId });
+        total += this.hit(sink, 'R25', r25.w, holes, () => tx('{name} (visiting) waits {holes} free period(s) on {day}', { name: tname(), holes, day: dayShort(d) }), { teacherId });
       }
       for (const x of list) if (x.idx === L.periods - 1) for (const c of x.u.classIds) lastPeriodByClass.set(c, (lastPeriodByClass.get(c) ?? 0) + 1);
     }
@@ -262,19 +262,19 @@ export class SoftScorer {
     if (r14 && loads.some((n) => n > 0)) {
       const tol = numParam(r14.rule, 'tolerance', 2);
       const spread = Math.max(...loads) - Math.min(...loads);
-      total += this.hit(sink, 'R14', r14.w, spread - tol, () => `${tname()}'s daily load ranges ${Math.min(...loads)}–${Math.max(...loads)}`, { teacherId });
+      total += this.hit(sink, 'R14', r14.w, spread - tol, () => tx('{name}’s daily load ranges {min}–{max}', { name: tname(), min: Math.min(...loads), max: Math.max(...loads) }), { teacherId });
     }
     const r24 = this.teacherOn('R24', teacherId);
     if (r24 && frees.length) {
       const tol = numParam(r24.rule, 'tolerance', 3);
       const spread = Math.max(...frees) - Math.min(...frees);
-      total += this.hit(sink, 'R24', r24.w, spread - tol, () => `${tname()}'s free periods are bunched (${Math.min(...frees)}–${Math.max(...frees)} a day)`, { teacherId });
+      total += this.hit(sink, 'R24', r24.w, spread - tol, () => tx('{name}’s free periods are bunched ({min}–{max} a day)', { name: tname(), min: Math.min(...frees), max: Math.max(...frees) }), { teacherId });
     }
     const r23 = this.teacherOn('R23', teacherId);
     if (r23) {
       const max = numParam(r23.rule, 'maxPerWeek', 2);
       for (const [c, n] of lastPeriodByClass)
-        total += this.hit(sink, 'R23', r23.w, n - max, () => `${tname()} has ${this.names.get(c)} in the last period ${n}× a week`, { teacherId, classId: c });
+        total += this.hit(sink, 'R23', r23.w, n - max, () => tx('{name} has {cls} in the last period {n}× a week', { name: tname(), cls: this.names.get(c), n }), { teacherId, classId: c });
     }
     return total;
   }
@@ -307,7 +307,7 @@ export class SoftScorer {
     let total = 0;
     for (let i = 0; i < periods; i++) {
       const free = present - (busy.get(i)?.size ?? 0);
-      total += this.hit(sink, 'R26', r26.w, min - free, () => `Only ${free} teacher(s) free in P${i + 1} on ${DAY[day]} (want ${min})`, {});
+      total += this.hit(sink, 'R26', r26.w, min - free, () => tx('Only {free} teacher(s) free in P{period} on {day} (want {min})', { free, period: i + 1, day: dayShort(day), min }), {});
     }
     return total;
   }

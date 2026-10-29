@@ -3,6 +3,7 @@ import { addBlock, addLine, addSet } from './blocks';
 import { mulberry32 } from '@/solver/rng';
 import type { Project } from './project';
 import { choicesOn } from './students';
+import { tx } from '@/i18n';
 
 /**
  * Option block builder (International). From the students' subject choices it
@@ -273,7 +274,7 @@ export function applyBlockPlan(
 ): string {
   const blockId = addBlock(d, { name: input.name, classIds: input.classIds });
   const lineIds = Array.from({ length: plan.lines }, (_, i) =>
-    addLine(d, blockId, { label: `Line ${LINE_LETTERS[i] ?? i + 1}`, periods: input.periods, doubles: input.doubles ?? 0 }),
+    addLine(d, blockId, { label: tx('Line {x}', { x: LINE_LETTERS[i] ?? i + 1 }), periods: input.periods, doubles: input.doubles ?? 0 }),
   );
   const busy = new Set<string>();
   const load = new Map<string, number>();

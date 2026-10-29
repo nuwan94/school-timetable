@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Id, IsoDate, Named } from './common';
+import { tx } from '@/i18n';
 
 /**
  * Time model. Minutes are the base unit everywhere: clock times are minutes
@@ -103,8 +104,8 @@ export function formatClock(minutes: number): string {
 export function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} min`;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+  if (h === 0) return tx('{m} min', { m });
+  return m === 0 ? tx('{h} h', { h }) : tx('{h} h {m} min', { h, m });
 }
 
 export function parseClock(text: string): number {

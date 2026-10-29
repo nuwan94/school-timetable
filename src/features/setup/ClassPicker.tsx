@@ -1,7 +1,8 @@
 import { useProjectStore } from '@/store/projectStore';
+import { tx } from '@/i18n';
 
 /** Pick classes, grouped by grade, with a whole-grade toggle per row. */
-export function ClassPicker({ value, onChange, label = 'Classes' }: { value: string[]; onChange: (ids: string[]) => void; label?: string }) {
+export function ClassPicker({ value, onChange, label = tx('Classes') }: { value: string[]; onChange: (ids: string[]) => void; label?: string }) {
   const project = useProjectStore((s) => s.project)!;
   const grades = [...project.grades].sort((a, b) => a.level - b.level);
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
@@ -23,7 +24,7 @@ export function ClassPicker({ value, onChange, label = 'Classes' }: { value: str
                   onChange(all ? value.filter((v) => !classes.some((c) => c.id === v)) : [...new Set([...value, ...classes.map((c) => c.id)])])
                 }
                 className={`w-24 rounded border px-1.5 py-0.5 text-left text-xs ${all ? 'border-teal-700 bg-teal-50 font-semibold' : 'border-slate-300 bg-white'}`}
-                title={`Select all of ${g.name}`}
+                title={tx('Select all of {name}', { name: g.name })}
               >
                 {g.name}
               </button>
