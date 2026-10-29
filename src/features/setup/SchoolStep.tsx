@@ -1,11 +1,12 @@
 import { newId } from '@/domain/common';
-import { WEEKDAYS, type Weekday } from '@/domain/time';
+import { WEEKDAYS } from '@/domain/time';
 import { PACK_LABELS } from '@/packs';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Chips, NumberInput, PageHeader, Select, TextInput } from '@/ui/kit';
 import { BellScheduleEditor } from './BellScheduleEditor';
+import { dayShort, tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
-const DAY_SHORT: Record<Weekday, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
 
 export function SchoolStep() {
   const project = useProjectStore((s) => s.project)!;
@@ -50,25 +51,26 @@ export function SchoolStep() {
 
   return (
     <>
-      <PageHeader title="School & bell schedule">
-        {PACK_LABELS[project.pack]}. Name your school, pick the working days, and set the bell times. Classes in each section
-        follow that section's bell schedule.
+      <PageHeader title={tx('School & bell schedule')}>
+        {tx('{pack}. Name your school, pick the working days, and set the bell times. Classes in each section follow that section’s bell schedule.', {
+          pack: PACK_LABELS[project.pack],
+        })}
       </PageHeader>
 
       <div className="space-y-4">
-        <Card title="School">
+        <Card title={tx('School')}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {text('name', 'School name', 'e.g. Sri Sumangala Vidyalaya')}
-            {localName('si', 'Name in Sinhala (for printing)')}
-            {localName('ta', 'Name in Tamil (for printing)')}
-            {text('address', 'Address')}
-            {text('academicYear', 'Academic year', '2027')}
-            {text('term', 'Term', 'Term 1')}
-            {!project.simpleMode && text('gradeLabel', 'Call grades', 'Grade / Year')}
+            {text('name', tx('School name'), tx('e.g. Sri Sumangala Vidyalaya'))}
+            {localName('si', tx('Name in Sinhala (for printing)'))}
+            {localName('ta', tx('Name in Tamil (for printing)'))}
+            {text('address', tx('Address'))}
+            {text('academicYear', tx('Academic year'), '2027')}
+            {text('term', tx('Term'), tx('Term 1'))}
+            {!project.simpleMode && text('gradeLabel', tx('Call grades'), tx('Grade / Year'))}
             {project.pack === 'international' && (
               <div>
                 <label className="label" htmlFor="inst-weeks">
-                  Teaching weeks a year
+                  {tx('Teaching weeks a year')}
                 </label>
                 <NumberInput
                   id="inst-weeks"
@@ -87,15 +89,15 @@ export function SchoolStep() {
             )}
             <div>
               <label className="label" htmlFor="inst-printlang">
-                Printed sheets in
+                {tx('Printed sheets in')}
               </label>
               <Select
                 id="inst-printlang"
                 value={institute.printLanguage}
                 options={[
-                  { value: 'en', label: 'English' },
-                  { value: 'si', label: 'සිංහල (Sinhala)' },
-                  { value: 'ta', label: 'தமிழ் (Tamil)' },
+                  { value: 'en', label: tx('English') },
+                  { value: 'si', label: tx('සිංහල (Sinhala)') },
+                  { value: 'ta', label: tx('தமிழ் (Tamil)') },
                 ]}
                 onChange={(v) =>
                   update((d) => {
@@ -106,10 +108,10 @@ export function SchoolStep() {
             </div>
           </div>
           <div className="mt-4">
-            <p className="label">Working days</p>
+            <p className="label">{tx('Working days')}</p>
             <Chips
               value={institute.workingDays}
-              options={WEEKDAYS.map((d) => ({ value: d, label: DAY_SHORT[d] }))}
+              options={WEEKDAYS.map((d) => ({ value: d, label: dayShort(d) }))}
               onChange={(days) => {
                 if (days.length === 0) return; // at least one day
                 update((d) => {
@@ -121,7 +123,7 @@ export function SchoolStep() {
         </Card>
 
         <Card
-          title="Bell schedules"
+          title={tx('Bell schedules')}
           actions={
             !project.simpleMode && (
               <button
@@ -132,7 +134,7 @@ export function SchoolStep() {
                     const id = newId('bell');
                     d.bellSchedules.push({
                       id,
-                      name: `Schedule ${d.bellSchedules.length + 1}`,
+                      name: tx('Schedule {x}', { x: d.bellSchedules.length + 1 }),
                       shortCode: '',
                       local: {},
                       active: true,
@@ -142,14 +144,17 @@ export function SchoolStep() {
                   })
                 }
               >
-                + Another schedule
+                {tx('+ Another schedule')}
               </button>
             )
           }
         >
           <p className="mb-3 text-sm text-slate-600">
-            Use another schedule when a section keeps different times (e.g. primary leaves earlier). Use{' '}
-            <em>Different times on…</em> for one day, such as a shorter Friday.
+            <Rich
+              text={tx(
+                'Use another schedule when a section keeps different times (e.g. primary leaves earlier). Use <em>Different times on…</em> for one day, such as a shorter Friday.',
+              )}
+            />
           </p>
           <div className="space-y-4">
             {project.bellSchedules.map((b) => (

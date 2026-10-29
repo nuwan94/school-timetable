@@ -6,6 +6,7 @@ import { patternPeriods } from './factories';
 import type { Project, ReportColumn } from './project';
 import { ledgerRows } from './relief';
 import { classIdsOfGroups } from './timetable';
+import { tx } from '@/i18n';
 
 /**
  * SL returns and staff reports (PLAN.md §9.3). Every report is a plain table
@@ -28,14 +29,30 @@ export interface ReportTable {
 export const inCadre = (t: Teacher) => t.active && !NOT_IN_CADRE.includes(t.category);
 
 const CATEGORY_LABELS: Record<Teacher['category'], string> = {
-  permanent: 'Permanent',
-  contract: 'Contract',
-  attached: 'Attached',
-  visiting: 'Visiting',
-  developmentOfficer: 'Development Officer',
-  trainee: 'Trainee',
-  coach: 'Sports coach',
-  vacancy: 'Vacancy',
+  get permanent() {
+    return tx('Permanent');
+  },
+  get contract() {
+    return tx('Contract');
+  },
+  get attached() {
+    return tx('Attached');
+  },
+  get visiting() {
+    return tx('Visiting');
+  },
+  get developmentOfficer() {
+    return tx('Development Officer');
+  },
+  get trainee() {
+    return tx('Trainee');
+  },
+  get coach() {
+    return tx('Sports coach');
+  },
+  get vacancy() {
+    return tx('Vacancy');
+  },
 };
 
 type MediumKey = Medium | 'bilingual';
@@ -126,18 +143,18 @@ export function deploymentReturn(p: Project): ReportTable {
       const status = !total
         ? ''
         : !normText && total.level !== 'over'
-          ? 'No norm set'
+          ? tx('No norm set')
           : total.level === 'under'
-            ? 'Under norm'
+            ? tx('Under norm')
             : total.level === 'over'
-              ? 'Over'
+              ? tx('Over')
               : total.level === 'ok'
-                ? 'Within norm'
-                : 'No lessons';
+                ? tx('Within norm')
+                : tx('No lessons');
       return {
         no: i + 1,
         name: t.name,
-        category: CATEGORY_LABELS[t.category] + (inCadre(t) ? '' : ' (not in cadre)'),
+        category: inCadre(t) ? CATEGORY_LABELS[t.category] : tx('{category} (not in cadre)', { category: CATEGORY_LABELS[t.category] }),
         serviceGrade: t.serviceGrade,
         appointmentType: t.appointmentType,
         appointmentSubject: subjectName(p, t.appointmentSubjectId),
@@ -151,25 +168,25 @@ export function deploymentReturn(p: Project): ReportTable {
     });
   return {
     id: 'deployment',
-    title: 'Teacher deployment return',
-    note: 'Periods outside appointment: cover, or a subject or medium other than the appointment.',
+    title: tx('Teacher deployment return'),
+    note: tx('Periods outside appointment: cover, or a subject or medium other than the appointment.'),
     columns: [
-      { key: 'no', label: 'No', numeric: true },
-      { key: 'name', label: 'Name' },
-      { key: 'category', label: 'Category' },
-      { key: 'serviceGrade', label: 'Service grade' },
-      { key: 'appointmentType', label: 'Appointment type' },
-      { key: 'appointmentSubject', label: 'Appointment subject' },
-      { key: 'appointmentMedium', label: 'Medium' },
-      { key: 'taught', label: 'Subjects taught (grades)' },
-      { key: 'periods', label: 'Periods / week', numeric: true },
-      { key: 'outside', label: 'Outside appointment', numeric: true },
-      { key: 'norm', label: 'Norm' },
-      { key: 'status', label: 'Norm status' },
+      { key: 'no', label: tx('No.'), numeric: true },
+      { key: 'name', label: tx('Name') },
+      { key: 'category', label: tx('Category') },
+      { key: 'serviceGrade', label: tx('Service grade') },
+      { key: 'appointmentType', label: tx('Appointment type') },
+      { key: 'appointmentSubject', label: tx('Appointment subject') },
+      { key: 'appointmentMedium', label: tx('Medium') },
+      { key: 'taught', label: tx('Subjects taught (grades)') },
+      { key: 'periods', label: tx('Periods / week'), numeric: true },
+      { key: 'outside', label: tx('Outside appointment'), numeric: true },
+      { key: 'norm', label: tx('Norm') },
+      { key: 'status', label: tx('Norm status') },
     ],
     rows,
     totals: {
-      name: `${rows.length} teachers`,
+      name: tx('{n} teachers', { n: rows.length }),
       periods: rows.reduce((s, r) => s + r.periods, 0),
       outside: rows.reduce((s, r) => s + r.outside, 0),
     },
@@ -180,15 +197,15 @@ export function deploymentReturn(p: Project): ReportTable {
 
 /** The generic cadre layout; a school can rename, reorder and hide these columns. */
 export const CADRE_COLUMNS: ReportColumn[] = [
-  { key: 'no', label: 'No', visible: true },
-  { key: 'code', label: 'Code', visible: false },
-  { key: 'subject', label: 'Subject', visible: true },
-  { key: 'medium', label: 'Medium', visible: true },
-  { key: 'approved', label: 'Approved', visible: true },
-  { key: 'actual', label: 'Actual', visible: true },
-  { key: 'excess', label: 'Excess', visible: true },
-  { key: 'deficit', label: 'Deficit', visible: true },
-  { key: 'remarks', label: 'Remarks', visible: true },
+  { key: 'no', get label() { return tx('No.'); }, visible: true },
+  { key: 'code', get label() { return tx('Code'); }, visible: false },
+  { key: 'subject', get label() { return tx('Subject'); }, visible: true },
+  { key: 'medium', get label() { return tx('Medium'); }, visible: true },
+  { key: 'approved', get label() { return tx('Approved'); }, visible: true },
+  { key: 'actual', get label() { return tx('Actual'); }, visible: true },
+  { key: 'excess', get label() { return tx('Excess'); }, visible: true },
+  { key: 'deficit', get label() { return tx('Deficit'); }, visible: true },
+  { key: 'remarks', get label() { return tx('Remarks'); }, visible: true },
 ];
 const NUMERIC = new Set(['no', 'approved', 'actual', 'excess', 'deficit']);
 
@@ -234,19 +251,17 @@ export function cadreReturn(p: Project): ReportTable {
     actual: r.actual,
     excess: Math.max(0, r.actual - r.approved),
     deficit: Math.max(0, r.approved - r.actual),
-    remarks: r.approved === 0 && r.actual > 0 ? 'Not in approved cadre' : '',
+    remarks: r.approved === 0 && r.actual > 0 ? tx('Not in approved cadre') : '',
   }));
   const layout = cadreLayout(p).filter((c) => c.visible);
   const sum = (k: 'approved' | 'actual' | 'excess' | 'deficit') => data.reduce((s, r) => s + r[k], 0);
   return {
     id: 'cadre',
-    title: 'Cadre return',
-    note: `Approved vs actual teachers by appointment subject and medium. Not counted: ${NOT_IN_CADRE.map((c) => CATEGORY_LABELS[c].toLowerCase()).join(', ')}.${
-      unrecorded.length ? ` ${unrecorded.length} teacher(s) have no appointment subject or medium recorded: ${unrecorded.join(', ')}.` : ''
-    }`,
-    columns: layout.map((c) => ({ key: c.key, label: c.label, numeric: NUMERIC.has(c.key) })),
+    title: tx('Cadre return'),
+    note: tx('Approved vs actual teachers by appointment subject and medium. Not counted: {join}.{x}', { join: NOT_IN_CADRE.map((c) => CATEGORY_LABELS[c].toLowerCase()).join(', '), x: unrecorded.length ? ' ' + tx('{n} teacher(s) have no appointment subject or medium recorded: {names}.', { n: unrecorded.length, names: unrecorded.join(', ') }) : '' }),
+    columns: layout.map((c) => ({ key: c.key, label: tx(c.label), numeric: NUMERIC.has(c.key) })),
     rows: data,
-    totals: { subject: 'Total', approved: sum('approved'), actual: sum('actual'), excess: sum('excess'), deficit: sum('deficit') },
+    totals: { subject: tx('Total'), approved: sum('approved'), actual: sum('actual'), excess: sum('excess'), deficit: sum('deficit') },
   };
 }
 
@@ -326,26 +341,26 @@ export function surplusReport(p: Project, onlyDeficits = false): ReportTable {
   const sumNum = (k: 'surplus' | 'deficit') => (per ? rows.reduce((s, r) => s + (typeof r[k] === 'number' ? (r[k] as number) : 0), 0) : '—');
   return {
     id: onlyDeficits ? 'request' : 'surplus',
-    title: onlyDeficits ? 'Request for teachers' : 'Surplus and deficit',
+    title: onlyDeficits ? tx('Request for teachers') : tx('Surplus and deficit'),
     note: per
-      ? `Periods per week by subject and medium. Teachers needed = periods ÷ ${per}, rounded up.`
-      : 'Periods per week by subject and medium. Set "periods per teacher" to see surplus and deficit in teachers.',
+      ? tx('Periods per week by subject and medium. Teachers needed = periods ÷ {per}, rounded up.', { per })
+      : tx('Periods per week by subject and medium. Set "periods per teacher" to see surplus and deficit in teachers.'),
     columns: [
-      { key: 'no', label: 'No', numeric: true },
-      { key: 'subject', label: 'Subject' },
-      { key: 'medium', label: 'Medium' },
-      { key: 'needed', label: 'Periods needed', numeric: true },
-      { key: 'byAppointed', label: 'By appointed teachers', numeric: true },
-      { key: 'byOthers', label: 'By others', numeric: true },
-      { key: 'uncovered', label: 'Uncovered', numeric: true },
-      { key: 'appointed', label: 'Teachers appointed', numeric: true },
-      { key: 'teachersNeeded', label: 'Teachers needed', numeric: true },
-      { key: 'surplus', label: 'Surplus', numeric: true },
-      { key: 'deficit', label: 'Deficit', numeric: true },
+      { key: 'no', label: tx('No.'), numeric: true },
+      { key: 'subject', label: tx('Subject') },
+      { key: 'medium', label: tx('Medium') },
+      { key: 'needed', label: tx('Periods needed'), numeric: true },
+      { key: 'byAppointed', label: tx('By appointed teachers'), numeric: true },
+      { key: 'byOthers', label: tx('By others'), numeric: true },
+      { key: 'uncovered', label: tx('Uncovered'), numeric: true },
+      { key: 'appointed', label: tx('Teachers appointed'), numeric: true },
+      { key: 'teachersNeeded', label: tx('Teachers needed'), numeric: true },
+      { key: 'surplus', label: tx('Surplus'), numeric: true },
+      { key: 'deficit', label: tx('Deficit'), numeric: true },
     ],
     rows,
     totals: {
-      subject: 'Total',
+      subject: tx('Total'),
       needed: n('needed'),
       byAppointed: n('byAppointed'),
       byOthers: n('byOthers'),
@@ -382,7 +397,7 @@ export function workloadReport(p: Project, date: string): ReportTable {
         name: t.name,
         periods,
         free: Math.max(0, (tt?.capacity ?? 0) - periods),
-        status: !tt ? '' : tt.level === 'under' ? 'Under norm' : tt.level === 'over' ? 'Over' : tt.level === 'ok' ? 'OK' : 'No lessons',
+        status: !tt ? '' : tt.level === 'under' ? tx('Under norm') : tt.level === 'over' ? tx('Over') : tt.level === 'ok' ? tx('OK') : tx('No lessons'),
         reliefWeek: r?.week ?? 0,
         reliefTerm: r?.term ?? 0,
         absentDays: r?.absentDays ?? 0,
@@ -395,24 +410,24 @@ export function workloadReport(p: Project, date: string): ReportTable {
   const avg = term.length ? term.reduce((s, x) => s + x, 0) / term.length : 0;
   return {
     id: 'workload',
-    title: 'Teacher workload and relief fairness',
+    title: tx('Teacher workload and relief fairness'),
     note: rows.length
-      ? `Relief this term: average ${avg.toFixed(1)}, highest ${Math.max(...term)}, lowest ${Math.min(...term)}. Duties are per week across all duty rosters.`
+      ? tx('Relief this term: average {toFixed}, highest {max}, lowest {min}. Duties are per week across all duty rosters.', { toFixed: avg.toFixed(1), max: Math.max(...term), min: Math.min(...term) })
       : undefined,
     columns: [
-      { key: 'name', label: 'Teacher' },
-      { key: 'periods', label: 'Periods / week', numeric: true },
-      { key: 'free', label: 'Free periods', numeric: true },
-      { key: 'status', label: 'Load' },
-      { key: 'reliefWeek', label: 'Relief this week', numeric: true },
-      { key: 'reliefTerm', label: 'Relief this term', numeric: true },
-      { key: 'absentDays', label: 'Days absent (term)', numeric: true },
-      { key: 'duties', label: 'Duties / week', numeric: true },
-      { key: 'invigilation', label: 'Invigilation', numeric: true },
+      { key: 'name', label: tx('Teacher') },
+      { key: 'periods', label: tx('Periods / week'), numeric: true },
+      { key: 'free', label: tx('Free periods'), numeric: true },
+      { key: 'status', label: tx('Load') },
+      { key: 'reliefWeek', label: tx('Relief this week'), numeric: true },
+      { key: 'reliefTerm', label: tx('Relief this term'), numeric: true },
+      { key: 'absentDays', label: tx('Days absent (term)'), numeric: true },
+      { key: 'duties', label: tx('Duties / week'), numeric: true },
+      { key: 'invigilation', label: tx('Invigilation'), numeric: true },
     ],
     rows,
     totals: {
-      name: `${rows.length} teachers`,
+      name: tx('{n} teachers', { n: rows.length }),
       periods: rows.reduce((s, r) => s + r.periods, 0),
       reliefTerm: rows.reduce((s, r) => s + r.reliefTerm, 0),
       duties: rows.reduce((s, r) => s + r.duties, 0),

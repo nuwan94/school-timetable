@@ -1,9 +1,9 @@
 import type { Lang } from '@/print/labels';
 
 /**
- * Words on the Today and Relief ledger screens. These screens are used
- * daily by deputy principals and sectional heads, often on a phone, so
- * they speak Sinhala and Tamil too. Best-effort translations; editable.
+ * Words on the Today and Relief ledger screens, in the UI language (they
+ * also go on the relief register and slips printed from Today). Best-effort
+ * translations; editable.
  */
 const EN = {
   title: 'Today — relief',
@@ -164,23 +164,3 @@ const TA: Strings = {
 };
 
 export const STRINGS: Record<Lang, Strings> = { en: EN, si: SI, ta: TA };
-
-const KEY = 'timetable.uiLang';
-
-/** UI language for daily screens: remembered per device, defaulting to the print language. */
-export function loadUiLang(fallback: Lang): Lang {
-  try {
-    const v = localStorage.getItem(KEY);
-    return v === 'en' || v === 'si' || v === 'ta' ? v : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function saveUiLang(lang: Lang): void {
-  try {
-    localStorage.setItem(KEY, lang);
-  } catch {
-    /* storage unavailable */
-  }
-}

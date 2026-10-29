@@ -1,4 +1,5 @@
 import type { Project } from '@/domain/project';
+import { uiLang } from '@/i18n';
 // Inline so the single-file offline build carries the worker inside the HTML.
 import SolverWorker from '@/workers/solver.worker?worker&inline';
 import type { ToWorker } from '@/workers/solver.worker';
@@ -40,6 +41,6 @@ export function runSolver(project: Project, options: GenerateOptions, onProgress
       reject(new Error(e.message || 'The timetable worker failed to start.'));
     };
   });
-  send({ type: 'start', project, options });
+  send({ type: 'start', project, options, lang: uiLang() });
   return { result, stop: () => send({ type: 'stop' }) };
 }

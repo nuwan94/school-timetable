@@ -1,5 +1,6 @@
 import type { Weekday } from '@/domain/time';
 import type { Model, Position, Unit } from './model';
+import { tx } from '@/i18n';
 
 interface Entry {
   key: string;
@@ -62,19 +63,19 @@ export class SolverState {
     const done = () => stopAtFirst && (blockers.size > 0 || hard);
 
     for (const c of u.classIds) {
-      block(overlapping(this.occ.get(rk(`c:${c}`, pos.day)), pos.start, pos.end).map((e) => e.key), `${this.name(c)} busy`);
-      if (u.oncePerDay) block(this.subjectDay.get(`${c}|${pos.day}|${u.subjectKey}`) ?? [], `${this.name(c)} already has it that day`);
+      block(overlapping(this.occ.get(rk(`c:${c}`, pos.day)), pos.start, pos.end).map((e) => e.key), tx('{name} busy', { name: this.name(c) }));
+      if (u.oncePerDay) block(this.subjectDay.get(`${c}|${pos.day}|${u.subjectKey}`) ?? [], tx('{name} already has it that day', { name: this.name(c) }));
       if (done()) return { blockers, hard, reasons, roomId: null };
     }
     for (const t of u.teacherIds) {
       const hits = overlapping(this.occ.get(rk(`t:${t}`, pos.day)), pos.start, pos.end).filter(
         (e) => !(u.multiGradeGroupId && e.mg === u.multiGradeGroupId),
       );
-      block(hits.map((e) => e.key), `${this.name(t)} busy`);
+      block(hits.map((e) => e.key), tx('{name} busy', { name: this.name(t) }));
       const max = this.model.teacherDailyMax.get(t);
       if (max !== undefined && (this.load.get(`t:${t}|${pos.day}`) ?? 0) + u.length > max) {
         hard = true;
-        reasons.push(`${this.name(t)} at daily maximum`);
+        reasons.push(tx('{name} at daily maximum', { name: this.name(t) }));
       }
       if (done()) return { blockers, hard, reasons, roomId: null };
     }

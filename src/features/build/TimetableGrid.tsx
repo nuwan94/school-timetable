@@ -1,7 +1,7 @@
 import type { Grid } from '@/domain/timetable';
 import { formatClock } from '@/domain/time';
+import { dayShort, tx } from '@/i18n';
 
-const DAY_LABEL = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
 /** Read-only week grid. `mode` decides what each cell shows besides the subject. */
 export function TimetableGrid({
@@ -24,7 +24,7 @@ export function TimetableGrid({
             <th className="w-24 border border-slate-200 bg-slate-50 px-2 py-1 text-left text-xs font-medium text-slate-500" />
             {grid.days.map((d) => (
               <th key={d} className="border border-slate-200 bg-slate-50 px-2 py-1 font-semibold">
-                {DAY_LABEL[d]}
+                {dayShort(d)}
               </th>
             ))}
           </tr>
@@ -54,7 +54,7 @@ export function TimetableGrid({
                   if (!lessons.length)
                     return (
                       <td key={day} className="border border-slate-200 px-2 py-1 align-top text-xs italic text-slate-400">
-                        {mode === 'class' ? 'Self-study' : ''}
+                        {mode === 'class' ? tx('Self-study') : ''}
                       </td>
                     );
                   return (
@@ -64,7 +64,7 @@ export function TimetableGrid({
                           <span className="font-semibold">
                             {mode === 'teacher' && teacherId ? (l.parts.find((p) => p.teacherIds.includes(teacherId))?.subject ?? l.title) : l.title}
                           </span>
-                          {l.slotIds.length > 1 && <span className="ml-1 text-[10px] text-slate-500">double</span>}
+                          {l.slotIds.length > 1 && <span className="ml-1 text-[10px] text-slate-500">{tx('double')}</span>}
                           {mode === 'class' ? (
                             <span className="block text-xs text-slate-600">
                               {l.parts.length > 1

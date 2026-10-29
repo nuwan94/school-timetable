@@ -6,8 +6,9 @@ import { checkTimetable } from '@/solver/checker';
 import { applySteps, EditSession, removePlacement, toggleLock, type Level, type Step, type Verdict } from '@/solver/editor';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader } from '@/ui/kit';
+import { dayShort, tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
-const DAY = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
 const TARGET: Record<Level, string> = {
   ok: 'bg-emerald-100 ring-1 ring-inset ring-emerald-500',
@@ -45,13 +46,12 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
   if (!version)
     return (
       <div>
-        <PageHeader title="Edit timetable" />
+        <PageHeader title={tx('Edit timetable')} />
         <Empty>
-          No timetable yet.{' '}
-          <button className="text-teal-700 underline" onClick={onGenerate}>
-            Generate one first
-          </button>
-          .
+          <Rich
+            text={tx('No timetable yet. <link>Generate one first</link>.')}
+            tags={{ link: (c) => <button className="text-teal-700 underline" onClick={onGenerate}>{c}</button> }}
+          />
         </Empty>
       </div>
     );
@@ -96,62 +96,69 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Edit timetable">
-        Drag a lesson to a new period, or click a lesson and then click where it should go. While you move a lesson, periods turn{' '}
-        <span className="rounded bg-emerald-100 px-1">green</span> (fine), <span className="rounded bg-amber-100 px-1">amber</span> (allowed, but
-        breaks a preference) or <span className="rounded bg-red-100 px-1">red</span> (clash). Clashes are allowed while you work.
+      <PageHeader title={tx('Edit timetable')}>
+        <Rich
+          text={tx(
+            'Drag a lesson to a new period, or click a lesson and then click where it should go. While you move a lesson, periods turn <green>green</green> (fine), <amber>amber</amber> (allowed, but breaks a preference) or <red>red</red> (clash). Clashes are allowed while you work.',
+          )}
+          tags={{
+            green: (c) => <span className="rounded bg-emerald-100 px-1">{c}</span>,
+            amber: (c) => <span className="rounded bg-amber-100 px-1">{c}</span>,
+            red: (c) => <span className="rounded bg-red-100 px-1">{c}</span>,
+          }}
+        />
       </PageHeader>
 
       <Card>
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-medium">{version.name}</span>
           <span className={`rounded px-2 py-0.5 text-xs font-medium ${version.status === 'approved' ? 'bg-teal-100 text-teal-900' : 'bg-slate-100 text-slate-700'}`}>
-            {version.status}
+            {version.status === 'approved' ? tx('approved') : tx('draft')}
           </span>
           <span
             className={`rounded px-2 py-0.5 text-sm font-medium ${check.violations.length ? 'bg-red-100 text-red-900' : 'bg-emerald-50 text-emerald-900'}`}
             data-testid="clash-count"
           >
-            {check.violations.length ? `${check.violations.length} clash${check.violations.length === 1 ? '' : 'es'}` : 'No clashes'}
+            {check.violations.length === 0 ? tx('No clashes') : check.violations.length === 1 ? tx('1 clash') : tx('{n} clashes', { n: check.violations.length })}
           </span>
           <span className="text-sm text-slate-600" data-testid="unplaced-count">
-            {allUnplaced} not placed
+            {tx('{allUnplaced} not placed', { allUnplaced })}
           </span>
           <div className="ml-auto flex flex-wrap gap-2">
-            <button className="btn" onClick={undo} disabled={!history.past.length} title="Undo">
-              ↶ Undo
+            <button className="btn" onClick={undo} disabled={!history.past.length} title={tx('Undo')}>
+              {tx('↶ Undo')}
             </button>
-            <button className="btn" onClick={redo} disabled={!history.future.length} title="Redo">
-              ↷ Redo
+            <button className="btn" onClick={redo} disabled={!history.future.length} title={tx('Redo')}>
+              {tx('↷ Redo')}
             </button>
             {version.status === 'draft' && (
               <button
                 className="btn btn-primary"
                 disabled={check.violations.length > 0}
-                title={check.violations.length ? 'Fix the clashes first' : 'Mark this timetable as final'}
+                title={check.violations.length ? tx('Fix the clashes first') : tx('Mark this timetable as final')}
                 onClick={() => setApproving(true)}
                 data-testid="approve"
               >
-                Approve…
+                {tx('Approve…')}
               </button>
             )}
             {version.status === 'approved' && (
               <button className="btn btn-primary" onClick={onPrint}>
-                Print & share →
+                {tx('Print & share →')}
               </button>
             )}
           </div>
         </div>
         {version.status === 'approved' && (
-          <p className="mt-2 text-xs text-slate-600">Approved. Any change makes a new draft, so the printed timetable stays as it was.</p>
+          <p className="mt-2 text-xs text-slate-600">{tx('Approved. Any change makes a new draft, so the printed timetable stays as it was.')}</p>
         )}
         {approving && (
           <div className="mt-3 flex flex-wrap items-end gap-3 rounded-md border border-teal-300 bg-teal-50 p-3">
             <label className="text-sm">
-              <span className="label">Effective from (optional)</span>
+              <span className="label">{tx('Effective from (optional)')}</span>
               <input type="date" className="field w-44" value={effective} onChange={(e) => setEffective(e.target.value)} />
             </label>
-            {allUnplaced > 0 && <p className="text-sm text-amber-800">{allUnplaced} lesson(s) are still not placed.</p>}
+            {allUnplaced > 0 && <p className="text-sm text-amber-800">{tx('{allUnplaced} lesson(s) are still not placed.', { allUnplaced })}</p>}
             <button
               className="btn btn-primary"
               onClick={() => {
@@ -159,10 +166,10 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
                 setApproving(false);
               }}
             >
-              Approve
+              {tx('Approve')}
             </button>
             <button className="btn" onClick={() => setApproving(false)}>
-              Cancel
+              {tx('Cancel')}
             </button>
           </div>
         )}
@@ -170,17 +177,17 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Card
-          title="Week"
+          title={tx('Week')}
           actions={
-            <select className="field w-56" value={who} onChange={(e) => setWho(e.target.value)} aria-label="Edit timetable of">
-              <optgroup label="Classes">
+            <select className="field w-56" value={who} onChange={(e) => setWho(e.target.value)} aria-label={tx('Edit timetable of')}>
+              <optgroup label={tx('Classes')}>
                 {project.classes.map((c) => (
                   <option key={c.id} value={`c:${c.id}`}>
                     {c.name}
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="Teachers">
+              <optgroup label={tx('Teachers')}>
                 {project.teachers.map((t) => (
                   <option key={t.id} value={`t:${t.id}`}>
                     {t.name}
@@ -191,7 +198,7 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
           }
         >
           {!grid ? (
-            <Empty>Nothing to show.</Empty>
+            <Empty>{tx('Nothing to show.')}</Empty>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-sm" data-testid="edit-grid">
@@ -200,7 +207,7 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
                     <th className="w-20 border border-slate-200 bg-slate-50" />
                     {grid.days.map((d) => (
                       <th key={d} className="border border-slate-200 bg-slate-50 px-2 py-1">
-                        {DAY[d]}
+                        {dayShort(d)}
                       </th>
                     ))}
                   </tr>
@@ -276,19 +283,19 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
         </Card>
 
         <div className="space-y-4">
-          <Card title={sel ? sel.label : 'Lesson'}>
+          <Card title={sel ? sel.label : tx('Lesson')}>
             {!sel ? (
-              <p className="text-sm text-slate-500">Click a lesson to see where else it can go.</p>
+              <p className="text-sm text-slate-500">{tx('Click a lesson to see where else it can go.')}</p>
             ) : (
               <div className="space-y-3 text-sm" data-testid="lesson-panel">
                 <p className="text-slate-600">
-                  {selPlacement ? `Now: ${session.where(selPlacement)}` : 'Not placed yet — click a green period to place it.'}
+                  {selPlacement ? tx('Now: {where}', { where: session.where(selPlacement) }) : tx('Not placed yet — click a green period to place it.')}
                   {sel.teacherIds.length > 0 && ` · ${sel.teacherIds.map((t) => session.model.names.get(t)).join(', ')}`}
                 </p>
                 {selPlacement && (
                   <div className="flex flex-wrap gap-2">
                     <button className="btn" onClick={() => commit(toggleLock(placements, sel.key))} data-testid="lock">
-                      {selPlacement.locked ? '🔓 Unlock' : '🔒 Lock here'}
+                      {selPlacement.locked ? tx('🔓 Unlock') : tx('🔒 Lock here')}
                     </button>
                     <button
                       className="btn"
@@ -296,12 +303,12 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
                         commit(removePlacement(placements, sel.key));
                       }}
                     >
-                      Take off timetable
+                      {tx('Take off timetable')}
                     </button>
                   </div>
                 )}
                 {selPlacement?.locked ? (
-                  <p className="text-xs text-slate-500">Locked lessons stay put when you generate again.</p>
+                  <p className="text-xs text-slate-500">{tx('Locked lessons stay put when you generate again.')}</p>
                 ) : (
                   <Suggestions session={session} lessonKey={sel.key} onApply={apply} />
                 )}
@@ -309,9 +316,9 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
             )}
           </Card>
 
-          <Card title={`Not placed (${tray.length}${tray.length !== allUnplaced ? ` of ${allUnplaced}` : ''})`}>
+          <Card title={tray.length !== allUnplaced ? tx('Not placed ({n} of {total})', { n: tray.length, total: allUnplaced }) : tx('Not placed ({n})', { n: tray.length })}>
             {tray.length === 0 ? (
-              <p className="text-sm text-slate-500">Every lesson here is on the timetable.</p>
+              <p className="text-sm text-slate-500">{tx('Every lesson here is on the timetable.')}</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5" data-testid="tray">
                 {tray.map((u) => (
@@ -333,9 +340,9 @@ export function EditScreen({ onGenerate, onPrint }: { onGenerate: () => void; on
             )}
           </Card>
 
-          <Card title={`Clashes (${check.violations.length})`}>
+          <Card title={tx('Clashes ({violations})', { violations: check.violations.length })}>
             {check.violations.length === 0 ? (
-              <p className="text-sm text-emerald-800">No clashes. The timetable can be approved.</p>
+              <p className="text-sm text-emerald-800">{tx('No clashes. The timetable can be approved.')}</p>
             ) : (
               <ul className="max-h-64 space-y-1 overflow-y-auto text-sm text-red-900" data-testid="conflicts">
                 {check.violations.map((v, i) => (
@@ -391,13 +398,13 @@ function Chip({
     >
       <span className="font-semibold">{isClass ? lesson.title : (own?.subject ?? lesson.title)}</span>
       {lesson.locked && <span className="ml-1 text-[10px]">🔒</span>}
-      {lesson.slotIds.length > 1 && <span className="ml-1 text-[10px] opacity-70">double</span>}
+      {lesson.slotIds.length > 1 && <span className="ml-1 text-[10px] opacity-70">{tx('double')}</span>}
       <span className="block text-[11px] opacity-80">
         {isClass
           ? lesson.parts.length > 1
             ? lesson.parts.map((p) => p.subject).join(' · ')
             : lesson.uncovered
-              ? 'no teacher'
+              ? tx('no teacher')
               : lesson.parts[0]?.teacher
           : lesson.classIds.map(nameOf).join('+')}
       </span>
@@ -407,10 +414,10 @@ function Chip({
 
 function Suggestions({ session, lessonKey, onApply }: { session: EditSession; lessonKey: string; onApply: (steps: Step[]) => void }) {
   const list = useMemo(() => session.suggestions(lessonKey), [session, lessonKey]);
-  if (!list.length) return <p className="text-xs text-slate-500">No clash-free move found. You can still drag it; the clash will be listed.</p>;
+  if (!list.length) return <p className="text-xs text-slate-500">{tx('No clash-free move found. You can still drag it; the clash will be listed.')}</p>;
   return (
     <div>
-      <p className="label">Clash-free options</p>
+      <p className="label">{tx('Clash-free options')}</p>
       <ul className="mt-1 max-h-80 space-y-1.5 overflow-y-auto" data-testid="suggestions">
         {list.map((s, i) => (
           <li key={i} className="rounded border border-slate-200 p-2">
@@ -420,10 +427,10 @@ function Suggestions({ session, lessonKey, onApply }: { session: EditSession; le
                 {s.description}
               </span>
               <button className="btn shrink-0 px-2 py-0.5 text-xs" onClick={() => onApply(s.steps)}>
-                Apply
+                {tx('Apply')}
               </button>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">Affects: {s.teachers.join(', ') || 'no teacher'}</p>
+            <p className="mt-0.5 text-xs text-slate-500">{tx('Affects:')} {s.teachers.join(', ') || tx('no teacher')}</p>
           </li>
         ))}
       </ul>

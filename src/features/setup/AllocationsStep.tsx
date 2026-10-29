@@ -8,6 +8,8 @@ import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, LevelBadge, NumberInput, PageHeader, Select } from '@/ui/kit';
 import { GradeTools, PasteAllocations, TemplateLibrary } from './AllocationTools';
 import { confirmDialog } from '@/ui/dialogs';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 interface Cell {
   classId: string;
@@ -21,15 +23,27 @@ const STATUS_STYLE: Record<Allocation['status'], string> = {
 };
 
 const STATUS_LABEL: Record<Allocation['status'], string> = {
-  appointed: 'Appointed',
-  covering: 'Covering (not appointed for this subject)',
-  uncovered: 'Uncovered / self-study (no teacher)',
+  get appointed() {
+    return tx('Appointed');
+  },
+  get covering() {
+    return tx('Covering (not appointed for this subject)');
+  },
+  get uncovered() {
+    return tx('Uncovered / self-study (no teacher)');
+  },
 };
 
 const STATUS_SHORT: Record<Allocation['status'], string> = {
-  appointed: 'Appointed',
-  covering: 'Covering',
-  uncovered: 'No teacher',
+  get appointed() {
+    return tx('Appointed');
+  },
+  get covering() {
+    return tx('Covering');
+  },
+  get uncovered() {
+    return tx('No teacher');
+  },
 };
 
 function teacherLabel(p: Project, checks: Checks, id: string) {
@@ -64,13 +78,13 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
     <div className="sticky bottom-0 z-20 -mx-3 mt-4 border-t-2 border-teal-700 bg-white px-3 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] md:mx-0 md:rounded-t-lg">
       <div className="flex flex-wrap items-end gap-3">
         <div className="mr-2">
-          <p className="text-xs uppercase text-slate-500">Editing</p>
+          <p className="text-xs uppercase text-slate-500">{tx('Editing')}</p>
           <p className="font-semibold">
             {cls.name} · <span style={{ color: subject.colour }}>{subject.name}</span>
           </p>
         </div>
         <label>
-          <span className="label">Periods/week</span>
+          <span className="label">{tx('Periods/week')}</span>
           <NumberInput
             autoFocus
             value={periods}
@@ -81,7 +95,7 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
           />
         </label>
         <label>
-          <span className="label">of which doubles</span>
+          <span className="label">{tx('of which doubles')}</span>
           <NumberInput
             value={doubles}
             min={0}
@@ -91,21 +105,21 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
           />
         </label>
         <label className="min-w-64 flex-1">
-          <span className="label">Teacher</span>
+          <span className="label">{tx('Teacher')}</span>
           <select className="field w-full" value={teacherId} disabled={periods === 0} onChange={(e) => set({ teacherId: e.target.value || null })}>
-            <option value="">— no teacher (uncovered) —</option>
+            <option value="">{tx('— no teacher (uncovered) —')}</option>
             {qualified.length > 0 && (
-              <optgroup label={`Teaches ${subject.name}`}>
+              <optgroup label={tx('Teaches {name}', { name: subject.name })}>
                 {qualified.map((t) => (
                   <option key={t.id} value={t.id}>
                     {teacherLabel(project, checks, t.id)}
-                    {fitsMedium(t.media) ? '' : ' · other medium'}
+                    {fitsMedium(t.media) ? '' : tx(' · other medium')}
                   </option>
                 ))}
               </optgroup>
             )}
             {others.length > 0 && (
-              <optgroup label="Other teachers (will be marked covering)">
+              <optgroup label={tx('Other teachers (will be marked covering)')}>
                 {others.map((t) => (
                   <option key={t.id} value={t.id}>
                     {teacherLabel(project, checks, t.id)}
@@ -117,7 +131,7 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
         </label>
         {alloc && (
           <label>
-            <span className="label">Status</span>
+            <span className="label">{tx('Status')}</span>
             <Select
               value={alloc.status}
               options={(Object.keys(STATUS_SHORT) as Allocation['status'][]).map((s) => ({ value: s, label: STATUS_SHORT[s] }))}
@@ -130,11 +144,11 @@ function CellEditor({ cell, checks, onClose }: { cell: Cell; checks: Checks; onC
         <div className="flex gap-2">
           {alloc && (
             <button className="btn" onClick={() => set({ periods: 0 })}>
-              Clear
+              {tx('Clear')}
             </button>
           )}
           <button className="btn" onClick={onClose}>
-            Done
+            {tx('Done')}
           </button>
         </div>
       </div>
@@ -163,8 +177,14 @@ function MatrixCell({
       <button
         onClick={onSelect}
         aria-pressed={selected}
-        aria-label={`${subject.name}: ${periods ? `${periods} periods${teacher ? `, ${teacher.name}` : ', no teacher'}` : 'not taught'}`}
-        title={alloc ? STATUS_LABEL[alloc.status] : 'Click to add'}
+        aria-label={
+          !periods
+            ? tx('{subject}: not taught', { subject: subject.name })
+            : teacher
+              ? tx('{subject}: {periods} periods, {teacher}', { subject: subject.name, periods, teacher: teacher.name })
+              : tx('{subject}: {periods} periods, no teacher', { subject: subject.name, periods })
+        }
+        title={alloc ? STATUS_LABEL[alloc.status] : tx('Click to add')}
         className={`relative flex h-12 w-full min-w-[58px] flex-col items-center justify-center px-1 text-center leading-tight ${
           alloc ? STATUS_STYLE[alloc.status] : 'text-slate-300 hover:bg-slate-50'
         } ${selected ? 'outline outline-2 -outline-offset-2 outline-teal-600' : ''}`}
@@ -179,7 +199,7 @@ function MatrixCell({
             {alloc.groupIds.length > 1 && (
               <span
                 className="absolute right-0.5 top-0.5 rounded bg-indigo-100 px-0.5 text-[9px] font-semibold text-indigo-800"
-                title={`Taught together: ${alloc.groupIds.map((g) => project.classes.find((c) => c.id === g)?.name).join(' + ')}`}
+                title={tx('Taught together: {join}', { join: alloc.groupIds.map((g) => project.classes.find((c) => c.id === g)?.name).join(' + ') })}
               >
                 M
               </span>
@@ -213,8 +233,8 @@ export function AllocationsStep() {
   if (project.classes.length === 0 || project.subjects.length === 0) {
     return (
       <>
-        <PageHeader title="Who teaches what" />
-        <Empty>Add classes and subjects first.</Empty>
+        <PageHeader title={tx('Who teaches what')} />
+        <Empty>{tx('Add classes and subjects first.')}</Empty>
       </>
     );
   }
@@ -228,13 +248,12 @@ export function AllocationsStep() {
 
   return (
     <>
-      <PageHeader title="Who teaches what">
-        Each cell is one subject for one class: periods per week and the teacher. Fill one class, then copy its periods to the rest of the grade and
-        just pick teachers. Totals update as you type.
+      <PageHeader title={tx('Who teaches what')}>
+        {tx('Each cell is one subject for one class: periods per week and the teacher. Fill one class, then copy its periods to the rest of the grade and just pick teachers. Totals update as you type.')}
       </PageHeader>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Grade">
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label={tx('Grade')}>
           {grades.map((g) => {
             const gc = project.classes.filter((c) => c.gradeId === g.id);
             const full = gc.length > 0 && gc.every((c) => checks.classes.get(c.id)?.level === 'ok');
@@ -259,7 +278,7 @@ export function AllocationsStep() {
         </div>
         <label className="ml-auto flex items-center gap-1.5 text-sm text-slate-600">
           <input type="checkbox" checked={!showAllSubjects} onChange={(e) => setShowAllSubjects(!e.target.checked)} />
-          Only subjects in use
+          {tx('Only subjects in use')}
         </label>
       </div>
 
@@ -275,7 +294,7 @@ export function AllocationsStep() {
           <table className="border-collapse text-sm" data-testid="allocation-matrix">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 border border-slate-200 bg-slate-50 px-2 py-1 text-left text-xs uppercase text-slate-500">Class</th>
+                <th className="sticky left-0 z-10 border border-slate-200 bg-slate-50 px-2 py-1 text-left text-xs uppercase text-slate-500">{tx('Class')}</th>
                 {subjects.map((s) => (
                   <th key={s.id} className="border border-slate-200 bg-slate-50 px-1 py-1 text-xs font-semibold" title={s.name}>
                     <span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: s.colour }} />
@@ -283,11 +302,11 @@ export function AllocationsStep() {
                   </th>
                 ))}
                 {hasBlocks && (
-                  <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500" title="Periods in option blocks">
-                    Blocks
+                  <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500" title={tx('Periods in option blocks')}>
+                    {tx('Blocks')}
                   </th>
                 )}
-                <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500">Total</th>
+                <th className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs uppercase text-slate-500">{tx('Total')}</th>
                 <th className="border border-slate-200 bg-slate-50 px-2 py-1" />
               </tr>
             </thead>
@@ -310,7 +329,7 @@ export function AllocationsStep() {
                       />
                     ))}
                     {hasBlocks && (
-                      <td className="border border-slate-200 px-2 text-center text-sm tabular-nums text-indigo-800" title="Periods in option blocks">
+                      <td className="border border-slate-200 px-2 text-center text-sm tabular-nums text-indigo-800" title={tx('Periods in option blocks')}>
                         {total.blockPeriods || ''}
                       </td>
                     )}
@@ -323,15 +342,15 @@ export function AllocationsStep() {
                       {classes.length > 1 && total.periods > 0 && (
                         <button
                           className="text-xs text-teal-800 underline"
-                          title={`Copy ${c.name}'s periods per subject to the other classes in ${grade?.name} (teachers are kept)`}
+                          title={tx('Copy {name}\'s periods per subject to the other classes in {name2} (teachers are kept)', { name: c.name, name2: grade?.name })}
                           onClick={async () => {
                             const others = classes
                               .filter((x) => x.id !== c.id)
                               .map((x) => x.name)
                               .join(', ');
-                            const ok = await confirmDialog(`Copy ${c.name}'s periods?`, {
-                              text: `To ${others}. Teachers already chosen are kept.`,
-                              confirmText: 'Copy',
+                            const ok = await confirmDialog(tx('Copy {name}\'s periods?', { name: c.name }), {
+                              text: tx('To {others}. Teachers already chosen are kept.', { others }),
+                              confirmText: tx('Copy'),
                             });
                             if (ok)
                               update((d) =>
@@ -343,7 +362,7 @@ export function AllocationsStep() {
                               );
                           }}
                         >
-                          Copy to grade
+                          {tx('Copy to grade')}
                         </button>
                       )}
                     </td>
@@ -355,15 +374,15 @@ export function AllocationsStep() {
         </div>
         <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-200 px-3 py-2 text-xs text-slate-600">
           <span>
-            <span className="mr-1 inline-block h-3 w-3 border border-slate-300 bg-white align-middle" /> appointed
+            <span className="mr-1 inline-block h-3 w-3 border border-slate-300 bg-white align-middle" /> {tx('appointed')}
           </span>
           <span>
-            <span className="mr-1 inline-block h-3 w-3 bg-amber-50 ring-1 ring-amber-300 align-middle" /> covering (outside appointment)
+            <span className="mr-1 inline-block h-3 w-3 bg-amber-50 ring-1 ring-amber-300 align-middle" /> {tx('covering (outside appointment)')}
           </span>
           <span>
-            <span className="mr-1 inline-block h-3 w-3 bg-red-50 ring-1 ring-red-300 align-middle" /> no teacher
+            <span className="mr-1 inline-block h-3 w-3 bg-red-50 ring-1 ring-red-300 align-middle" /> {tx('no teacher')}
           </span>
-          <span>2D = two double periods</span>
+          <span>{tx('2D = two double periods')}</span>
         </p>
       </div>
 
@@ -371,14 +390,14 @@ export function AllocationsStep() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card
-          title="Teacher loads"
+          title={tx('Teacher loads')}
           actions={
             <Select
-              aria-label="Sort teachers"
+              aria-label={tx('Sort teachers')}
               value={loadSort}
               options={[
-                { value: 'load', label: 'Most periods first' },
-                { value: 'name', label: 'By name' },
+                { value: 'load', label: tx('Most periods first') },
+                { value: 'name', label: tx('By name') },
               ]}
               onChange={setLoadSort}
               className="w-44 text-xs"
@@ -386,7 +405,7 @@ export function AllocationsStep() {
           }
         >
           {teacherRows.length === 0 ? (
-            <Empty>No teachers yet.</Empty>
+            <Empty>{tx('No teachers yet.')}</Empty>
           ) : (
             <ul className="max-h-96 divide-y divide-slate-100 overflow-auto text-sm" data-testid="teacher-loads">
               {teacherRows.map((t) => {
@@ -403,11 +422,11 @@ export function AllocationsStep() {
                     </span>
                     <LevelBadge level={t.level}>
                       {t.periods}/{limit}
-                      {t.min !== null && ` (min ${t.min})`}
+                      {t.min !== null && tx(' (min {min})', { min: t.min })}
                     </LevelBadge>
                     {t.covering > 0 && (
-                      <span className="text-xs text-amber-800" title="Periods outside appointment">
-                        {t.covering} cov.
+                      <span className="text-xs text-amber-800" title={tx('Periods outside appointment')}>
+                        {tx('{covering} cov.', { covering: t.covering })}
                       </span>
                     )}
                   </li>
@@ -417,14 +436,13 @@ export function AllocationsStep() {
           )}
         </Card>
 
-        <Card title={`Checks${errors + warnings ? ` · ${errors} problem(s), ${warnings} warning(s)` : ''}`}>
+        <Card title={errors + warnings ? tx('Checks · {errors} problem(s), {warnings} warning(s)', { errors, warnings }) : tx('Checks')}>
           <p className="mb-2 text-sm text-slate-600" data-testid="supply-demand">
-            Classes need <strong className="tabular-nums">{checks.demand}</strong> teacher-periods; staff can give up to{' '}
-            <strong className="tabular-nums">{checks.supply}</strong>.
-            {checks.uncoveredPeriods > 0 && ` ${checks.uncoveredPeriods} period(s) still have no teacher.`}
+            <Rich text={tx('Classes need <b>{demand}</b> teacher-periods; staff can give up to <b>{supply}</b>.', { demand: checks.demand, supply: checks.supply })} />
+            {checks.uncoveredPeriods > 0 && tx(' {uncoveredPeriods} period(s) still have no teacher.', { uncoveredPeriods: checks.uncoveredPeriods })}
           </p>
           {checks.issues.length === 0 ? (
-            <p className="text-sm text-emerald-800">No problems found.</p>
+            <p className="text-sm text-emerald-800">{tx('No problems found.')}</p>
           ) : (
             <ul className="max-h-96 space-y-1.5 overflow-auto text-sm">
               {checks.issues.map((i, n) => (
@@ -439,7 +457,7 @@ export function AllocationsStep() {
                   }`}
                 >
                   {i.message}
-                  {i.fix && <span className="block text-xs text-slate-700">Suggestion: {i.fix}</span>}
+                  {i.fix && <span className="block text-xs text-slate-700">{tx('Suggestion: {fix}', { fix: i.fix })}</span>}
                 </li>
               ))}
             </ul>

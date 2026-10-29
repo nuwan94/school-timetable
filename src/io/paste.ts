@@ -1,6 +1,7 @@
 import type { Medium } from '@/domain/common';
 import type { Subject } from '@/domain/entities';
 import type { Project } from '@/domain/project';
+import { tx } from '@/i18n';
 
 /**
  * Parses rows pasted from Excel / Google Sheets (tab-separated) into teacher
@@ -130,11 +131,11 @@ export function parseAllocationPaste(text: string, p: Lookups): PastedAllocation
     const s = findSubject(subject);
     const t = teacher ? findTeacher(teacher) : undefined;
     const errors: string[] = [];
-    if (!c) errors.push(`unknown class "${cls}"`);
-    if (!s) errors.push(`unknown subject "${subject}"`);
-    if (teacher && !t) errors.push(`unknown teacher "${teacher}"`);
-    if (!Number.isInteger(periods) || periods < 0 || periods > 20) errors.push(`bad periods "${periods}"`);
-    if (doubles * 2 > periods) errors.push('more doubles than periods allow');
+    if (!c) errors.push(tx('unknown class "{cls}"', { cls }));
+    if (!s) errors.push(tx('unknown subject "{subject}"', { subject }));
+    if (teacher && !t) errors.push(tx('unknown teacher "{teacher}"', { teacher }));
+    if (!Number.isInteger(periods) || periods < 0 || periods > 20) errors.push(tx('bad periods "{periods}"', { periods }));
+    if (doubles * 2 > periods) errors.push(tx('more doubles than periods allow'));
     return {
       row,
       classId: c?.id ?? null,
@@ -161,7 +162,7 @@ export function parseAllocationPaste(text: string, p: Lookups): PastedAllocation
         if (!cell.trim() || !findSubject(subject)) return;
         const parsed = parseCell(cell);
         if (!parsed) {
-          out.push({ ...make(i + 2, cls, subject, 0, 0, ''), errors: [`cannot read "${cell.trim()}"`] });
+          out.push({ ...make(i + 2, cls, subject, 0, 0, ''), errors: [tx('cannot read "{cell}"', { cell: cell.trim() })] });
           return;
         }
         out.push(make(i + 2, cls, subject, parsed.periods, parsed.doubles, parsed.teacher));

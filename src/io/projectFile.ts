@@ -1,5 +1,6 @@
 import { loadProject } from '@/domain/migrations';
 import type { Project } from '@/domain/project';
+import { tx } from '@/i18n';
 
 /**
  * Project file I/O. Uses the File System Access API where available (Chrome/Edge
@@ -10,7 +11,7 @@ import type { Project } from '@/domain/project';
 export const FILE_EXTENSION = '.ttb';
 const PICKER_TYPES = [
   {
-    description: 'Timetable project',
+    get description() { return tx('Timetable project'); },
     accept: { 'application/json': [FILE_EXTENSION, '.json'] },
   },
 ];
@@ -42,7 +43,7 @@ export function parseProjectText(text: string): Project {
   try {
     json = JSON.parse(text);
   } catch {
-    throw new Error('This file is not a timetable project (it is not valid JSON).');
+    throw new Error(tx('This file is not a timetable project (it is not valid JSON).'));
   }
   return loadProject(json);
 }

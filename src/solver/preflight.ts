@@ -3,6 +3,7 @@ import { doublesIn, expandPattern, patternPeriods } from '@/domain/factories';
 import type { Project } from '@/domain/project';
 import { numParam, ruleAppliesToClass, ruleFor } from '@/domain/rules';
 import { buildModel } from './model';
+import { tx } from '@/i18n';
 
 /**
  * Pre-flight (PLAN.md §4.3): everything the live checks find, plus problems
@@ -34,10 +35,10 @@ export function preflight(p: Project): Preflight {
         severity: 'error',
         message: `${u.label}: ${u.noPositionReason}.`,
         fix: u.noPositionReason?.includes('not available')
-          ? 'Add a working day for the teacher or give the lesson to another teacher.'
+          ? tx('Add a working day for the teacher or give the lesson to another teacher.')
           : u.length > 1
-            ? 'Turn the double period into two singles, or remove the break between those periods.'
-            : 'Check the fixed time and the bell schedule.',
+            ? tx('Turn the double period into two singles, or remove the break between those periods.')
+            : tx('Check the fixed time and the bell schedule.'),
       });
 
   // Once-per-day (R4 hard) needs no more lessons than days.
@@ -52,8 +53,8 @@ export function preflight(p: Project): Preflight {
       const needDoubles = lessons - days;
       issues.push({
         severity: 'error',
-        message: `${classes.map((c) => c!.name).join('+')} ${subject?.name}: ${lessons} lessons a week but "once per day" allows only ${days}.`,
-        fix: `Make ${needDoubles + doublesIn(a.pattern)} of its ${patternPeriods(a.pattern)} periods double periods, or make rule R4 soft.`,
+        message: tx('{join} {name}: {lessons} lessons a week but "once per day" allows only {days}.', { join: classes.map((c) => c!.name).join('+'), name: subject?.name, lessons, days }),
+        fix: tx('Make {x} of its {patternPeriods} periods double periods, or make rule R4 soft.', { x: needDoubles + doublesIn(a.pattern), patternPeriods: patternPeriods(a.pattern) }),
       });
     }
   }
@@ -68,15 +69,15 @@ export function preflight(p: Project): Preflight {
     if (r12?.strength === 'hard' && total.periods > maxPerDay * tDays)
       issues.push({
         severity: 'error',
-        message: `${t.name} has ${total.periods} periods but at most ${maxPerDay}/day × ${tDays} days = ${maxPerDay * tDays} are allowed (rule R12).`,
-        fix: 'Move some periods to another teacher, add working days, or raise the daily maximum.',
+        message: tx('{name} has {periods} periods but at most {maxPerDay}/day × {tDays} days = {x} are allowed (rule R12).', { name: t.name, periods: total.periods, maxPerDay, tDays, x: maxPerDay * tDays }),
+        fix: tx('Move some periods to another teacher, add working days, or raise the daily maximum.'),
       });
     // Rule vs norm (the v2 contradiction): a daily cap that makes the minimum unreachable.
     if (r12 && total.min !== null && maxPerDay * tDays < total.min)
       issues.push({
         severity: 'warning',
-        message: `Rule R12 (max ${maxPerDay}/day) makes ${t.name}'s minimum of ${total.min} periods impossible over ${tDays} day(s).`,
-        fix: 'Raise the daily maximum or lower the minimum for this role.',
+        message: tx('Rule R12 (max {maxPerDay}/day) makes {name}\'s minimum of {min} periods impossible over {tDays} day(s).', { maxPerDay, name: t.name, min: total.min, tDays }),
+        fix: tx('Raise the daily maximum or lower the minimum for this role.'),
       });
   }
 
@@ -90,12 +91,12 @@ export function preflight(p: Project): Preflight {
     if (multiSchedule(b.classIds))
       issues.push({
         severity: 'error',
-        message: `Option block "${b.name}" mixes classes with different bell schedules.`,
-        fix: 'Split the block by section, or put those sections on the same bell schedule.',
+        message: tx('Option block "{name}" mixes classes with different bell schedules.', { name: b.name }),
+        fix: tx('Split the block by section, or put those sections on the same bell schedule.'),
       });
   for (const a of p.allocations)
     if (a.groupIds.length > 1 && multiSchedule(a.groupIds))
-      issues.push({ severity: 'error', message: 'A combined lesson mixes classes with different bell schedules.', fix: 'Separate the classes.' });
+      issues.push({ severity: 'error', message: tx('A combined lesson mixes classes with different bell schedules.'), fix: tx('Separate the classes.') });
 
   // Room types: demand vs rooms × periods.
   for (const rt of p.roomTypes) {
@@ -106,8 +107,8 @@ export function preflight(p: Project): Preflight {
     if (rooms.length === 0) {
       issues.push({
         severity: 'info',
-        message: `${demand} periods need a ${rt.name} but no ${rt.name} is listed — they will be timetabled without a room.`,
-        fix: `Add the ${rt.name} in Special rooms to have it scheduled.`,
+        message: tx('{demand} periods need a {name} but no {name} is listed — they will be timetabled without a room.', { demand, name: rt.name }),
+        fix: tx('Add the {name} in Special rooms to have it scheduled.', { name: rt.name }),
       });
       continue;
     }
@@ -115,8 +116,8 @@ export function preflight(p: Project): Preflight {
     if (demand > weekly)
       issues.push({
         severity: 'error',
-        message: `${demand} periods need a ${rt.name} but ${rooms.length} room(s) give about ${weekly} per week.`,
-        fix: `Add another ${rt.name}, or let some of these lessons use ordinary classrooms (clear "Needs room" on the subject).`,
+        message: tx('{demand} periods need a {name} but {rooms} room(s) give about {weekly} per week.', { demand, name: rt.name, rooms: rooms.length, weekly }),
+        fix: tx('Add another {name}, or let some of these lessons use ordinary classrooms (clear "Needs room" on the subject).', { name: rt.name }),
       });
   }
 
@@ -125,8 +126,8 @@ export function preflight(p: Project): Preflight {
     if (u.kind === 'line' && u.teacherIds.length > 1 && u.positions.length > 0 && u.positions.length < 3)
       issues.push({
         severity: 'warning',
-        message: `${u.label}: its teachers are all free at only ${u.positions.length} time(s) a week.`,
-        fix: 'Check the part-time teachers\' days in this line.',
+        message: tx('{label}: its teachers are all free at only {positions} time(s) a week.', { label: u.label, positions: u.positions.length }),
+        fix: tx('Check the part-time teachers\' days in this line.'),
       });
 
   const r1 = ruleFor(p, 'R1');
@@ -135,16 +136,16 @@ export function preflight(p: Project): Preflight {
     if (missing.length)
       issues.push({
         severity: 'warning',
-        message: `${missing.length} class(es) have no class teacher, so "class teacher takes period 1" cannot apply: ${missing
+        message: tx('{missing} class(es) have no class teacher, so "class teacher takes period 1" cannot apply: {join}{x}.', { missing: missing.length, join: missing
           .slice(0, 6)
           .map((c) => c.name)
-          .join(', ')}${missing.length > 6 ? '…' : ''}.`,
-        fix: 'Pick class teachers in Classes.',
+          .join(', '), x: missing.length > 6 ? '…' : '' }),
+        fix: tx('Pick class teachers in Classes.'),
       });
   }
 
   if (p.allocations.length === 0 && p.optionBlocks.length === 0)
-    issues.push({ severity: 'error', message: 'Nothing to timetable yet.', fix: 'Fill in Who teaches what.' });
+    issues.push({ severity: 'error', message: tx('Nothing to timetable yet.'), fix: tx('Fill in Who teaches what.') });
 
   const classOver = [...live.classes.values()].some((c) => c.level === 'over');
   return {

@@ -5,6 +5,7 @@ import type { Project } from '@/domain/project';
 import { numParam, ruleAppliesToClass, ruleFor } from '@/domain/rules';
 import type { Placement } from '@/domain/schedule';
 import { slotsForDay, type BellSchedule, type Weekday } from '@/domain/time';
+import { dayShort, tx } from '@/i18n';
 
 /**
  * Solver model: the project flattened into placeable *units* (one per lesson
@@ -144,17 +145,17 @@ export function buildModel(p: Project, opts: ModelOptions = {}): Model {
     const schedule = cls ? scheduleForClass(p, cls) : p.bellSchedules[0];
     let positions = schedule ? positionsFor(schedule, days, u.length) : [];
     let noPositionReason: string | undefined;
-    if (positions.length === 0) noPositionReason = u.length > 1 ? `no ${u.length} periods in a row without a break` : 'no teaching periods';
+    if (positions.length === 0) noPositionReason = u.length > 1 ? tx('no {n} periods in a row without a break', { n: u.length }) : tx('no teaching periods');
     const teachers = u.teacherIds.map((id) => p.teachers.find((t) => t.id === id)).filter((t): t is Teacher => !!t);
     const available = positions.filter((pos) => teachers.every((t) => teacherAvailable(t, pos)));
     if (positions.length && !available.length)
-      noPositionReason = `${teachers.map((t) => t.name).join(' / ')} not available at any possible time`;
+      noPositionReason = tx('{names} not available at any possible time', { names: teachers.map((t) => t.name).join(' / ') });
     positions = available;
     const lock = lockedByKey.get(u.key);
     const pin = lock ?? fixed;
     if (pin) {
       const at = positions.filter((pos) => pos.day === pin.day && pos.slotId === pin.slotId);
-      if (!at.length) noPositionReason = `its fixed time (${pin.day}) is not a valid time for this lesson`;
+      if (!at.length) noPositionReason = tx('its fixed time ({day}) is not a valid time for this lesson', { day: dayShort(pin.day) });
       positions = at;
     }
     const r1Class = u.classIds.length === 1 && r1Classes.has(u.classIds[0]!);

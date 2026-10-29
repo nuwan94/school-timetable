@@ -15,15 +15,17 @@ import { useProjectStore } from '@/store/projectStore';
 import { useUiStore } from '@/store/uiStore';
 import { PageHeader } from '@/ui/kit';
 import { ExportButtons, ReportView } from '@/ui/ReportView';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const TABS = [
-  { id: 'contact', label: 'Contact hours' },
-  { id: 'rooms', label: 'Rooms' },
-  { id: 'contract', label: 'Contract hours' },
-  { id: 'visiting', label: 'Visiting claims' },
-  { id: 'sets', label: 'Sets' },
-  { id: 'houses', label: 'Houses' },
-  { id: 'ccas', label: 'Activities' },
+  { id: 'contact', get label() { return tx('Contact hours'); } },
+  { id: 'rooms', get label() { return tx('Rooms'); } },
+  { id: 'contract', get label() { return tx('Contract hours'); } },
+  { id: 'visiting', get label() { return tx('Visiting claims'); } },
+  { id: 'sets', get label() { return tx('Sets'); } },
+  { id: 'houses', get label() { return tx('Houses'); } },
+  { id: 'ccas', get label() { return tx('Activities'); } },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
@@ -60,16 +62,16 @@ export function IntlReportsScreen() {
   const houseLists = useMemo(() => project.houses.map((h) => houseList(project, h.id)), [project]);
   const ccas = useMemo(() => ccaSummary(project), [project]);
   const rosters = useMemo(() => project.ccas.map((c) => ccaRoster(project, c.id)), [project]);
-  const short = contact.rows.filter((r) => String(r.status).includes('short') || String(r.status).includes('under')).length;
+  const meets = tx('Meets');
+  const short = contact.rows.filter((r) => r.status && r.status !== meets).length;
 
   return (
     <div className="space-y-4">
-      <PageHeader title="International reports">
-        Contact time against each board&apos;s guided learning hours, room use, contract hours for expatriate staff, visiting specialists&apos; claims
-        for payroll, teaching sets, houses and co-curricular rosters.
+      <PageHeader title={tx('International reports')}>
+        {tx('Contact time against each board\'s guided learning hours, room use, contract hours for expatriate staff, visiting specialists\' claims for payroll, teaching sets, houses and co-curricular rosters.')}
       </PageHeader>
 
-      <div role="tablist" aria-label="International reports" className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+      <div role="tablist" aria-label={tx('International reports')} className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -89,11 +91,10 @@ export function IntlReportsScreen() {
 
       {!hasTimetable && ['contact', 'rooms', 'contract', 'visiting'].includes(tab) && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
-          These figures come from the timetable.{' '}
-          <button className="font-medium underline" onClick={() => go('generate')}>
-            Generate one first
-          </button>
-          .
+          <Rich
+            text={tx('These figures come from the timetable. <link>Generate one first</link>.')}
+            tags={{ link: (c) => <button className="font-medium underline" onClick={() => go('generate')}>{c}</button> }}
+          />
         </p>
       )}
 
@@ -101,11 +102,10 @@ export function IntlReportsScreen() {
         <>
           {!project.institute.teachingWeeks && (
             <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900">
-              Hours a year need the number of teaching weeks.{' '}
-              <button className="font-medium underline" onClick={() => go('school')}>
-                Set it in School &amp; bells
-              </button>
-              .
+              <Rich
+                text={tx('Hours a year need the number of teaching weeks. <link>Set it in School & bells</link>.')}
+                tags={{ link: (c) => <button className="font-medium underline" onClick={() => go('school')}>{c}</button> }}
+              />
             </p>
           )}
           <ReportView project={project} table={contact} />
@@ -120,7 +120,7 @@ export function IntlReportsScreen() {
           actions={
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="flex items-center gap-1">
-                From
+                {tx('From')}
                 <input
                   type="date"
                   className="field w-36"
@@ -129,7 +129,7 @@ export function IntlReportsScreen() {
                 />
               </label>
               <label className="flex items-center gap-1">
-                to
+                {tx('to')}
                 <input
                   type="date"
                   className="field w-36"
@@ -151,11 +151,11 @@ export function IntlReportsScreen() {
             table={houses}
             actions={
               houseLists.length > 0 && (
-                <Labelled label="House lists">{<ExportButtons project={project} tables={houseLists} label="house-lists" />}</Labelled>
+                <Labelled label={tx('House lists')}>{<ExportButtons project={project} tables={houseLists} label="house-lists" />}</Labelled>
               )
             }
           />
-          <p className="text-xs text-slate-500">House lists export every house as its own sheet (Excel) or pages (PDF).</p>
+          <p className="text-xs text-slate-500">{tx('House lists export every house as its own sheet (Excel) or pages (PDF).')}</p>
         </>
       )}
       {tab === 'ccas' && (
@@ -163,7 +163,7 @@ export function IntlReportsScreen() {
           project={project}
           table={ccas}
           actions={
-            rosters.length > 0 && <Labelled label="Rosters">{<ExportButtons project={project} tables={rosters} label="activity-rosters" />}</Labelled>
+            rosters.length > 0 && <Labelled label={tx('Rosters')}>{<ExportButtons project={project} tables={rosters} label="activity-rosters" />}</Labelled>
           }
         />
       )}

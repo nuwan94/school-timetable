@@ -4,6 +4,7 @@ import { makeTeacher } from './factories';
 import type { Project } from './project';
 import type { TimetableVersion } from './schedule';
 import { lessonEntries, snapshotOf } from './timetable';
+import { tx } from '@/i18n';
 
 /**
  * Mid-year changes (PLAN.md §7): templates that change the data, a diff
@@ -135,7 +136,7 @@ export function longLeave(
     to: input.to,
     slotIds: [],
     recurrence: null,
-    reason: input.reason || 'Long leave',
+    reason: input.reason || tx('Long leave'),
     coverTeacherId: input.coverTeacherId,
   });
 }
@@ -180,7 +181,7 @@ export function saveChangeVersion(
     status: 'draft',
     effectiveFrom: input.effectiveFrom,
     basedOnId: input.baseId,
-    note: 'mid-year change',
+    note: tx('mid-year change'),
     createdAt: new Date().toISOString(),
     placements: input.placements,
     baseSnapshot: input.baseSnapshot,

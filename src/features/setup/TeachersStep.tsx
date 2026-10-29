@@ -3,19 +3,20 @@ import { CATEGORY_LABELS } from '@/domain/catalog';
 import type { Medium } from '@/domain/common';
 import type { EmploymentCategory, Teacher } from '@/domain/entities';
 import { makeRole, makeTeacher } from '@/domain/factories';
-import { WEEKDAYS, type Weekday } from '@/domain/time';
+import { WEEKDAYS } from '@/domain/time';
 import { parseTeacherPaste } from '@/io/paste';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Chips, Empty, IconButton, NumberInput, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
 import { useDelete } from './useDelete';
+import { dayShort, tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const MEDIA = [
-  { value: 'si', label: 'S', title: 'Sinhala' },
-  { value: 'ta', label: 'T', title: 'Tamil' },
-  { value: 'en', label: 'E', title: 'English' },
+  { value: 'si', label: 'S', get title() { return tx('Sinhala'); } },
+  { value: 'ta', label: 'T', get title() { return tx('Tamil'); } },
+  { value: 'en', label: 'E', get title() { return tx('English'); } },
 ] as const satisfies readonly { value: Medium; label: string; title: string }[];
 
-const DAY_LETTER: Record<Weekday, string> = { mon: 'M', tue: 'Tu', wed: 'W', thu: 'Th', fri: 'F', sat: 'Sa', sun: 'Su' };
 const CATEGORY_OPTIONS = (Object.keys(CATEGORY_LABELS) as EmploymentCategory[]).map((c) => ({ value: c, label: CATEGORY_LABELS[c] }));
 
 function RolesCard() {
@@ -24,29 +25,29 @@ function RolesCard() {
   const remove = useDelete();
   return (
     <Card
-      title="Roles and teaching-load norms"
+      title={tx('Roles and teaching-load norms')}
       actions={
         <button
           className="btn"
           onClick={() =>
             update((d) => {
-              d.roles.push(makeRole({ name: 'New role', norm: { unit: 'periods', min: null, max: null } }));
+              d.roles.push(makeRole({ name: tx('New role'), norm: { unit: 'periods', min: null, max: null } }));
             })
           }
         >
-          + Role
+          {tx('+ Role')}
         </button>
       }
     >
       <p className="mb-3 text-sm text-slate-600">
-        Periods per week. {project.pack === 'sl-gov' && 'Enter the minimum from the current Ministry circular — the app does not assume a figure. '}
-        Leave blank for no limit.
+        {tx('Periods per week.')} {project.pack === 'sl-gov' && tx('Enter the minimum from the current Ministry circular — the app does not assume a figure. ')}
+        {tx('Leave blank for no limit.')}
       </p>
       <div className="space-y-2">
         {project.roles.map((r) => (
           <div key={r.id} className="flex flex-wrap items-center gap-2">
             <TextInput
-              aria-label="Role name"
+              aria-label={tx('Role name')}
               value={r.name}
               onChange={(v) =>
                 update((d) => {
@@ -55,9 +56,9 @@ function RolesCard() {
               }
               className="w-48"
             />
-            <span className="text-sm text-slate-500">min</span>
+            <span className="text-sm text-slate-500">{tx('min')}</span>
             <NumberInput
-              aria-label={`${r.name} minimum periods`}
+              aria-label={tx('{name} minimum periods', { name: r.name })}
               value={r.norm.min}
               nullable
               min={0}
@@ -69,9 +70,9 @@ function RolesCard() {
               }
               className="w-20"
             />
-            <span className="text-sm text-slate-500">max</span>
+            <span className="text-sm text-slate-500">{tx('max')}</span>
             <NumberInput
-              aria-label={`${r.name} maximum periods`}
+              aria-label={tx('{name} maximum periods', { name: r.name })}
               value={r.norm.max}
               nullable
               min={0}
@@ -83,8 +84,8 @@ function RolesCard() {
               }
               className="w-20"
             />
-            <span className="text-xs text-slate-500">{project.teachers.filter((t) => t.roleId === r.id).length} teacher(s)</span>
-            <IconButton label={`Delete role ${r.name}`} danger onClick={() => remove('role', r.id, r.name)}>
+            <span className="text-xs text-slate-500">{tx('{length} teacher(s)', { length: project.teachers.filter((t) => t.roleId === r.id).length })}</span>
+            <IconButton label={tx('Delete role {name}', { name: r.name })} danger onClick={() => remove('role', r.id, r.name)}>
               <TrashIcon />
             </IconButton>
           </div>
@@ -103,17 +104,20 @@ function PasteCard({ onDone }: { onDone: () => void }) {
   const defaultRole = project.roles.find((r) => r.name === 'Teacher')?.id ?? null;
 
   return (
-    <Card title="Paste teachers from Excel">
+    <Card title={tx('Paste teachers from Excel')}>
       <p className="mb-2 text-sm text-slate-600">
-        Copy rows with columns <strong>Name · Short code · Subjects · Media</strong> and paste below. Subjects can be codes or
-        names separated by commas (e.g. <code>MAT, SCI</code>). Media: Sinhala / Tamil / English.
+        <Rich
+          text={tx(
+            'Copy rows with columns <b>Name · Short code · Subjects · Media</b> and paste below. Subjects can be codes or names separated by commas (e.g. <code>MAT, SCI</code>). Media: Sinhala / Tamil / English.',
+          )}
+        />
       </p>
       <textarea
-        aria-label="Pasted rows"
+        aria-label={tx('Pasted rows')}
         className="field h-32 w-full font-mono text-xs"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={'K. Perera\tKP\tMAT, SCI\tSinhala\nA. Rajan\tAR\tTAM\tTamil'}
+        placeholder={tx('K. Perera	KP	MAT, SCI	Sinhala\nA. Rajan	AR	TAM	Tamil')}
       />
       {rows.length > 0 && (
         <div className="mt-2 max-h-56 overflow-auto rounded border border-slate-200">
@@ -126,8 +130,8 @@ function PasteCard({ onDone }: { onDone: () => void }) {
                   <td className="px-2 py-1">{r.subjectIds.map((id) => project.subjects.find((s) => s.id === id)?.shortCode).join(', ')}</td>
                   <td className="px-2 py-1">{r.media.join(', ')}</td>
                   <td className="px-2 py-1 text-amber-800">
-                    {existing.has(r.name.toLowerCase()) && 'already exists · '}
-                    {r.unknown.length > 0 && `unknown subject: ${r.unknown.join(', ')}`}
+                    {existing.has(r.name.toLowerCase()) && tx('already exists · ')}
+                    {r.unknown.length > 0 && tx('unknown subject: {join}', { join: r.unknown.join(', ') })}
                   </td>
                 </tr>
               ))}
@@ -150,10 +154,10 @@ function PasteCard({ onDone }: { onDone: () => void }) {
             onDone();
           }}
         >
-          Add {rows.filter((r) => !existing.has(r.name.toLowerCase())).length} teacher(s)
+          {tx('Add {length} teacher(s)', { length: rows.filter((r) => !existing.has(r.name.toLowerCase())).length })}
         </button>
         <button className="btn" onClick={onDone}>
-          Cancel
+          {tx('Cancel')}
         </button>
       </div>
     </Card>
@@ -173,7 +177,7 @@ export function SubjectPicker({ value, onChange }: { value: string[]; onChange: 
           <button
             key={id}
             type="button"
-            title={`${s.name} — click to remove`}
+            title={tx('{name} — click to remove', { name: s.name })}
             onClick={() => onChange(value.filter((v) => v !== id))}
             className="rounded-full border border-teal-700 bg-teal-700 px-1.5 py-0.5 text-xs text-white hover:bg-teal-800"
           >
@@ -183,12 +187,12 @@ export function SubjectPicker({ value, onChange }: { value: string[]; onChange: 
       })}
       {rest.length > 0 && (
         <select
-          aria-label="Add subject"
+          aria-label={tx('Add subject')}
           className="rounded-full border border-dashed border-slate-400 bg-white px-1.5 py-0.5 text-xs text-slate-600"
           value=""
           onChange={(e) => e.target.value && onChange([...value, e.target.value])}
         >
-          <option value="">+ add</option>
+          <option value="">{tx('+ add')}</option>
           {rest.map((s) => (
             <option key={s.id} value={s.id}>
               {s.shortCode ? `${s.shortCode} — ${s.name}` : s.name}
@@ -216,29 +220,29 @@ function TeacherDetails({ t }: { t: Teacher }) {
   );
   return (
     <div className="grid gap-3 bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
-      {field('Title', <TextInput value={t.title} placeholder="Mr / Mrs / Rev." onChange={(v) => edit((x) => (x.title = v))} />)}
-      {field('Department', <TextInput value={t.department} onChange={(v) => edit((x) => (x.department = v))} />)}
+      {field('Title', <TextInput value={t.title} placeholder={tx('Mr / Mrs / Rev.')} onChange={(v) => edit((x) => (x.title = v))} />)}
+      {field(tx('Department'), <TextInput value={t.department} onChange={(v) => edit((x) => (x.department = v))} />)}
       {(t.category === 'attached' || t.category === 'visiting') &&
-        field('Other school', <TextInput value={t.hostSchool} onChange={(v) => edit((x) => (x.hostSchool = v))} />)}
+        field(tx('Other school'), <TextInput value={t.hostSchool} onChange={(v) => edit((x) => (x.hostSchool = v))} />)}
       {project.pack === 'international' &&
         field(
-          'Contract hours a week',
+          tx('Contract hours a week'),
           <NumberInput
             value={t.contractMinutes === null ? null : t.contractMinutes / 60}
             nullable
             min={1}
             max={60}
-            placeholder="Expatriate contracts"
+            placeholder={tx('Expatriate contracts')}
             onChange={(v) => edit((x) => (x.contractMinutes = v === null ? null : Math.round(v * 60)))}
           />,
         )}
       {(t.category === 'visiting' || t.hourlyRate !== null) &&
         field(
-          'Hourly rate (claims)',
+          tx('Hourly rate (claims)'),
           <NumberInput value={t.hourlyRate} nullable min={0} max={1_000_000} onChange={(v) => edit((x) => (x.hourlyRate = v))} />,
         )}
       {field(
-        'Max periods/week (override)',
+        tx('Max periods/week (override)'),
         <NumberInput
           value={t.normOverride?.max ?? null}
           nullable
@@ -253,10 +257,10 @@ function TeacherDetails({ t }: { t: Teacher }) {
       )}
       {service && (
         <>
-          {field('Service grade', <TextInput value={t.serviceGrade} placeholder="SLTS 2-II" onChange={(v) => edit((x) => (x.serviceGrade = v))} />)}
-          {field('Appointment type', <TextInput value={t.appointmentType} placeholder="Graduate / Trained" onChange={(v) => edit((x) => (x.appointmentType = v))} />)}
+          {field(tx('Service grade'), <TextInput value={t.serviceGrade} placeholder={tx('SLTS 2-II')} onChange={(v) => edit((x) => (x.serviceGrade = v))} />)}
+          {field(tx('Appointment type'), <TextInput value={t.appointmentType} placeholder={tx('Graduate / Trained')} onChange={(v) => edit((x) => (x.appointmentType = v))} />)}
           {field(
-            'Appointment subject',
+            tx('Appointment subject'),
             <Select
               value={t.appointmentSubjectId ?? ''}
               options={[{ value: '', label: '—' }, ...project.subjects.map((s) => ({ value: s.id, label: s.name }))]}
@@ -264,23 +268,23 @@ function TeacherDetails({ t }: { t: Teacher }) {
             />,
           )}
           {field(
-            'Appointment medium',
+            tx('Appointment medium'),
             <Select
               value={t.appointmentMedium ?? ''}
               options={[
                 { value: '', label: '—' },
-                { value: 'si', label: 'Sinhala' },
-                { value: 'ta', label: 'Tamil' },
-                { value: 'en', label: 'English' },
+                { value: 'si', label: tx('Sinhala') },
+                { value: 'ta', label: tx('Tamil') },
+                { value: 'en', label: tx('English') },
               ]}
               onChange={(v) => edit((x) => (x.appointmentMedium = (v || null) as Medium | null))}
             />,
           )}
           {field(
-            'Appointed to this school',
+            tx('Appointed to this school'),
             <input type="date" className="field w-full" value={t.appointedToSchoolOn ?? ''} onChange={(e) => edit((x) => (x.appointedToSchoolOn = e.target.value || null))} />,
           )}
-          {field('NIC (stays on this device)', <TextInput value={t.nic} onChange={(v) => edit((x) => (x.nic = v))} />)}
+          {field(tx('NIC (stays on this device)'), <TextInput value={t.nic} onChange={(v) => edit((x) => (x.nic = v))} />)}
         </>
       )}
     </div>
@@ -307,52 +311,51 @@ export function TeachersStep() {
 
   return (
     <>
-      <PageHeader title="Teachers">
-        Tick the subjects each teacher can teach and the media they teach in. For shared or part-time staff, tick only the days
-        they are at this school.
+      <PageHeader title={tx('Teachers')}>
+        {tx('Tick the subjects each teacher can teach and the media they teach in. For shared or part-time staff, tick only the days they are at this school.')}
       </PageHeader>
 
       <div className="space-y-4">
         <RolesCard />
         {pasting && <PasteCard onDone={() => setPasting(false)} />}
         <Card
-          title={`Teachers (${project.teachers.length})`}
+          title={tx('Teachers ({teachers})', { teachers: project.teachers.length })}
           actions={
             <>
-              <TextInput aria-label="Find teacher" value={filter} onChange={setFilter} placeholder="Find…" className="w-36" />
+              <TextInput aria-label={tx('Find teacher')} value={filter} onChange={setFilter} placeholder={tx('Find…')} className="w-36" />
               {!pasting && (
                 <button className="btn" onClick={() => setPasting(true)}>
-                  Paste from Excel
+                  {tx('Paste from Excel')}
                 </button>
               )}
               <button
                 className="btn btn-primary"
                 onClick={() =>
                   update((d) => {
-                    d.teachers.push(makeTeacher({ name: 'New teacher', roleId: d.roles.find((r) => r.name === 'Teacher')?.id ?? null }));
+                    d.teachers.push(makeTeacher({ name: tx('New teacher'), roleId: d.roles.find((r) => r.name === 'Teacher')?.id ?? null }));
                   })
                 }
               >
-                + Teacher
+                {tx('+ Teacher')}
               </button>
             </>
           }
         >
-          {project.subjects.length === 0 && <p className="mb-2 text-sm text-amber-800">Add subjects first so you can tick what each teacher teaches.</p>}
+          {project.subjects.length === 0 && <p className="mb-2 text-sm text-amber-800">{tx('Add subjects first so you can tick what each teacher teaches.')}</p>}
           {teachers.length === 0 ? (
-            <Empty>{q ? 'No teacher matches.' : 'No teachers yet.'}</Empty>
+            <Empty>{q ? tx('No teacher matches.') : tx('No teachers yet.')}</Empty>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1180px] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase text-slate-500">
-                    <th className="py-1 pr-2">Name</th>
-                    <th className="py-1 pr-2">Code</th>
-                    <th className="py-1 pr-2">Role</th>
-                    {!simple && <th className="py-1 pr-2">Type</th>}
-                    <th className="py-1 pr-2">Subjects</th>
-                    <th className="py-1 pr-2">Media</th>
-                    <th className="py-1 pr-2">Days here</th>
+                    <th className="py-1 pr-2">{tx('Name')}</th>
+                    <th className="py-1 pr-2">{tx('Code')}</th>
+                    <th className="py-1 pr-2">{tx('Role')}</th>
+                    {!simple && <th className="py-1 pr-2">{tx('Type')}</th>}
+                    <th className="py-1 pr-2">{tx('Subjects')}</th>
+                    <th className="py-1 pr-2">{tx('Media')}</th>
+                    <th className="py-1 pr-2">{tx('Days here')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -361,17 +364,17 @@ export function TeachersStep() {
                     <Fragment key={t.id}>
                       <tr className="border-t border-slate-100 align-top">
                         <td className="py-1.5 pr-2">
-                          <TextInput aria-label="Teacher name" value={t.name} onChange={(v) => edit(t.id, (x) => (x.name = v))} className="w-44" />
+                          <TextInput aria-label={tx('Teacher name')} value={t.name} onChange={(v) => edit(t.id, (x) => (x.name = v))} className="w-44" />
                         </td>
                         <td className="py-1.5 pr-2">
-                          <TextInput aria-label="Short code" value={t.shortCode} maxLength={6} onChange={(v) => edit(t.id, (x) => (x.shortCode = v))} className="w-16" />
+                          <TextInput aria-label={tx('Short code')} value={t.shortCode} maxLength={6} onChange={(v) => edit(t.id, (x) => (x.shortCode = v))} className="w-16" />
                         </td>
                         <td className="py-1.5 pr-2">
-                          <Select aria-label="Role" value={t.roleId ?? ''} options={roleOptions} onChange={(v) => edit(t.id, (x) => (x.roleId = v || null))} className="w-36" />
+                          <Select aria-label={tx('Role')} value={t.roleId ?? ''} options={roleOptions} onChange={(v) => edit(t.id, (x) => (x.roleId = v || null))} className="w-36" />
                         </td>
                         {!simple && (
                           <td className="py-1.5 pr-2">
-                            <Select aria-label="Employment type" value={t.category} options={CATEGORY_OPTIONS} onChange={(v) => edit(t.id, (x) => (x.category = v))} className="w-36" />
+                            <Select aria-label={tx('Employment type')} value={t.category} options={CATEGORY_OPTIONS} onChange={(v) => edit(t.id, (x) => (x.category = v))} className="w-36" />
                           </td>
                         )}
                         <td className="min-w-[200px] max-w-xs py-1.5 pr-2">
@@ -384,7 +387,7 @@ export function TeachersStep() {
                           <Chips
                             size="sm"
                             value={t.contractedDays.length ? t.contractedDays : days}
-                            options={days.map((d) => ({ value: d, label: DAY_LETTER[d] }))}
+                            options={days.map((d) => ({ value: d, label: dayShort(d) }))}
                             onChange={(v) => {
                               if (v.length === 0) return;
                               edit(t.id, (x) => (x.contractedDays = v.length === days.length ? [] : WEEKDAYS.filter((w) => v.includes(w))));
@@ -393,9 +396,9 @@ export function TeachersStep() {
                         </td>
                         <td className="whitespace-nowrap py-1.5 text-right">
                           <button className="px-1 text-xs text-teal-800 underline" aria-expanded={open === t.id} onClick={() => setOpen(open === t.id ? null : t.id)}>
-                            {open === t.id ? 'Less' : 'More'}
+                            {open === t.id ? tx('Less') : tx('More')}
                           </button>
-                          <IconButton label={`Delete ${t.name}`} danger onClick={() => remove('teacher', t.id, t.name)}>
+                          <IconButton label={tx('Delete {name}', { name: t.name })} danger onClick={() => remove('teacher', t.id, t.name)}>
                             <TrashIcon />
                           </IconButton>
                         </td>

@@ -8,6 +8,8 @@ import { parseAllocationPaste } from '@/io/paste';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, Select, TrashIcon } from '@/ui/kit';
 import { confirmDialog, promptDialog } from '@/ui/dialogs';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 /** Toolbar above the matrix: apply / save templates for the current grade, paste from Excel. */
 export function GradeTools({ grade, classes, onPaste }: { grade: Grade; classes: SchoolClass[]; onPaste: () => void }) {
@@ -21,9 +23,9 @@ export function GradeTools({ grade, classes, onPaste }: { grade: Grade; classes:
   const apply = async (id: string) => {
     const tpl = project.templates.find((t) => t.id === id);
     if (!tpl || classes.length === 0) return;
-    const ok = await confirmDialog(`Apply "${tpl.name}"?`, {
-      text: `${tpl.version ? `${tpl.version}\n` : ''}To ${classes.map((c) => c.name).join(', ')}. Periods are replaced; teachers are kept.`,
-      confirmText: 'Apply',
+    const ok = await confirmDialog(tx('Apply "{name}"?', { name: tpl.name }), {
+      text: (tpl.version ? `${tpl.version}\n` : '') + tx('To {classes}. Periods are replaced; teachers are kept.', { classes: classes.map((c) => c.name).join(', ') }),
+      confirmText: tx('Apply'),
     });
     if (!ok) return;
     let result = { cells: 0, missing: [] as string[] };
@@ -35,54 +37,54 @@ export function GradeTools({ grade, classes, onPaste }: { grade: Grade; classes:
       );
     });
     setMessage(
-      `Set ${result.cells} cell(s).` + (result.missing.length ? ` No subject with code: ${result.missing.join(', ')} — add them in Subjects.` : ''),
+      tx('Set {cells} cell(s).', { cells: result.cells }) + (result.missing.length ? tx(' No subject with code: {join} — add them in Subjects.', { join: result.missing.join(', ') }) : ''),
     );
   };
 
   const save = async (classId: string) => {
     const cls = classes.find((c) => c.id === classId);
     if (!cls) return;
-    const name = await promptDialog(`Save ${cls.name} as a template`, {
-      label: 'Template name',
+    const name = await promptDialog(tx('Save {name} as a template', { name: cls.name }), {
+      label: tx('Template name'),
       value: `${grade.name}${cls.stream ? ` ${cls.stream}` : ''}`,
       required: true,
-      confirmText: 'Next',
+      confirmText: tx('Next'),
     });
     if (!name) return;
-    const version = await promptDialog('Curriculum version', {
-      label: 'For example "NIE 2024 reform" (optional)',
+    const version = await promptDialog(tx('Curriculum version'), {
+      label: tx('For example "NIE 2024 reform" (optional)'),
       value: project.templates[0]?.version ?? '',
-      confirmText: 'Save template',
+      confirmText: tx('Save template'),
     });
     if (version === null) return;
     update((d) => {
       d.templates.push(templateFromClass(d as typeof project, classId, { name, version }));
     });
-    setMessage(`Saved template "${name}" from ${cls.name}.`);
+    setMessage(tx('Saved template "{name}" from {name2}.', { name, name2: cls.name }));
   };
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       {templates.length > 0 && (
         <Select
-          aria-label="Apply template"
+          aria-label={tx('Apply template')}
           value=""
-          options={[{ value: '', label: 'Apply template…' }, ...templates.map((t) => ({ value: t.id, label: `${t.name} · ${t.version}` }))]}
+          options={[{ value: '', label: tx('Apply template…') }, ...templates.map((t) => ({ value: t.id, label: `${t.name} · ${t.version}` }))]}
           onChange={apply}
           className="w-56"
         />
       )}
       {classes.length > 0 && (
         <Select
-          aria-label="Save class as template"
+          aria-label={tx('Save class as template')}
           value=""
-          options={[{ value: '', label: 'Save class as template…' }, ...classes.map((c) => ({ value: c.id, label: c.name }))]}
+          options={[{ value: '', label: tx('Save class as template…') }, ...classes.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={save}
           className="w-56"
         />
       )}
       <button className="btn" onClick={onPaste}>
-        Paste from Excel
+        {tx('Paste from Excel')}
       </button>
       {message && (
         <span className="text-sm text-teal-800" role="status">
@@ -101,29 +103,31 @@ export function PasteAllocations({ onDone }: { onDone: () => void }) {
   const good = rows.filter((r) => r.errors.length === 0);
 
   return (
-    <Card title="Paste who-teaches-what from Excel">
+    <Card title={tx('Paste who-teaches-what from Excel')}>
       <p className="mb-2 text-sm text-slate-600">
-        Either a <strong>list</strong> (Class · Subject · Periods · Teacher · Doubles) or a <strong>grid</strong> like the matrix: first row{' '}
-        <code>Class</code> then subject codes, cells like <code>6 KP</code> or <code>5 1D NF</code>. Teachers by code or name. Existing cells are
-        overwritten.
+        <Rich
+          text={tx(
+            'Either a <b>list</b> (Class · Subject · Periods · Teacher · Doubles) or a <b>grid</b> like the matrix: first row <code>Class</code> then subject codes, cells like <code>6 KP</code> or <code>5 1D NF</code>. Teachers by code or name. Existing cells are overwritten.',
+          )}
+        />
       </p>
       <textarea
-        aria-label="Pasted allocations"
+        aria-label={tx('Pasted allocations')}
         className="field h-32 w-full font-mono text-xs"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={'Class\tMAT\tSCI\tENG\n6A\t6 KP\t5 1D NF\t4 MD\n6B\t6 SS\t5 1D SS\t4 MD'}
+        placeholder={tx('Class	MAT	SCI	ENG\n6A	6 KP	5 1D NF	4 MD\n6B	6 SS	5 1D SS	4 MD')}
       />
       {rows.length > 0 && (
         <div className="mt-2 max-h-60 overflow-auto rounded border border-slate-200">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
               <tr>
-                <th className="px-2 py-1">Row</th>
-                <th className="px-2 py-1">Class</th>
-                <th className="px-2 py-1">Subject</th>
-                <th className="px-2 py-1">Periods</th>
-                <th className="px-2 py-1">Teacher</th>
+                <th className="px-2 py-1">{tx('Row')}</th>
+                <th className="px-2 py-1">{tx('Class')}</th>
+                <th className="px-2 py-1">{tx('Subject')}</th>
+                <th className="px-2 py-1">{tx('Periods')}</th>
+                <th className="px-2 py-1">{tx('Teacher')}</th>
                 <th className="px-2 py-1" />
               </tr>
             </thead>
@@ -160,12 +164,12 @@ export function PasteAllocations({ onDone }: { onDone: () => void }) {
             onDone();
           }}
         >
-          Apply {good.length} row(s)
+          {tx('Apply {good} row(s)', { good: good.length })}
         </button>
         <button className="btn" onClick={onDone}>
-          Cancel
+          {tx('Cancel')}
         </button>
-        {rows.length > good.length && <span className="text-sm text-red-800">{rows.length - good.length} row(s) with problems will be skipped.</span>}
+        {rows.length > good.length && <span className="text-sm text-red-800">{tx('{x} row(s) with problems will be skipped.', { x: rows.length - good.length })}</span>}
       </div>
     </Card>
   );
@@ -182,25 +186,25 @@ export function TemplateLibrary() {
 
   return (
     <Card
-      title="Curriculum templates"
+      title={tx('Curriculum templates')}
       actions={
         <>
           <button className="btn" onClick={() => fileRef.current?.click()}>
-            Import…
+            {tx('Import…')}
           </button>
           {project.templates.length > 0 && (
             <button
               className="btn"
               onClick={() => downloadBlob(new Blob([exportTemplates(project.templates)], { type: 'application/json' }), 'timetable-templates.json')}
             >
-              Export all
+              {tx('Export all')}
             </button>
           )}
           <input
             ref={fileRef}
             type="file"
             accept=".json,application/json"
-            aria-label="Import templates file"
+            aria-label={tx('Import templates file')}
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0];
@@ -221,12 +225,11 @@ export function TemplateLibrary() {
       }
     >
       <p className="mb-2 text-sm text-slate-600">
-        Periods per subject for a grade, labelled with the curriculum version. Save one from a finished class, or import a file shared by another
-        school. The app ships no official figures.
+        {tx('Periods per subject for a grade, labelled with the curriculum version. Save one from a finished class, or import a file shared by another school. The app ships no official figures.')}
       </p>
       {error && <p className="mb-2 text-sm text-red-800">{error}</p>}
       {project.templates.length === 0 ? (
-        <Empty>No templates yet. Use "Save class as template…" above the matrix.</Empty>
+        <Empty>{tx('No templates yet. Use "Save class as template…" above the matrix.')}</Empty>
       ) : (
         <div className="space-y-3">
           {[...byVersion].map(([version, list]) => (
@@ -241,10 +244,10 @@ export function TemplateLibrary() {
                       {t.items.reduce((s, i) => s + i.amount, 0)}
                     </span>
                     <IconButton
-                      label={`Delete template ${t.name}`}
+                      label={tx('Delete template {name}', { name: t.name })}
                       danger
                       onClick={async () => {
-                        if (await confirmDialog(`Delete template "${t.name}"?`, { confirmText: 'Delete', danger: true }))
+                        if (await confirmDialog(tx('Delete template "{name}"?', { name: t.name }), { confirmText: tx('Delete'), danger: true }))
                           update((d) => {
                             d.templates = d.templates.filter((x) => x.id !== t.id);
                           });

@@ -5,6 +5,7 @@ import type { Weekday } from '@/domain/time';
 import { buildModel, positionsFor, type Model, type Position, type Unit } from './model';
 import { scheduleForClass } from '@/domain/checks';
 import { SolverState } from './state';
+import { dayShort, tx } from '@/i18n';
 
 /**
  * Manual editing support (PLAN.md §6). Reuses the solver's model and
@@ -39,7 +40,6 @@ export interface Suggestion {
 
 export const keyOf = (pl: Pick<Placement, 'itemId' | 'occurrence'>) => `${pl.itemId}#${pl.occurrence}`;
 
-const DAY = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
 export class EditSession {
   readonly model: Model;
@@ -82,7 +82,7 @@ export class EditSession {
   }
 
   where(step: Pick<Step, 'day' | 'slotId'>) {
-    return `${DAY[step.day]} ${this.slotLabel.get(step.slotId) ?? ''}`.trim();
+    return `${dayShort(step.day)} ${this.slotLabel.get(step.slotId) ?? ''}`.trim();
   }
 
   /** Any run of the right length starting at this slot, ignoring teacher availability. */
@@ -126,15 +126,15 @@ export class EditSession {
       let level: Level = c.blockers.size || c.hard ? 'clash' : 'ok';
       if (!u.positions.includes(pos) && !u.positions.some((x) => x.day === day && x.slotId === slotId)) {
         level = 'clash';
-        reasons.push(u.teacherIds.map((t) => this.name(t)).join('/') + ' not available');
+        reasons.push(tx('{names} not available', { names: u.teacherIds.map((t) => this.name(t)).join('/') }));
       }
       if (level === 'ok') {
         if (this.softOncePerDay && u.classIds.some((cl) => this.state.hasSubjectOnDay(cl, day, u.subjectKey)))
-          reasons.push(`already has ${u.label.split(' ').slice(1).join(' ') || 'this subject'} that day`);
+          reasons.push(tx('already has {subject} that day', { subject: u.label.split(' ').slice(1).join(' ') || tx('this subject') }));
         if (this.softMax !== null)
           for (const t of u.teacherIds) {
             const load = this.state.dayLoad(`t:${t}`, day) + u.length;
-            if (load > this.softMax) reasons.push(`${this.name(t)} would teach ${load} periods (max ${this.softMax})`);
+            if (load > this.softMax) reasons.push(tx('{name} would teach {load} periods (max {softMax})', { name: this.name(t), load, softMax: this.softMax }));
           }
         if (reasons.length) level = 'soft';
       }
@@ -183,7 +183,7 @@ export class EditSession {
       if (here(pos)) continue;
       const v = this.verdict(key, pos.day, pos.slotId);
       if (v.level === 'ok')
-        add({ kind: 'move', description: `Move to ${this.where(pos)}`, steps: [{ key, day: pos.day, slotId: pos.slotId }], teachers: this.teachersOf([key]) });
+        add({ kind: 'move', description: tx('Move to {where}', { where: this.where(pos) }), steps: [{ key, day: pos.day, slotId: pos.slotId }], teachers: this.teachersOf([key]) });
     }
     const moves = out.splice(0, Math.ceil(limit / 2));
     out.length = 0;
@@ -204,7 +204,7 @@ export class EditSession {
         if (back.level === 'ok')
           add({
             kind: 'swap',
-            description: `Swap with ${bu.label} (${this.where(bat)} ↔ ${this.where(at)})`,
+            description: tx('Swap with {label} ({where} ↔ {where2})', { label: bu.label, where: this.where(bat), where2: this.where(at) }),
             steps: [
               { key, day: pos.day, slotId: pos.slotId },
               { key: b, day: at.day, slotId: at.slotId },
@@ -220,7 +220,7 @@ export class EditSession {
         if (vb.level !== 'ok') continue;
         add({
           kind: 'chain',
-          description: `Move ${bu.label} to ${this.where(bpos)}, then this to ${this.where(pos)}`,
+          description: tx('Move {label} to {where}, then this to {where2}', { label: bu.label, where: this.where(bpos), where2: this.where(pos) }),
           steps: [
             { key: b, day: bpos.day, slotId: bpos.slotId },
             { key, day: pos.day, slotId: pos.slotId },

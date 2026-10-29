@@ -3,6 +3,7 @@ import { newId } from './common';
 import { MergedClass, MultiGradeGroup, type Allocation, type SchoolClass } from './entities';
 import { makeAllocation, makeClass, makeGrade, patternPeriods } from './factories';
 import type { Project } from './project';
+import { msg, tx } from '@/i18n';
 
 /**
  * Edits that must keep the project internally consistent. They run on Immer
@@ -15,41 +16,41 @@ const blockSets = (p: Project) => p.optionBlocks.flatMap((b) => b.lines.flatMap(
 
 /** What would be affected by deleting an entity; shown in the confirm dialog. */
 export function deleteImpact(p: Project, kind: EntityKind, id: string): string[] {
-  const n = (count: number, what: string) => (count > 0 ? [`${count} ${what}`] : []);
+  const n = (count: number, what: string) => (count > 0 ? [tx(what, { n: count })] : []);
   switch (kind) {
     case 'section':
-      return n(p.grades.filter((g) => g.sectionId === id).length, 'grade(s) and their classes');
+      return n(p.grades.filter((g) => g.sectionId === id).length, msg('{n} grade(s) and their classes'));
     case 'grade': {
       const classIds = new Set(p.classes.filter((c) => c.gradeId === id).map((c) => c.id));
       return [
-        ...n(classIds.size, 'class(es)'),
-        ...n(p.allocations.filter((a) => a.groupIds.some((g) => classIds.has(g))).length, 'allocation(s)'),
+        ...n(classIds.size, msg('{n} class(es)')),
+        ...n(p.allocations.filter((a) => a.groupIds.some((g) => classIds.has(g))).length, msg('{n} allocation(s)')),
       ];
     }
     case 'class':
       return [
-        ...n(p.allocations.filter((a) => a.groupIds.includes(id)).length, 'allocation(s)'),
-        ...n(p.optionBlocks.filter((b) => b.classIds.includes(id)).length, 'option block(s) lose this class'),
+        ...n(p.allocations.filter((a) => a.groupIds.includes(id)).length, msg('{n} allocation(s)')),
+        ...n(p.optionBlocks.filter((b) => b.classIds.includes(id)).length, msg('{n} option block(s) lose this class')),
       ];
     case 'subject':
       return [
-        ...n(p.allocations.filter((a) => a.subjectId === id).length, 'allocation(s)'),
-        ...n(blockSets(p).filter((s) => s.subjectId === id).length, 'option-block group(s)'),
+        ...n(p.allocations.filter((a) => a.subjectId === id).length, msg('{n} allocation(s)')),
+        ...n(blockSets(p).filter((s) => s.subjectId === id).length, msg('{n} option-block group(s)')),
       ];
     case 'teacher':
       return [
-        ...n(p.allocations.filter((a) => a.teacherIds.includes(id)).length, 'allocation(s) become uncovered'),
-        ...n(blockSets(p).filter((s) => s.teacherIds.includes(id)).length, 'option-block group(s) lose their teacher'),
-        ...n(p.classes.filter((c) => c.classTeacherId === id).length, 'class(es) lose their class teacher'),
+        ...n(p.allocations.filter((a) => a.teacherIds.includes(id)).length, msg('{n} allocation(s) become uncovered')),
+        ...n(blockSets(p).filter((s) => s.teacherIds.includes(id)).length, msg('{n} option-block group(s) lose their teacher')),
+        ...n(p.classes.filter((c) => c.classTeacherId === id).length, msg('{n} class(es) lose their class teacher')),
       ];
     case 'room':
-      return n(p.classes.filter((c) => c.homeRoomId === id).length, 'class(es) lose their home room');
+      return n(p.classes.filter((c) => c.homeRoomId === id).length, msg('{n} class(es) lose their home room'));
     case 'roomType':
-      return n(p.rooms.filter((r) => r.roomTypeId === id).length, 'room(s) lose their type');
+      return n(p.rooms.filter((r) => r.roomTypeId === id).length, msg('{n} room(s) lose their type'));
     case 'role':
-      return n(p.teachers.filter((t) => t.roleId === id).length, 'teacher(s) lose their role');
+      return n(p.teachers.filter((t) => t.roleId === id).length, msg('{n} teacher(s) lose their role'));
     case 'bellSchedule':
-      return n(p.sections.filter((s) => s.bellScheduleId === id).length, 'section(s) use it');
+      return n(p.sections.filter((s) => s.bellScheduleId === id).length, msg('{n} section(s) use it'));
   }
 }
 
@@ -121,7 +122,7 @@ export function deleteEntity(d: Draft<Project>, kind: EntityKind, id: string): v
       for (const t of d.teachers) if (t.roleId === id) t.roleId = null;
       break;
     case 'bellSchedule':
-      if (d.sections.some((s) => s.bellScheduleId === id)) throw new Error('This bell schedule is still used by a section.');
+      if (d.sections.some((s) => s.bellScheduleId === id)) throw new Error(tx('This bell schedule is still used by a section.'));
       d.bellSchedules = d.bellSchedules.filter((x) => x.id !== id);
       break;
   }
@@ -237,9 +238,9 @@ export function copyClassPeriods(d: Draft<Project>, fromClassId: string, toClass
  * allocation (the first class's periods and teacher win).
  */
 export function mergeClasses(d: Draft<Project>, input: { name: string; classIds: string[]; exceptSubjectIds: string[] }): string {
-  if (input.classIds.length < 2) throw new Error('Pick at least two classes to merge.');
+  if (input.classIds.length < 2) throw new Error(tx('Pick at least two classes to merge.'));
   const taken = d.mergedClasses.find((m) => m.classIds.some((c) => input.classIds.includes(c)));
-  if (taken) throw new Error(`A class is already in merge "${taken.name}".`);
+  if (taken) throw new Error(tx('A class is already in merge "{name}".', { name: taken.name }));
   const id = newId('mrg');
   for (const subject of d.subjects) {
     if (input.exceptSubjectIds.includes(subject.id)) continue;
@@ -281,8 +282,8 @@ export function setMergeExceptions(d: Draft<Project>, mergeId: string, exceptSub
 // ------------------------------------------------------- multi-grade groups
 
 export function addMultiGradeGroup(d: Draft<Project>, input: { name: string; classIds: string[] }): void {
-  if (input.classIds.length < 2) throw new Error('Pick at least two classes.');
+  if (input.classIds.length < 2) throw new Error(tx('Pick at least two classes.'));
   const taken = d.multiGradeGroups.find((g) => g.classIds.some((c) => input.classIds.includes(c)));
-  if (taken) throw new Error(`A class is already in multi-grade group "${taken.name}".`);
+  if (taken) throw new Error(tx('A class is already in multi-grade group "{name}".', { name: taken.name }));
   d.multiGradeGroups.push(MultiGradeGroup.parse({ id: newId('mgg'), ...input }));
 }

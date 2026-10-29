@@ -5,6 +5,7 @@ import { ruleAppliesToClass, ruleFor } from '@/domain/rules';
 import type { Placement } from '@/domain/schedule';
 import { membersOf } from '@/domain/students';
 import { slotsForDay, type Weekday } from '@/domain/time';
+import { dayShort, tx } from '@/i18n';
 
 /**
  * Independent timetable checker (PLAN.md §12). Deliberately shares no code
@@ -81,7 +82,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
       const inLine = new Map<string, number>();
       for (const ids of listed) for (const id of ids) inLine.set(id, (inLine.get(id) ?? 0) + 1);
       for (const [id, n] of inLine)
-        if (n > 1) violations.push({ kind: 'clash', message: `${name(id)} is in ${n} sets of ${b.name} · ${l.label}.` });
+        if (n > 1) violations.push({ kind: 'clash', message: tx('{name} is in {n} sets of {name2} · {label}.', { name: name(id), n, name2: b.name, label: l.label }) });
       items.set(l.id, {
           label: `${b.name} · ${l.label}`,
           classIds: [...b.classIds],
@@ -104,13 +105,13 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
   for (const pl of placements) {
     const item = items.get(pl.itemId);
     if (!item) {
-      violations.push({ kind: 'count', message: `A placement refers to a lesson that no longer exists (${pl.itemId}).` });
+      violations.push({ kind: 'count', message: tx('A placement refers to a lesson that no longer exists ({itemId}).', { itemId: pl.itemId }) });
       continue;
     }
     const key = `${pl.itemId}#${pl.occurrence}`;
     const length = item.lengths[pl.occurrence];
     if (length === undefined || seen.has(key)) {
-      violations.push({ kind: 'count', message: `${item.label} is placed more times than it has lessons.` });
+      violations.push({ kind: 'count', message: tx('{label} is placed more times than it has lessons.', { label: item.label }) });
       continue;
     }
     seen.add(key);
@@ -122,12 +123,12 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
     const i = slots.findIndex((s) => s.id === pl.slotId);
     const run = i >= 0 ? slots.slice(i, i + length) : [];
     if (!p.institute.workingDays.includes(pl.day) || run.length < length || run.some((s) => s.kind !== 'period')) {
-      violations.push({ kind: 'slot', message: `${item.label} is not on ${length} consecutive teaching periods (${pl.day}).` });
+      violations.push({ kind: 'slot', message: tx('{label} is not on {length} consecutive teaching periods ({day}).', { label: item.label, length, day: dayShort(pl.day) }) });
       continue;
     }
     for (let k = 1; k < run.length; k++)
       if (run[k]!.start !== run[k - 1]!.start + run[k - 1]!.duration)
-        violations.push({ kind: 'slot', message: `${item.label} double period is split by a gap (${pl.day}).` });
+        violations.push({ kind: 'slot', message: tx('{label} double period is split by a gap ({day}).', { label: item.label, day: dayShort(pl.day) }) });
     const start = run[0]!.start;
     const end = run[run.length - 1]!.start + run[run.length - 1]!.duration;
     const booking = { start, end, label: item.label, multiGrade: item.multiGrade };
@@ -145,7 +146,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
       const okWindow = !teacher.windows.length || teacher.windows.some((w) => w.day === pl.day && w.start <= start && end <= w.end);
       const blocked = teacher.unavailable.some((w) => w.day === pl.day && w.start < end && start < w.end);
       if (!okDay || !okWindow || blocked)
-        violations.push({ kind: 'availability', message: `${teacher.name} is not available for ${item.label} (${pl.day}).` });
+        violations.push({ kind: 'availability', message: tx('{name} is not available for {label} ({day}).', { name: teacher.name, label: item.label, day: dayShort(pl.day) }) });
     }
     const rooms = [...item.roomIds, ...(pl.roomId && !item.roomIds.includes(pl.roomId) ? [pl.roomId] : [])];
     for (const r of rooms) book(`r:${r}`, pl.day, booking);
@@ -153,7 +154,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
     if (item.roomTypeId) {
       const room = p.rooms.find((r) => r.id === pl.roomId);
       if (!room || room.roomTypeId !== item.roomTypeId)
-        violations.push({ kind: 'room', message: `${item.label} is not in a room of the required type (${pl.day}).` });
+        violations.push({ kind: 'room', message: tx('{label} is not in a room of the required type ({day}).', { label: item.label, day: dayShort(pl.day) }) });
     }
   }
 
@@ -176,7 +177,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
         reported.add(labels);
         violations.push({
           kind: 'clash',
-          message: `${name(id)} is double-booked on ${day}: ${[...new Set(relevant.map((b) => b.label))].join(' / ')}.`,
+          message: tx('{name} is double-booked on {day}: {join}.', { name: name(id), day: dayShort(day), join: [...new Set(relevant.map((b) => b.label))].join(' / ') }),
         });
         break; // one message per resource-day is enough
       }
@@ -189,7 +190,7 @@ export function checkTimetable(p: Project, placements: Placement[], opts: { rela
       const [classId, day] = key.split('|') as [string, string];
       const cls = p.classes.find((c) => c.id === classId);
       if (n > 1 && cls && ruleAppliesToClass(r4, cls, p))
-        violations.push({ kind: 'oncePerDay', message: `${cls.name} has the same subject ${n} times on ${day}.` });
+        violations.push({ kind: 'oncePerDay', message: tx('{name} has the same subject {n} times on {day}.', { name: cls.name, n, day: dayShort(day) }) });
     }
   }
 

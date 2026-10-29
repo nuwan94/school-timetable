@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { canInstall, installApp, useInstall } from '@/pwa';
 import { Icon } from './Icon';
+import { tx } from '@/i18n';
 
 /** "Install app": the browser's prompt where there is one, otherwise the how-to. Hidden once installed. */
-export function InstallButton({ className, label = 'Install app' }: { className: string; label?: string }) {
+export function InstallButton({ className, label = tx('Install app') }: { className: string; label?: string }) {
   const installed = useInstall((s) => s.installed);
   if (!canInstall || installed) return null;
   return (
@@ -23,22 +24,24 @@ function platform(): 'ios' | 'android' | 'firefox' | 'desktop' {
 }
 
 const STEPS: Record<ReturnType<typeof platform>, string[]> = {
-  ios: ['Open this page in Safari.', 'Tap the Share button.', 'Choose “Add to Home Screen”, then “Add”.'],
-  android: ['Open the browser menu (⋮).', 'Choose “Install app” or “Add to Home screen”.', 'Confirm with “Install”.'],
-  firefox: [
-    'Firefox cannot install web apps on a computer.',
-    'Open this page in Chrome or Edge instead.',
-    'Click the install icon in the address bar.',
-  ],
-  desktop: [
-    'Click the install icon at the right of the address bar.',
-    'Or open the browser menu and choose “Install School Timetable”.',
-    'It then opens from the Start menu or desktop, even without internet.',
-  ],
+  get ios() {
+    return [tx('Open this page in Safari.'), tx('Tap the Share button.'), tx('Choose “Add to Home Screen”, then “Add”.')];
+  },
+  get android() {
+    return [tx('Open the browser menu (⋮).'), tx('Choose “Install app” or “Add to Home screen”.'), tx('Confirm with “Install”.')];
+  },
+  get firefox() {
+    return [tx('Firefox cannot install web apps on a computer.'), tx('Open this page in Chrome or Edge instead.'), tx('Click the install icon in the address bar.')];
+  },
+  get desktop() {
+    return [tx('Click the install icon at the right of the address bar.'), tx('Or open the browser menu and choose “Install School Timetable”.'), tx('It then opens from the Start menu or desktop, even without internet.')];
+  },
 };
 
 /** How to install when the browser gives no prompt, with the pendrive copy as a fallback. */
 export function InstallHelp() {
+  // The link sits inside the sentence, wherever the language puts it.
+  const pendrive = tx('Copy the {link} to a pendrive and open it in Chrome or Edge.').split('{link}');
   const open = useInstall((s) => s.helpOpen);
   const setHelp = useInstall((s) => s.setHelp);
   useEffect(() => {
@@ -62,16 +65,16 @@ export function InstallHelp() {
         <div className="h-1.5 bg-gradient-to-r from-teal-600 via-emerald-500 to-amber-400" />
         <button
           onClick={() => setHelp(false)}
-          aria-label="Close"
+          aria-label={tx('Close')}
           className="absolute right-3 top-4 rounded-full p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
         >
           <Icon name="close" className="h-5 w-5" />
         </button>
         <div className="px-6 pb-6 pt-6">
           <h2 id="install-title" className="text-xl font-bold">
-            Install School Timetable
+            {tx('Install School Timetable')}
           </h2>
-          <p className="mt-1 text-sm text-slate-600">It opens like any other app and keeps working without internet.</p>
+          <p className="mt-1 text-sm text-slate-600">{tx('It opens like any other app and keeps working without internet.')}</p>
           <ol className="mt-5 space-y-3">
             {steps.map((s, i) => (
               <li key={s} className="flex gap-3 text-sm">
@@ -83,13 +86,13 @@ export function InstallHelp() {
             ))}
           </ol>
           <div className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-            <p className="font-medium text-slate-800">School computer with no internet or no install rights?</p>
+            <p className="font-medium text-slate-800">{tx('School computer with no internet or no install rights?')}</p>
             <p className="mt-1">
-              Copy the{' '}
+              {pendrive[0]}
               <a className="font-medium text-teal-700 underline" href="./timetable-offline.html" download>
-                single-file version
-              </a>{' '}
-              to a pendrive and open it in Chrome or Edge.
+                {tx('single-file version')}
+              </a>
+              {pendrive[1]}
             </p>
           </div>
         </div>

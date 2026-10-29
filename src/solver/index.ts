@@ -7,6 +7,7 @@ import { optimise } from './optimise';
 import { softReport, SoftScorer, type SoftReport } from './soft';
 import { solve, type SolveHooks } from './solve';
 import { SolverState } from './state';
+import { tx } from '@/i18n';
 
 export interface GenerateOptions extends ModelOptions {
   seed?: number;
@@ -157,7 +158,7 @@ export async function generateTimetable(p: Project, opts: GenerateOptions = {}, 
         occurrence: u.occurrence,
         label: u.label,
         length: u.length,
-        reason: reasons.get(u.key) ?? 'could not be placed',
+        reason: reasons.get(u.key) ?? tx('could not be placed'),
         weight: u.weight,
       }))
       .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label)),

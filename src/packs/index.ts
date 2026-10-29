@@ -4,6 +4,7 @@ import { makeRole, makeSection } from '@/domain/factories';
 import { Project, FILE_FORMAT, SCHEMA_VERSION, type ProjectInput } from '@/domain/project';
 import type { RuleConfig, Strength } from '@/domain/schedule';
 import { buildSlots, type BellSchedule, type SlotKind } from '@/domain/time';
+import { msg, tx } from '@/i18n';
 
 /**
  * School packs set starting defaults only; every value stays editable.
@@ -14,12 +15,12 @@ import { buildSlots, type BellSchedule, type SlotKind } from '@/domain/time';
 type Part = readonly [SlotKind, string, number];
 
 const SL_DAY: Part[] = [
-  ['assembly', 'Assembly', 20],
+  ['assembly', msg('Assembly'), 20],
   ['period', 'P1', 40],
   ['period', 'P2', 40],
   ['period', 'P3', 40],
   ['period', 'P4', 40],
-  ['break', 'Interval', 20],
+  ['break', msg('Interval'), 20],
   ['period', 'P5', 40],
   ['period', 'P6', 40],
   ['period', 'P7', 40],
@@ -27,14 +28,14 @@ const SL_DAY: Part[] = [
 ];
 
 const INTL_DAY: Part[] = [
-  ['formTime', 'Form time', 15],
+  ['formTime', msg('Form time'), 15],
   ['period', 'P1', 50],
   ['period', 'P2', 50],
   ['period', 'P3', 50],
-  ['break', 'Break', 20],
+  ['break', msg('Break'), 20],
   ['period', 'P4', 50],
   ['period', 'P5', 50],
-  ['break', 'Lunch', 30],
+  ['break', msg('Lunch'), 30],
   ['period', 'P6', 50],
   ['period', 'P7', 50],
 ];
@@ -47,7 +48,7 @@ function schedule(name: string, start: string, parts: Part[]): BellSchedule {
     shortCode: '',
     local: {},
     active: true,
-    slots: buildSlots(start, parts, id),
+    slots: buildSlots(start, parts.map(([kind, label, minutes]) => [kind, tx(label), minutes] as const), id),
     dayOverrides: {},
   };
 }
@@ -141,7 +142,13 @@ export function createProject(pack: Pack, schoolName = ''): Project {
 }
 
 export const PACK_LABELS: Record<Pack, string> = {
-  simple: 'Simple (small school)',
-  'sl-gov': 'Sri Lanka Government',
-  international: 'International (Cambridge / Edexcel)',
+  get simple() {
+    return tx('Simple (small school)');
+  },
+  get ['sl-gov']() {
+    return tx('Sri Lanka Government');
+  },
+  get international() {
+    return tx('International (Cambridge / Edexcel)');
+  },
 };

@@ -3,6 +3,7 @@ import { addDays, dayContext } from './relief';
 import type { Project } from './project';
 import type { ReportTable } from './returns';
 import { teachingSlots } from './time';
+import { dayLong, tx } from '@/i18n';
 
 /**
  * International reports (PLAN.md §13 P7): room use, contact hours against
@@ -97,15 +98,15 @@ export function roomUtilisation(p: Project): ReportTable {
     .sort((a, b) => b.percent - a.percent || a.room.localeCompare(b.room));
   return {
     id: 'room-use',
-    title: 'Room utilisation',
-    note: 'Periods a week each room is in use (lessons with no room count in the form room). Low figures show space to spare; above 85% leaves little room to move lessons.',
+    title: tx('Room utilisation'),
+    note: tx('Periods a week each room is in use (lessons with no room count in the form room). Low figures show space to spare; above 85% leaves little room to move lessons.'),
     columns: [
-      { key: 'room', label: 'Room' },
-      { key: 'seats', label: 'Seats', numeric: true },
-      { key: 'used', label: 'Periods used', numeric: true },
-      { key: 'available', label: 'Periods available', numeric: true },
-      { key: 'percent', label: '% used', numeric: true },
-      { key: 'mostly', label: 'Mostly' },
+      { key: 'room', label: tx('Room') },
+      { key: 'seats', label: tx('Seats'), numeric: true },
+      { key: 'used', label: tx('Periods used'), numeric: true },
+      { key: 'available', label: tx('Periods available'), numeric: true },
+      { key: 'percent', label: tx('% used'), numeric: true },
+      { key: 'mostly', label: tx('Mostly') },
     ],
     rows,
   };
@@ -140,7 +141,16 @@ function teachingGroups(p: Project, entries: LessonEntry[]): Teaching[] {
   return [...out.values()];
 }
 
-const BOARD: Record<string, string> = { national: 'National', cambridge: 'Cambridge', edexcel: 'Pearson Edexcel', other: 'Other' };
+const BOARD: Record<string, string> = {
+  get national() {
+    return tx('National');
+  },
+  cambridge: 'Cambridge',
+  edexcel: 'Pearson Edexcel',
+  get other() {
+    return tx('Other');
+  },
+};
 
 export function contactHours(p: Project): ReportTable {
   const weeks = p.institute.teachingWeeks;
@@ -152,8 +162,8 @@ export function contactHours(p: Project): ReportTable {
       const glh = s?.glh ?? null;
       const target = s?.targetMinutes ?? null;
       const short = [
-        target && t.minutes < target ? `${target - t.minutes} min/week under target` : '',
-        glh && course !== null && course < glh ? `${Math.round((glh - course) * 10) / 10} h short of GLH` : '',
+        target && t.minutes < target ? tx('{n} min/week under target', { n: target - t.minutes }) : '',
+        glh && course !== null && course < glh ? tx('{n} h short of GLH', { n: Math.round((glh - course) * 10) / 10 }) : '',
       ].filter(Boolean);
       return {
         board: BOARD[s?.board ?? 'other'] ?? '',
@@ -166,7 +176,7 @@ export function contactHours(p: Project): ReportTable {
         perYear: year ?? '',
         course: course ?? '',
         glh: glh ?? '',
-        status: short.join('; ') || (glh || target ? 'Meets' : ''),
+        status: short.join('; ') || (glh || target ? tx('Meets') : ''),
       };
     })
     .sort(
@@ -178,22 +188,22 @@ export function contactHours(p: Project): ReportTable {
     );
   return {
     id: 'contact-hours',
-    title: 'Contact hours vs guided learning hours',
+    title: tx('Contact hours vs guided learning hours'),
     note: weeks
-      ? `Timetabled minutes a week × ${weeks} teaching weeks, over the course's years, against the board's guided learning hours.`
-      : 'Set the teaching weeks in the school details to turn weekly minutes into hours a year.',
+      ? tx('Timetabled minutes a week × {weeks} teaching weeks, over the course\'s years, against the board\'s guided learning hours.', { weeks })
+      : tx('Set the teaching weeks in the school details to turn weekly minutes into hours a year.'),
     columns: [
-      { key: 'board', label: 'Board' },
-      { key: 'level', label: 'Level' },
-      { key: 'subject', label: 'Subject' },
-      { key: 'code', label: 'Syllabus' },
-      { key: 'group', label: 'Group' },
-      { key: 'perWeek', label: 'Min / week', numeric: true },
-      { key: 'target', label: 'Target min', numeric: true },
-      { key: 'perYear', label: 'Hours / year', numeric: true },
-      { key: 'course', label: 'Course hours', numeric: true },
-      { key: 'glh', label: 'GLH', numeric: true },
-      { key: 'status', label: 'Status' },
+      { key: 'board', label: tx('Board') },
+      { key: 'level', label: tx('Level') },
+      { key: 'subject', label: tx('Subject') },
+      { key: 'code', label: tx('Syllabus') },
+      { key: 'group', label: tx('Group') },
+      { key: 'perWeek', label: tx('Min / week'), numeric: true },
+      { key: 'target', label: tx('Target min'), numeric: true },
+      { key: 'perYear', label: tx('Hours / year'), numeric: true },
+      { key: 'course', label: tx('Course hours'), numeric: true },
+      { key: 'glh', label: tx('GLH'), numeric: true },
+      { key: 'status', label: tx('Status') },
     ],
     rows,
   };
@@ -228,23 +238,23 @@ export function contractHours(p: Project): ReportTable {
         total: hours(total),
         contract: hours(contract),
         balance: hours(contract - total),
-        status: total > contract ? 'Over contract' : 'Within contract',
+        status: total > contract ? tx('Over contract') : tx('Within contract'),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
   return {
     id: 'contract-hours',
-    title: 'Contract hours compliance',
-    note: 'Hours a week for staff with contracted hours (expatriate contracts): teaching, duty rosters and co-curricular activities against the hours in the contract.',
+    title: tx('Contract hours compliance'),
+    note: tx('Hours a week for staff with contracted hours (expatriate contracts): teaching, duty rosters and co-curricular activities against the hours in the contract.'),
     columns: [
-      { key: 'name', label: 'Teacher' },
-      { key: 'teaching', label: 'Teaching h', numeric: true },
-      { key: 'duties', label: 'Duties h', numeric: true },
-      { key: 'cca', label: 'CCA h', numeric: true },
-      { key: 'total', label: 'Total h', numeric: true },
-      { key: 'contract', label: 'Contract h', numeric: true },
-      { key: 'balance', label: 'Balance h', numeric: true },
-      { key: 'status', label: 'Status' },
+      { key: 'name', label: tx('Teacher') },
+      { key: 'teaching', label: tx('Teaching h'), numeric: true },
+      { key: 'duties', label: tx('Duties h'), numeric: true },
+      { key: 'cca', label: tx('CCA h'), numeric: true },
+      { key: 'total', label: tx('Total h'), numeric: true },
+      { key: 'contract', label: tx('Contract h'), numeric: true },
+      { key: 'balance', label: tx('Balance h'), numeric: true },
+      { key: 'status', label: tx('Status') },
     ],
     rows,
   };
@@ -295,20 +305,20 @@ export function visitingClaims(p: Project, from: string, to: string): ReportTabl
   const sum = (k: 'hours' | 'amount') => Math.round(rows.reduce((s, r) => s + (Number(r[k]) || 0), 0) * 100) / 100;
   return {
     id: 'visiting-claims',
-    title: 'Visiting specialists — hours claimed',
-    note: `${from} to ${to}: timetabled lessons on school days, less absences. Holidays and days the classes are away are not counted.`,
+    title: tx('Visiting specialists — hours claimed'),
+    note: tx('{from} to {to}: timetabled lessons on school days, less absences. Holidays and days the classes are away are not counted.', { from, to }),
     columns: [
-      { key: 'name', label: 'Teacher' },
-      { key: 'host', label: 'Also works at' },
-      { key: 'days', label: 'Days', numeric: true },
-      { key: 'lessons', label: 'Lessons', numeric: true },
-      { key: 'missed', label: 'Missed', numeric: true },
-      { key: 'hours', label: 'Hours', numeric: true },
-      { key: 'rate', label: 'Rate / h', numeric: true },
-      { key: 'amount', label: 'Amount', numeric: true },
+      { key: 'name', label: tx('Teacher') },
+      { key: 'host', label: tx('Also works at') },
+      { key: 'days', label: tx('Days'), numeric: true },
+      { key: 'lessons', label: tx('Lessons'), numeric: true },
+      { key: 'missed', label: tx('Missed'), numeric: true },
+      { key: 'hours', label: tx('Hours'), numeric: true },
+      { key: 'rate', label: tx('Rate / h'), numeric: true },
+      { key: 'amount', label: tx('Amount'), numeric: true },
     ],
     rows,
-    totals: rows.length ? { name: 'Total', hours: sum('hours'), amount: sum('amount') } : undefined,
+    totals: rows.length ? { name: tx('Total'), hours: sum('hours'), amount: sum('amount') } : undefined,
   };
 }
 
@@ -321,7 +331,8 @@ const yearOf = (p: Project, classId: string) => {
 
 export function houseSummary(p: Project): ReportTable {
   const grades = [...p.grades].sort((a, b) => a.level - b.level).filter((g) => p.students.some((s) => yearOf(p, s.classId)?.id === g.id));
-  const rows = [...p.houses, { id: '', name: 'No house', colour: '' }]
+  const noHouse = tx('No house');
+  const rows = [...p.houses, { id: '', name: noHouse, colour: '' }]
     .map((h) => {
       const mine = p.students.filter((s) => s.active && (s.houseId ?? '') === h.id);
       const row: Record<string, string | number> = { house: h.name, total: mine.length };
@@ -329,17 +340,17 @@ export function houseSummary(p: Project): ReportTable {
       row.ccas = p.ccas.filter((c) => c.houseId === h.id).length || '';
       return row;
     })
-    .filter((r) => r.house !== 'No house' || Number(r.total) > 0);
-  const totals: Record<string, string | number> = { house: 'Total', total: rows.reduce((s, r) => s + Number(r.total), 0) };
+    .filter((r) => r.house !== noHouse || Number(r.total) > 0);
+  const totals: Record<string, string | number> = { house: tx('Total'), total: rows.reduce((s, r) => s + Number(r.total), 0) };
   for (const g of grades) totals[g.id] = rows.reduce((s, r) => s + Number(r[g.id] ?? 0), 0);
   return {
     id: 'houses',
-    title: 'Houses',
-    note: 'Students in each house by year group, to keep the houses balanced.',
+    title: tx('Houses'),
+    note: tx('Students in each house by year group, to keep the houses balanced.'),
     columns: [
-      { key: 'house', label: 'House' },
+      { key: 'house', label: tx('House') },
       ...grades.map((g) => ({ key: g.id, label: g.name, numeric: true })),
-      { key: 'total', label: 'Total', numeric: true },
+      { key: 'total', label: tx('Total'), numeric: true },
     ],
     rows,
     totals,
@@ -360,41 +371,32 @@ export function houseList(p: Project, houseId: string): ReportTable {
     .sort((a, b) => a.level - b.level || a.form.localeCompare(b.form, undefined, { numeric: true }) || a.name.localeCompare(b.name));
   return {
     id: `house-${house?.name ?? houseId}`.toLowerCase().replace(/[^\w-]+/g, '-'),
-    title: `${house?.name ?? 'House'} House`,
+    title: tx('{x} House', { x: house?.name ?? tx('House') }),
     columns: [
-      { key: 'name', label: 'Student' },
-      { key: 'admission', label: 'Adm. no' },
-      { key: 'form', label: 'Form' },
+      { key: 'name', label: tx('Student') },
+      { key: 'admission', label: tx('Adm. no') },
+      { key: 'form', label: tx('Form') },
     ],
     rows,
   };
 }
 
-const DAY: Record<string, string> = {
-  mon: 'Monday',
-  tue: 'Tuesday',
-  wed: 'Wednesday',
-  thu: 'Thursday',
-  fri: 'Friday',
-  sat: 'Saturday',
-  sun: 'Sunday',
-};
 const clock = (m: number | null) => (m === null ? '' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
 
 export function ccaSummary(p: Project): ReportTable {
   return {
     id: 'ccas',
-    title: 'Co-curricular activities',
+    title: tx('Co-curricular activities'),
     columns: [
-      { key: 'name', label: 'Activity' },
-      { key: 'when', label: 'When' },
-      { key: 'place', label: 'Where' },
-      { key: 'staff', label: 'Staff' },
-      { key: 'students', label: 'Students', numeric: true },
+      { key: 'name', label: tx('Activity') },
+      { key: 'when', label: tx('When') },
+      { key: 'place', label: tx('Where') },
+      { key: 'staff', label: tx('Staff') },
+      { key: 'students', label: tx('Students'), numeric: true },
     ],
     rows: p.ccas.map((c) => ({
       name: c.name,
-      when: [c.day ? DAY[c.day] : '', c.start !== null ? `${clock(c.start)}–${clock(c.end)}` : ''].filter(Boolean).join(' '),
+      when: [c.day ? dayLong(c.day) : '', c.start !== null ? `${clock(c.start)}–${clock(c.end)}` : ''].filter(Boolean).join(' '),
       place: c.place,
       staff: c.teacherIds.map((id) => p.teachers.find((t) => t.id === id)?.name ?? '').join(', '),
       students: c.studentIds.length,
@@ -416,12 +418,12 @@ export function ccaRoster(p: Project, ccaId: string): ReportTable {
     .sort((a, b) => a.form.localeCompare(b.form, undefined, { numeric: true }) || a.name.localeCompare(b.name));
   return {
     id: `cca-${c?.name ?? ccaId}`.toLowerCase().replace(/[^\w-]+/g, '-'),
-    title: c?.name ?? 'Activity',
-    note: c ? [c.day ? DAY[c.day] : '', c.start !== null ? `${clock(c.start)}–${clock(c.end)}` : '', c.place].filter(Boolean).join(' · ') : '',
+    title: c?.name ?? tx('Activity'),
+    note: c ? [c.day ? dayLong(c.day) : '', c.start !== null ? `${clock(c.start)}–${clock(c.end)}` : '', c.place].filter(Boolean).join(' · ') : '',
     columns: [
-      { key: 'name', label: 'Student' },
-      { key: 'form', label: 'Form' },
-      { key: 'house', label: 'House' },
+      { key: 'name', label: tx('Student') },
+      { key: 'form', label: tx('Form') },
+      { key: 'house', label: tx('House') },
     ],
     rows,
   };
@@ -449,15 +451,15 @@ export function setSummary(p: Project): ReportTable {
   );
   return {
     id: 'sets',
-    title: 'Teaching sets',
+    title: tx('Teaching sets'),
     columns: [
-      { key: 'block', label: 'Block' },
-      { key: 'line', label: 'Line' },
-      { key: 'set', label: 'Set' },
-      { key: 'subject', label: 'Subject' },
-      { key: 'teacher', label: 'Teacher' },
-      { key: 'room', label: 'Room' },
-      { key: 'students', label: 'Students', numeric: true },
+      { key: 'block', label: tx('Block') },
+      { key: 'line', label: tx('Line') },
+      { key: 'set', label: tx('Set') },
+      { key: 'subject', label: tx('Subject') },
+      { key: 'teacher', label: tx('Teacher') },
+      { key: 'room', label: tx('Room') },
+      { key: 'students', label: tx('Students'), numeric: true },
     ],
     rows,
   };

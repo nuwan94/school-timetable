@@ -14,29 +14,31 @@ import type { GenerateResult } from '@/solver';
 import { runSolver } from '@/solver/runner';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader, TextInput } from '@/ui/kit';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 type Template = 'leaves' | 'appointee' | 'longLeave' | 'examClasses';
 
 const TEMPLATES: { value: Template; label: string; help: string }[] = [
   {
     value: 'leaves',
-    label: 'A teacher leaves or transfers',
-    help: 'Their lessons and class-teacher roles go to another teacher, or stay uncovered.',
+    get label() { return tx('A teacher leaves or transfers'); },
+    get help() { return tx('Their lessons and class-teacher roles go to another teacher, or stay uncovered.'); },
   },
   {
     value: 'appointee',
-    label: 'A new teacher joins',
-    help: 'Hand them lessons that are uncovered or taken from someone else.',
+    get label() { return tx('A new teacher joins'); },
+    get help() { return tx('Hand them lessons that are uncovered or taken from someone else.'); },
   },
   {
     value: 'longLeave',
-    label: 'Long leave (maternity, study…)',
-    help: 'The timetable stays; a named cover teacher is suggested first in daily relief.',
+    get label() { return tx('Long leave (maternity, study…)'); },
+    get help() { return tx('The timetable stays; a named cover teacher is suggested first in daily relief.'); },
   },
   {
     value: 'examClasses',
-    label: 'Exam classes leave',
-    help: 'e.g. Grade 11 after the O/L: their periods free up and their teachers can do relief.',
+    get label() { return tx('Exam classes leave'); },
+    get help() { return tx('e.g. Grade 11 after the O/L: their periods free up and their teachers can do relief.'); },
   },
 ];
 
@@ -80,8 +82,8 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
   if (!approved && !pending)
     return (
       <div>
-        <PageHeader title="Mid-year changes" />
-        <Empty>Approve a timetable first (in Edit). Changes start from the approved timetable so you can see exactly what moves.</Empty>
+        <PageHeader title={tx('Mid-year changes')} />
+        <Empty>{tx('Approve a timetable first (in Edit). Changes start from the approved timetable so you can see exactly what moves.')}</Empty>
       </div>
     );
 
@@ -111,7 +113,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
           classIds,
           from,
           to,
-          name: reason || 'Exam classes leave',
+          name: reason || tx('Exam classes leave'),
         });
     });
 
@@ -122,7 +124,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
         ? `${name.trim()} joins`
         : template === 'longLeave'
           ? `${teacherName(teacherId)} on leave ${from} – ${to}`
-          : `${classIds.map(className).join(', ')} leave from ${from}`;
+          : tx('{join} leave from {from}', { join: classIds.map(className).join(', '), from });
 
   const apply = async () => {
     setMessage(null);
@@ -141,8 +143,15 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
       update((d) => copyData(d as Project, changed));
       setMessage(
         template === 'longLeave'
-          ? `Saved. From ${from} to ${to}, Today — relief lists ${teacherName(teacherId)}'s lessons${otherId ? ` and suggests ${teacherName(otherId)} first` : ''}.`
-          : `Saved. From ${from}, these classes drop out of daily relief and their teachers count as free.`,
+          ? otherId
+            ? tx('Saved. From {from} to {to}, Today — relief lists {teacher}’s lessons and suggests {other} first.', {
+                from,
+                to,
+                teacher: teacherName(teacherId),
+                other: teacherName(otherId),
+              })
+            : tx('Saved. From {from} to {to}, Today — relief lists {teacher}’s lessons.', { from, to, teacher: teacherName(teacherId) })
+          : tx('Saved. From {from}, these classes drop out of daily relief and their teachers count as free.', { from }),
       );
       return;
     }
@@ -188,13 +197,13 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Mid-year changes">
-        When staff or classes change during the year, update the approved timetable with as few moves as possible and tell only the people affected.
+      <PageHeader title={tx('Mid-year changes')}>
+        {tx('When staff or classes change during the year, update the approved timetable with as few moves as possible and tell only the people affected.')}
       </PageHeader>
 
       {!pending && (
-        <Card title="1. What changed?">
-          <fieldset className="grid gap-2 sm:grid-cols-2" aria-label="Kind of change">
+        <Card title={tx('1. What changed?')}>
+          <fieldset className="grid gap-2 sm:grid-cols-2" aria-label={tx('Kind of change')}>
             {TEMPLATES.map((t) => (
               <label
                 key={t.value}
@@ -222,9 +231,9 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
           <div className="mt-4 flex flex-wrap items-end gap-3">
             {(template === 'leaves' || template === 'longLeave') && (
               <label className="text-sm">
-                <span className="label">Teacher</span>
+                <span className="label">{tx('Teacher')}</span>
                 <select className="field w-56" value={teacherId} onChange={(e) => setTeacherId(e.target.value)} data-testid="change-teacher">
-                  <option value="">Choose…</option>
+                  <option value="">{tx('Choose…')}</option>
                   {teachers.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
@@ -235,9 +244,9 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
             )}
             {(template === 'leaves' || template === 'longLeave') && (
               <label className="text-sm">
-                <span className="label">{template === 'leaves' ? 'Lessons go to' : 'Cover teacher'}</span>
+                <span className="label">{template === 'leaves' ? tx('Lessons go to') : tx('Cover teacher')}</span>
                 <select className="field w-56" value={otherId} onChange={(e) => setOtherId(e.target.value)} data-testid="change-other">
-                  <option value="">{template === 'leaves' ? 'Nobody yet (uncovered)' : 'None — daily relief'}</option>
+                  <option value="">{template === 'leaves' ? tx('Nobody yet (uncovered)') : tx('None — daily relief')}</option>
                   {teachers
                     .filter((t) => t.id !== teacherId)
                     .map((t) => (
@@ -251,13 +260,13 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
             {template === 'appointee' && (
               <>
                 <label className="text-sm">
-                  <span className="label">Name</span>
+                  <span className="label">{tx('Name')}</span>
                   <TextInput className="w-56" value={name} onChange={setName} data-testid="change-name" />
                 </label>
                 <label className="text-sm">
-                  <span className="label">Takes lessons from</span>
+                  <span className="label">{tx('Takes lessons from')}</span>
                   <select className="field w-56" value={otherId} onChange={(e) => setOtherId(e.target.value)}>
-                    <option value="">Uncovered lessons only</option>
+                    <option value="">{tx('Uncovered lessons only')}</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
@@ -268,22 +277,22 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
               </>
             )}
             <label className="text-sm">
-              <span className="label">{template === 'leaves' || template === 'appointee' ? 'Effective from' : 'From'}</span>
+              <span className="label">{template === 'leaves' || template === 'appointee' ? tx('Effective from') : tx('From')}</span>
               <input type="date" className="field w-40" value={from} onChange={(e) => setFrom(e.target.value)} />
             </label>
             {(template === 'longLeave' || template === 'examClasses') && (
               <>
                 <label className="text-sm">
-                  <span className="label">To</span>
+                  <span className="label">{tx('To')}</span>
                   <input type="date" className="field w-40" value={to} onChange={(e) => setTo(e.target.value)} data-testid="change-to" />
                 </label>
                 <label className="text-sm">
-                  <span className="label">{template === 'longLeave' ? 'Reason' : 'Name'}</span>
+                  <span className="label">{template === 'longLeave' ? tx('Reason') : tx('Name')}</span>
                   <TextInput
                     className="w-48"
                     value={reason}
                     onChange={setReason}
-                    placeholder={template === 'longLeave' ? 'Maternity leave' : 'G.C.E. O/L exam'}
+                    placeholder={template === 'longLeave' ? tx('Maternity leave') : tx('G.C.E. O/L exam')}
                   />
                 </label>
               </>
@@ -293,7 +302,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
           {template === 'appointee' && (
             <div className="mt-3 space-y-3">
               <div>
-                <p className="label">Subjects they teach</p>
+                <p className="label">{tx('Subjects they teach')}</p>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {project.subjects.map((s) => (
                     <button
@@ -308,9 +317,9 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
                 </div>
               </div>
               <div>
-                <p className="label">Lessons to hand over ({allocationIds.length})</p>
+                <p className="label">{tx('Lessons to hand over ({allocationIds})', { allocationIds: allocationIds.length })}</p>
                 {handover.length === 0 ? (
-                  <p className="text-sm text-slate-600">No uncovered lessons. Choose a teacher to take lessons from.</p>
+                  <p className="text-sm text-slate-600">{tx('No uncovered lessons. Choose a teacher to take lessons from.')}</p>
                 ) : (
                   <ul className="mt-1 grid max-h-64 gap-0.5 overflow-y-auto text-sm sm:grid-cols-2" data-testid="handover">
                     {handover.map((a) => (
@@ -322,7 +331,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
                             onChange={() => toggle(allocationIds, setAllocationIds, a.id)}
                           />
                           {a.groupIds.map(className).join('+')} · {subjectName(a.subjectId)} · {a.pattern.reduce((n, x) => n + x.length * x.count, 0)}
-                          p{a.status === 'uncovered' ? <span className="text-xs text-red-700">uncovered</span> : null}
+                          p{a.status === 'uncovered' ? <span className="text-xs text-red-700">{tx('uncovered')}</span> : null}
                         </label>
                       </li>
                     ))}
@@ -333,7 +342,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
           )}
 
           {template === 'examClasses' && (
-            <div className="mt-3 flex flex-wrap gap-1" aria-label="Classes leaving">
+            <div className="mt-3 flex flex-wrap gap-1" aria-label={tx('Classes leaving')}>
               {project.classes.map((c) => (
                 <button
                   key={c.id}
@@ -349,7 +358,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
 
           <div className="mt-4 flex items-center gap-3">
             <button className="btn btn-primary" disabled={!ready || busy} onClick={() => void apply()} data-testid="change-apply">
-              {busy ? 'Updating the timetable…' : template === 'longLeave' || template === 'examClasses' ? 'Save' : 'Update with least change'}
+              {busy ? tx('Updating the timetable…') : template === 'longLeave' || template === 'examClasses' ? tx('Save') : tx('Update with least change')}
             </button>
             {message && (
               <p className="text-sm text-slate-700" role="status" data-testid="change-message">
@@ -362,7 +371,7 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
 
       {pending && diff && (
         <Card
-          title={`2. Review: ${pending.name}`}
+          title={tx('2. Review: {name}', { name: pending.name })}
           actions={
             <button
               className="text-xs text-slate-600 underline"
@@ -373,31 +382,36 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
                 })
               }
             >
-              Discard draft
+              {tx('Discard draft')}
             </button>
           }
         >
           {result && result.unplaced.length > 0 && (
             <p className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-              {result.unplaced.length} lesson(s) found no place, e.g. {result.unplaced[0]!.label}: {result.unplaced[0]!.reason}. Fix them in Edit
-              before approving.
+              {tx('{unplaced} lesson(s) found no place, e.g. {label}: {reason}. Fix them in Edit before approving.', { unplaced: result.unplaced.length, label: result.unplaced[0]!.label, reason: result.unplaced[0]!.reason })}
             </p>
           )}
           <p className="text-sm" data-testid="diff-summary">
-            <b>{diff.changes.length}</b> lesson(s) change · <b>{diff.teachers.size}</b> teacher(s) and <b>{diff.classes.size}</b> class(es) affected
-            {pending.effectiveFrom ? ` · from ${pending.effectiveFrom}` : ''}.
+            <Rich
+              text={tx('<b>{lessons}</b> lesson(s) change · <b>{teachers}</b> teacher(s) and <b>{classes}</b> class(es) affected', {
+                lessons: diff.changes.length,
+                teachers: diff.teachers.size,
+                classes: diff.classes.size,
+              })}
+            />
+            {pending.effectiveFrom ? tx(' · from {effectiveFrom}', { effectiveFrom: pending.effectiveFrom }) : ''}.
           </p>
-          {diff.teachers.size > 0 && <p className="mt-1 text-sm text-slate-600">Teachers: {[...diff.teachers.keys()].map(teacherName).join(', ')}</p>}
+          {diff.teachers.size > 0 && <p className="mt-1 text-sm text-slate-600">{tx('Teachers: {join}', { join: [...diff.teachers.keys()].map(teacherName).join(', ') })}</p>}
           {diff.changes.length > 0 && (
             <div className="mt-3 max-h-80 overflow-auto">
               <table className="w-full text-sm" data-testid="diff-table">
                 <thead className="sticky top-0 bg-white text-left text-xs text-slate-500">
                   <tr>
-                    <th className="py-1 pr-2">Class</th>
-                    <th className="pr-2">Subject</th>
-                    <th className="pr-2">Before</th>
-                    <th className="pr-2">Now</th>
-                    <th>Change</th>
+                    <th className="py-1 pr-2">{tx('Class')}</th>
+                    <th className="pr-2">{tx('Subject')}</th>
+                    <th className="pr-2">{tx('Before')}</th>
+                    <th className="pr-2">{tx('Now')}</th>
+                    <th>{tx('Change')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -424,24 +438,24 @@ export function ChangesScreen({ onPrint }: { onPrint: () => void }) {
               onClick={() => update((d) => approveActiveVersion(d, pending.effectiveFrom))}
               data-testid="change-approve"
             >
-              Approve from {pending.effectiveFrom ?? 'now'}
+              {tx('Approve from')} {pending.effectiveFrom ?? 'now'}
             </button>
             <button className="btn" onClick={downloadNotices} disabled={!diff.teachers.size}>
-              Change notices (PDF, draft)
+              {tx('Change notices (PDF, draft)')}
             </button>
           </div>
         </Card>
       )}
 
       {!pending && active?.status === 'approved' && active.baseSnapshot.length > 0 && (
-        <Card title={`Approved: ${active.name}`}>
-          <p className="text-sm">Give each affected teacher their change notice, and reprint only the sheets that changed.</p>
+        <Card title={tx('Approved: {name}', { name: active.name })}>
+          <p className="text-sm">{tx('Give each affected teacher their change notice, and reprint only the sheets that changed.')}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-primary" onClick={downloadNotices} data-testid="change-notices">
-              Download change notices
+              {tx('Download change notices')}
             </button>
             <button className="btn" onClick={onPrint}>
-              Print changed sheets →
+              {tx('Print changed sheets →')}
             </button>
           </div>
         </Card>

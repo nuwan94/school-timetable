@@ -7,6 +7,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, NumberInput, PageHeader, Select, TextInput, TrashIcon } from '@/ui/kit';
 import { TaughtTogether } from './TaughtTogether';
 import { useDelete } from './useDelete';
+import { tx } from '@/i18n';
 
 const MEDIUM_OPTIONS = (Object.keys(MEDIUM_LABELS) as SchoolClass['medium'][]).map((m) => ({ value: m, label: MEDIUM_LABELS[m] }));
 
@@ -27,40 +28,40 @@ function QuickAdd() {
 
   if (!section) return null;
   return (
-    <Card title="Quick add">
+    <Card title={tx('Quick add')}>
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="qa-section">
-            Section
+            {tx('Section')}
           </label>
           <Select
             id="qa-section"
             value={section.id}
-            options={project.sections.map((s) => ({ value: s.id, label: s.name || '(unnamed)' }))}
+            options={project.sections.map((s) => ({ value: s.id, label: s.name || tx('(unnamed)') }))}
             onChange={setSectionId}
           />
         </div>
         <div>
           <label className="label" htmlFor="qa-from">
-            {project.institute.gradeLabel}s from
+            {tx('{gradeLabel} from', { gradeLabel: project.institute.gradeLabel })}
           </label>
           <NumberInput id="qa-from" value={from} min={0} max={14} nullable onChange={setFrom} className="w-20" />
         </div>
         <div>
           <label className="label" htmlFor="qa-to">
-            to
+            {tx('to')}
           </label>
           <NumberInput id="qa-to" value={to} min={0} max={14} nullable onChange={setTo} className="w-20" />
         </div>
         <div>
           <label className="label" htmlFor="qa-letters">
-            Classes in each
+            {tx('Classes in each')}
           </label>
           <TextInput id="qa-letters" value={letters} onChange={setLetters} className="w-36" placeholder="A, B, C" />
         </div>
         <div>
           <label className="label" htmlFor="qa-medium">
-            Medium
+            {tx('Medium')}
           </label>
           <Select id="qa-medium" value={medium} options={MEDIUM_OPTIONS} onChange={setMedium} />
         </div>
@@ -72,16 +73,20 @@ function QuickAdd() {
             update((d) => {
               created = quickAddClasses(d, { sectionId: section.id, fromLevel: from!, toLevel: to!, letters: parsedLetters, medium });
             });
-            setResult(created ? `Added ${created} class(es).` : 'Those classes already exist.');
+            setResult(created ? tx('Added {created} class(es).', { created }) : tx('Those classes already exist.'));
           }}
         >
-          Add classes
+          {tx('Add classes')}
         </button>
       </div>
       <p className="mt-2 text-xs text-slate-500">
         {from !== null && to !== null && from <= to && parsedLetters.length > 0
-          ? `Creates ${(to - from + 1) * parsedLetters.length} classes: ${from}${parsedLetters[0]} … ${to}${parsedLetters[parsedLetters.length - 1]}. Existing classes are skipped.`
-          : 'Enter a grade range and class letters.'}
+          ? tx('Creates {n} classes: {first} … {last}. Existing classes are skipped.', {
+              n: (to - from + 1) * parsedLetters.length,
+              first: `${from}${parsedLetters[0]}`,
+              last: `${to}${parsedLetters[parsedLetters.length - 1]}`,
+            })
+          : tx('Enter a grade range and class letters.')}
         {result && <span className="ml-2 font-medium text-teal-800">{result}</span>}
       </p>
     </Card>
@@ -94,7 +99,7 @@ export function ClassesStep() {
   const remove = useDelete();
   const simple = project.simpleMode;
   const scheduleOptions = project.bellSchedules.map((b) => ({ value: b.id, label: b.name }));
-  const teacherOptions = [{ value: '', label: '— none —' }, ...project.teachers.map((t) => ({ value: t.id, label: t.name }))];
+  const teacherOptions = [{ value: '', label: tx('— none —') }, ...project.teachers.map((t) => ({ value: t.id, label: t.name }))];
   const roomOptions = [{ value: '', label: '—' }, ...project.rooms.map((r) => ({ value: r.id, label: r.name }))];
 
   const editClass = (id: string, fn: (c: SchoolClass) => void) =>
@@ -104,24 +109,23 @@ export function ClassesStep() {
 
   return (
     <>
-      <PageHeader title="Sections, grades and classes">
-        Sections group grades that share a bell schedule (e.g. Primary, Secondary). Use Quick add to create many classes at once,
-        then fill in the class teacher later.
+      <PageHeader title={tx('Sections, grades and classes')}>
+        {tx('Sections group grades that share a bell schedule (e.g. Primary, Secondary). Use Quick add to create many classes at once, then fill in the class teacher later.')}
       </PageHeader>
 
       <div className="space-y-4">
         <Card
-          title="Sections"
+          title={tx('Sections')}
           actions={
             <button
               className="btn"
               onClick={() =>
                 update((d) => {
-                  d.sections.push(makeSection({ name: `Section ${d.sections.length + 1}`, bellScheduleId: d.bellSchedules[0]!.id, order: d.sections.length }));
+                  d.sections.push(makeSection({ name: tx('Section {x}', { x: d.sections.length + 1 }), bellScheduleId: d.bellSchedules[0]!.id, order: d.sections.length }));
                 })
               }
             >
-              + Section
+              {tx('+ Section')}
             </button>
           }
         >
@@ -129,7 +133,7 @@ export function ClassesStep() {
             {project.sections.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center gap-2">
                 <TextInput
-                  aria-label="Section name"
+                  aria-label={tx('Section name')}
                   value={s.name}
                   onChange={(v) =>
                     update((d) => {
@@ -138,9 +142,9 @@ export function ClassesStep() {
                   }
                   className="w-48"
                 />
-                <span className="text-sm text-slate-500">uses</span>
+                <span className="text-sm text-slate-500">{tx('uses')}</span>
                 <Select
-                  aria-label="Bell schedule"
+                  aria-label={tx('Bell schedule')}
                   value={s.bellScheduleId}
                   options={scheduleOptions}
                   onChange={(v) =>
@@ -150,7 +154,7 @@ export function ClassesStep() {
                   }
                   className="w-48"
                 />
-                <IconButton label={`Delete section ${s.name}`} danger onClick={() => remove('section', s.id, s.name)}>
+                <IconButton label={tx('Delete section {name}', { name: s.name })} danger onClick={() => remove('section', s.id, s.name)}>
                   <TrashIcon />
                 </IconButton>
               </div>
@@ -160,7 +164,7 @@ export function ClassesStep() {
 
         <QuickAdd />
 
-        {project.grades.length === 0 && <Empty>No classes yet. Use Quick add above.</Empty>}
+        {project.grades.length === 0 && <Empty>{tx('No classes yet. Use Quick add above.')}</Empty>}
 
         {[...project.grades]
           .sort((a, b) => a.level - b.level)
@@ -172,7 +176,7 @@ export function ClassesStep() {
                 title={
                   <span className="flex flex-wrap items-center gap-2">
                     <TextInput
-                      aria-label="Grade name"
+                      aria-label={tx('Grade name')}
                       value={g.name}
                       onChange={(v) =>
                         update((d) => {
@@ -183,7 +187,7 @@ export function ClassesStep() {
                     />
                     {project.sections.length > 1 && (
                       <Select
-                        aria-label="Section"
+                        aria-label={tx('Section')}
                         value={g.sectionId}
                         options={project.sections.map((s) => ({ value: s.id, label: s.name }))}
                         onChange={(v) =>
@@ -207,27 +211,27 @@ export function ClassesStep() {
                         })
                       }
                     >
-                      + Class
+                      {tx('+ Class')}
                     </button>
-                    <IconButton label={`Delete ${g.name}`} danger onClick={() => remove('grade', g.id, g.name)}>
+                    <IconButton label={tx('Delete {name}', { name: g.name })} danger onClick={() => remove('grade', g.id, g.name)}>
                       <TrashIcon />
                     </IconButton>
                   </>
                 }
               >
                 {classes.length === 0 ? (
-                  <Empty>No classes in this grade.</Empty>
+                  <Empty>{tx('No classes in this grade.')}</Empty>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px] text-sm">
                       <thead>
                         <tr className="text-left text-xs uppercase text-slate-500">
-                          <th className="py-1 pr-2">Class</th>
-                          <th className="py-1 pr-2">Medium</th>
-                          {!simple && <th className="py-1 pr-2">Stream</th>}
-                          <th className="py-1 pr-2">Class teacher</th>
-                          {!simple && <th className="py-1 pr-2">Home room</th>}
-                          <th className="py-1 pr-2">Students</th>
+                          <th className="py-1 pr-2">{tx('Class')}</th>
+                          <th className="py-1 pr-2">{tx('Medium')}</th>
+                          {!simple && <th className="py-1 pr-2">{tx('Stream')}</th>}
+                          <th className="py-1 pr-2">{tx('Class teacher')}</th>
+                          {!simple && <th className="py-1 pr-2">{tx('Home room')}</th>}
+                          <th className="py-1 pr-2">{tx('Students')}</th>
                           <th />
                         </tr>
                       </thead>
@@ -235,17 +239,17 @@ export function ClassesStep() {
                         {classes.map((c) => (
                           <tr key={c.id}>
                             <td className="py-1 pr-2">
-                              <TextInput aria-label="Class name" value={c.name} onChange={(v) => editClass(c.id, (x) => (x.name = v))} className="w-20" />
+                              <TextInput aria-label={tx('Class name')} value={c.name} onChange={(v) => editClass(c.id, (x) => (x.name = v))} className="w-20" />
                             </td>
                             <td className="py-1 pr-2">
-                              <Select aria-label="Medium" value={c.medium} options={MEDIUM_OPTIONS} onChange={(v) => editClass(c.id, (x) => (x.medium = v))} />
+                              <Select aria-label={tx('Medium')} value={c.medium} options={MEDIUM_OPTIONS} onChange={(v) => editClass(c.id, (x) => (x.medium = v))} />
                             </td>
                             {!simple && (
                               <td className="py-1 pr-2">
                                 <TextInput
-                                  aria-label="Stream"
+                                  aria-label={tx('Stream')}
                                   value={c.stream}
-                                  placeholder="e.g. Science"
+                                  placeholder={tx('e.g. Science')}
                                   onChange={(v) => editClass(c.id, (x) => (x.stream = v))}
                                   className="w-28"
                                 />
@@ -253,7 +257,7 @@ export function ClassesStep() {
                             )}
                             <td className="py-1 pr-2">
                               <Select
-                                aria-label="Class teacher"
+                                aria-label={tx('Class teacher')}
                                 value={c.classTeacherId ?? ''}
                                 options={teacherOptions}
                                 onChange={(v) => editClass(c.id, (x) => (x.classTeacherId = v || null))}
@@ -263,7 +267,7 @@ export function ClassesStep() {
                             {!simple && (
                               <td className="py-1 pr-2">
                                 <Select
-                                  aria-label="Home room"
+                                  aria-label={tx('Home room')}
                                   value={c.homeRoomId ?? ''}
                                   options={roomOptions}
                                   onChange={(v) => editClass(c.id, (x) => (x.homeRoomId = v || null))}
@@ -273,7 +277,7 @@ export function ClassesStep() {
                             )}
                             <td className="py-1 pr-2">
                               <NumberInput
-                                aria-label="Students"
+                                aria-label={tx('Students')}
                                 value={c.studentCount}
                                 min={0}
                                 onChange={(v) => editClass(c.id, (x) => (x.studentCount = v ?? 0))}
@@ -281,7 +285,7 @@ export function ClassesStep() {
                               />
                             </td>
                             <td className="py-1 text-right">
-                              <IconButton label={`Delete ${c.name}`} danger onClick={() => remove('class', c.id, c.name)}>
+                              <IconButton label={tx('Delete {name}', { name: c.name })} danger onClick={() => remove('class', c.id, c.name)}>
                                 <TrashIcon />
                               </IconButton>
                             </td>

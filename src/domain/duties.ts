@@ -4,6 +4,7 @@ import type { Project } from './project';
 import type { DutyAssignment, DutyRoster, DutySession } from './schedule';
 import { lessonEntries, mainSchedule } from './timetable';
 import { formatClock, slotsForDay, type Weekday } from './time';
+import { joinAnd, tx } from '@/i18n';
 
 /**
  * Interval and gate duty rosters (PLAN.md §8): a weekly grid of posts ×
@@ -22,26 +23,26 @@ export function makeDutyRoster(p: Project, kind: DutyRoster['kind']): DutyRoster
   let posts: string[];
   let name: string;
   if (kind === 'interval') {
-    name = 'Interval duty';
-    posts = ['Playground', 'Canteen', 'Corridors'];
+    name = tx('Interval duty');
+    posts = [tx('Playground'), tx('Canteen'), tx('Corridors')];
     sessions = slots
       .filter((s) => s.kind === 'break')
-      .map((s) => ({ id: newId('dses'), label: s.label || 'Interval', start: s.start, end: s.start + s.duration }));
-    if (!sessions.length) sessions = [{ id: newId('dses'), label: 'Interval', start: 10 * 60 + 30, end: 10 * 60 + 50 }];
+      .map((s) => ({ id: newId('dses'), label: s.label || tx('Interval'), start: s.start, end: s.start + s.duration }));
+    if (!sessions.length) sessions = [{ id: newId('dses'), label: tx('Interval'), start: 10 * 60 + 30, end: 10 * 60 + 50 }];
   } else if (kind === 'gate') {
-    name = 'Gate duty';
-    posts = ['Main gate'];
+    name = tx('Gate duty');
+    posts = [tx('Main gate')];
     const first = slots[0]?.start ?? 7 * 60 + 30;
     const lastSlot = slots[slots.length - 1];
     const last = lastSlot ? lastSlot.start + lastSlot.duration : 13 * 60 + 30;
     sessions = [
-      { id: newId('dses'), label: 'Morning', start: first - 30, end: first },
-      { id: newId('dses'), label: 'After school', start: last, end: last + 30 },
+      { id: newId('dses'), label: tx('Morning'), start: first - 30, end: first },
+      { id: newId('dses'), label: tx('After school'), start: last, end: last + 30 },
     ];
   } else {
-    name = 'Duty roster';
+    name = tx('Duty roster');
     posts = ['Post 1'];
-    sessions = [{ id: newId('dses'), label: 'Session', start: 12 * 60, end: 12 * 60 + 30 }];
+    sessions = [{ id: newId('dses'), label: tx('Session'), start: 12 * 60, end: 12 * 60 + 30 }];
   }
   return { id: newId('duty'), name, kind, posts, sessions, days: [...p.institute.workingDays], excludedTeacherIds: [], assignments: [] };
 }
@@ -134,12 +135,12 @@ export function dutyClashes(p: Project, roster: DutyRoster): DutyClash[] {
     const s = ses(a.sessionId);
     const t = p.teachers.find((x) => x.id === a.teacherId);
     if (!s || !t) continue;
-    if (!teacherDays(p, t).includes(a.day)) out.push({ kind: 'notWorking', message: `${t.name} does not work on ${a.day} (${a.post}).` });
+    if (!teacherDays(p, t).includes(a.day)) out.push({ kind: 'notWorking', message: tx('{name} does not work on {day} ({post}).', { name: t.name, day: a.day, post: a.post }) });
     if (entries.some((e) => e.day === a.day && e.teacherIds.includes(a.teacherId) && overlaps(e, s)))
-      out.push({ kind: 'teaching', message: `${t.name} has a lesson during ${at(a)} (${a.post}).` });
-    else if (isBusy(a.teacherId, a.day, s)) out.push({ kind: 'twice', message: `${t.name} is on another roster during ${at(a)}.` });
+      out.push({ kind: 'teaching', message: tx('{name} has a lesson during {at} ({post}).', { name: t.name, at: at(a), post: a.post }) });
+    else if (isBusy(a.teacherId, a.day, s)) out.push({ kind: 'twice', message: tx('{name} is on another roster during {at}.', { name: t.name, at: at(a) }) });
     if (NO_DUTY.has(t.category) || roster.excludedTeacherIds.includes(t.id))
-      out.push({ kind: 'notAllowed', message: `${t.name} is not normally put on duty (${a.post}, ${at(a)}).` });
+      out.push({ kind: 'notAllowed', message: tx('{name} is not normally put on duty ({post}, {at}).', { name: t.name, post: a.post, at: at(a) }) });
   }
   const seen = new Map<string, DutyAssignment[]>();
   for (const a of roster.assignments) {
@@ -150,13 +151,13 @@ export function dutyClashes(p: Project, roster: DutyRoster): DutyClash[] {
     if (list.length > 1)
       out.push({
         kind: 'twice',
-        message: `${name(list[0]!.teacherId)} is on ${list.map((a) => a.post).join(' and ')} at the same time (${at(list[0]!)}).`,
+        message: tx('{name} is on {join} at the same time ({at}).', { name: name(list[0]!.teacherId), join: joinAnd(list.map((a) => a.post)), at: at(list[0]!) }),
       });
   const filled = new Set(roster.assignments.map(dutyKey));
   let empty = 0;
   for (const day of roster.days)
     for (const s of roster.sessions) for (const post of roster.posts) if (!filled.has(dutyKey({ day, sessionId: s.id, post }))) empty++;
-  if (empty) out.push({ kind: 'empty', message: `${empty} duty slot(s) have nobody.` });
+  if (empty) out.push({ kind: 'empty', message: tx('{empty} duty slot(s) have nobody.', { empty }) });
   return out;
 }
 

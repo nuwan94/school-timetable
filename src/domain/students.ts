@@ -2,6 +2,7 @@ import type { Draft } from 'immer';
 import { newId } from './common';
 import { House, Student } from './entities';
 import type { Project } from './project';
+import { tx } from '@/i18n';
 
 /**
  * Students for the International pack: a list pasted from the school's
@@ -107,12 +108,12 @@ export function parseStudents(p: Project, text: string): ImportPreview {
     };
     const name = get('name');
     if (!name) {
-      problems.push(`Line ${i + 1}: no name.`);
+      problems.push(tx('Line {x}: no name.', { x: i + 1 }));
       continue;
     }
     const className = get('className');
     const classId = classByName.get(norm(className)) ?? null;
-    if (!classId) problems.push(`Line ${i + 1}: class "${className}" not found — ${name} is skipped.`);
+    if (!classId) problems.push(tx('Line {x}: class "{className}" not found — {name} is skipped.', { x: i + 1, className, name }));
     const codes =
       subjectsFrom < 0
         ? []

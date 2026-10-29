@@ -10,9 +10,11 @@ import { SheetRenderer } from '@/print/SheetRenderer';
 import '@/print/sheet.css';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, PageHeader } from '@/ui/kit';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const LANGS: { value: Lang; label: string }[] = [
-  { value: 'en', label: 'English' },
+  { value: 'en', get label() { return tx('English'); } },
   { value: 'si', label: 'සිංහල' },
   { value: 'ta', label: 'தமிழ்' },
 ];
@@ -72,13 +74,12 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
   if (!version)
     return (
       <div>
-        <PageHeader title="Print & share" />
+        <PageHeader title={tx('Print & share')} />
         <Empty>
-          No timetable yet.{' '}
-          <button className="text-teal-700 underline" onClick={onGenerate}>
-            Generate one first
-          </button>
-          .
+          <Rich
+            text={tx('No timetable yet. <link>Generate one first</link>.')}
+            tags={{ link: (c) => <button className="text-teal-700 underline" onClick={onGenerate}>{c}</button> }}
+          />
         </Empty>
       </div>
     );
@@ -112,7 +113,7 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
     setProgress('building…');
     try {
       const all = kinds.flatMap((k) => buildSheets(project, version, k.kind, { lang }));
-      const blob = await buildReviewBundle(all, { title: project.institute.name || 'Timetable', note: `${version.name} (${version.status})` });
+      const blob = await buildReviewBundle(all, { title: project.institute.name || tx('Timetable'), note: `${version.name} (${version.status})` });
       downloadBlob(blob, `${school}-review-${lang}-${stamp}.html`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -130,20 +131,20 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Print & share">
-        Print directly, or download a PDF that prints the same at any print shop (Sinhala and Tamil included). PNG is handy for WhatsApp.
+      <PageHeader title={tx('Print & share')}>
+        {tx('Print directly, or download a PDF that prints the same at any print shop (Sinhala and Tamil included). PNG is handy for WhatsApp.')}
       </PageHeader>
 
       {version.status === 'draft' && (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          This timetable is still a draft, so sheets are marked DRAFT. Approve it in Edit when it is final.
+          {tx('This timetable is still a draft, so sheets are marked DRAFT. Approve it in Edit when it is final.')}
         </p>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-4">
-          <Card title="Sheet">
-            <div className="space-y-1" role="radiogroup" aria-label="Sheet type">
+          <Card title={tx('Sheet')}>
+            <div className="space-y-1" role="radiogroup" aria-label={tx('Sheet type')}>
               {kinds.map((k) => (
                 <label key={k.kind} className="flex items-center gap-2 text-sm">
                   <input type="radio" name="sheet-kind" checked={meta.kind === k.kind} onChange={() => setKind(k.kind)} />
@@ -154,10 +155,10 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
             {diff && meta.perItem && meta.kind !== 'changeNotice' && (
               <label className="mt-3 flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} data-testid="only-changed" />
-                Only sheets that changed ({changedIds?.length ?? 0})
+                {tx('Only sheets that changed ({n})', { n: changedIds?.length ?? 0 })}
               </label>
             )}
-            <p className="label mt-4">Language</p>
+            <p className="label mt-4">{tx('Language')}</p>
             <div className="mt-1 flex gap-1">
               {LANGS.map((l) => (
                 <button
@@ -175,21 +176,21 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
               ))}
             </div>
             {lang !== 'en' && (
-              <p className="mt-1 text-xs text-slate-500">Uses the Sinhala/Tamil names entered for subjects, teachers and the school; English names fill any gaps.</p>
+              <p className="mt-1 text-xs text-slate-500">{tx('Uses the Sinhala/Tamil names entered for subjects, teachers and the school; English names fill any gaps.')}</p>
             )}
           </Card>
 
           {meta.perItem && items.length > 0 && (
             <Card
-              title={`Which ${{ class: 'classes', teacher: 'teachers', room: 'rooms', student: 'students' }[meta.perItem]}`}
+              title={{ class: tx('Which classes'), teacher: tx('Which teachers'), room: tx('Which rooms'), student: tx('Which students') }[meta.perItem]}
               actions={
                 <button className="text-xs text-teal-700 underline" onClick={() => setPicked(picked ? null : [])}>
-                  {picked ? 'All' : 'Choose…'}
+                  {picked ? tx('All') : tx('Choose…')}
                 </button>
               }
             >
               {!picked ? (
-                <p className="text-sm text-slate-600">All {items.length}.</p>
+                <p className="text-sm text-slate-600">{tx('All {items}.', { items: items.length })}</p>
               ) : (
                 <ul className="max-h-72 space-y-0.5 overflow-y-auto text-sm">
                   {items.map((it) => (
@@ -209,30 +210,30 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
             </Card>
           )}
 
-          <Card title="Output">
+          <Card title={tx('Output')}>
             <div className="flex flex-col gap-2">
               <button className="btn btn-primary" disabled={busy || !sheets.length} onClick={() => start('pdf', sheets)} data-testid="download-pdf">
-                Download PDF ({sheets.length} page{sheets.length === 1 ? '' : 's'})
+                {sheets.length === 1 ? tx('Download PDF (1 page)') : tx('Download PDF ({n} pages)', { n: sheets.length })}
               </button>
               <button className="btn" disabled={busy || !sheets.length} onClick={() => start('print', sheets)}>
-                Print…
+                {tx('Print…')}
               </button>
               {meta.perItem && sheets.length > 1 && (
                 <button className="btn" disabled={busy} onClick={() => start('zip', sheets)} data-testid="download-zip">
-                  One PDF each (zip)
+                  {tx('One PDF each (zip)')}
                 </button>
               )}
               <button className="btn" disabled={busy || !current} onClick={() => current && start('png', [current])}>
-                PNG of this page (WhatsApp)
+                {tx('PNG of this page (WhatsApp)')}
               </button>
               <hr className="my-1 border-slate-200" />
               <button className="btn" disabled={busy} onClick={() => void bundle()} data-testid="review-bundle">
-                Review bundle (one HTML file)
+                {tx('Review bundle (one HTML file)')}
               </button>
-              <p className="text-xs text-slate-500">Every sheet in one file that opens on any phone or PC — send it for checking before you print.</p>
+              <p className="text-xs text-slate-500">{tx('Every sheet in one file that opens on any phone or PC — send it for checking before you print.')}</p>
               {busy && (
                 <p className="text-sm text-slate-600" role="status">
-                  Working… {progress}
+                  {tx('Working… {progress}', { progress })}
                 </p>
               )}
               {error && (
@@ -245,24 +246,24 @@ export function PrintScreen({ onGenerate }: { onGenerate: () => void }) {
         </div>
 
         <Card
-          title={current ? current.title : 'Preview'}
+          title={current ? current.title : tx('Preview')}
           actions={
             sheets.length > 1 && (
               <div className="flex items-center gap-2 text-sm">
-                <button className="btn px-2 py-0.5" disabled={page <= 0} onClick={() => setPage(page - 1)} aria-label="Previous page">
+                <button className="btn px-2 py-0.5" disabled={page <= 0} onClick={() => setPage(page - 1)} aria-label={tx('Previous page')}>
                   ‹
                 </button>
                 <span data-testid="page-of">
                   {Math.min(page, sheets.length - 1) + 1} / {sheets.length}
                 </span>
-                <button className="btn px-2 py-0.5" disabled={page >= sheets.length - 1} onClick={() => setPage(page + 1)} aria-label="Next page">
+                <button className="btn px-2 py-0.5" disabled={page >= sheets.length - 1} onClick={() => setPage(page + 1)} aria-label={tx('Next page')}>
                   ›
                 </button>
               </div>
             )
           }
         >
-          {current ? <Preview sheet={current} /> : <Empty>Nothing to print for this choice.</Empty>}
+          {current ? <Preview sheet={current} /> : <Empty>{tx('Nothing to print for this choice.')}</Empty>}
         </Card>
       </div>
 

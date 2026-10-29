@@ -4,6 +4,7 @@ import { OptionBlock, StudentGroup, type Subject } from './entities';
 import { patternFrom } from './factories';
 import { pruneStudentGroups } from './mutations';
 import type { Project } from './project';
+import { tx } from '@/i18n';
 
 /**
  * Option blocks: lines of parallel sets placed as one unit. Each set teaches
@@ -17,12 +18,12 @@ type SetDraft = LineDraft['sets'][number];
 
 const block = (d: Draft<Project>, id: string): BlockDraft => {
   const b = d.optionBlocks.find((x) => x.id === id);
-  if (!b) throw new Error('Option block not found');
+  if (!b) throw new Error(tx('Option block not found'));
   return b;
 };
 const line = (d: Draft<Project>, blockId: string, lineId: string): LineDraft => {
   const l = block(d, blockId).lines.find((x) => x.id === lineId);
-  if (!l) throw new Error('Line not found');
+  if (!l) throw new Error(tx('Line not found'));
   return l;
 };
 
@@ -33,7 +34,7 @@ export function addBlock(d: Draft<Project>, input: { name: string; classIds: str
 }
 
 export function setBlockClasses(d: Draft<Project>, blockId: string, classIds: string[]): void {
-  if (classIds.length === 0) throw new Error('A block needs at least one class.');
+  if (classIds.length === 0) throw new Error(tx('A block needs at least one class.'));
   const b = block(d, blockId);
   b.classIds = classIds;
   const groupIds = new Set(b.lines.flatMap((l) => l.sets.map((s) => s.groupId)));
@@ -83,7 +84,7 @@ export function addSet(d: Draft<Project>, blockId: string, lineId: string, input
   d.studentGroups.push(
     StudentGroup.parse({
       id: groupId,
-      name: input.groupName ?? `${subject?.name ?? 'Group'}${sameSubject ? ` ${sameSubject + 1}` : ''}`,
+      name: input.groupName ?? `${subject?.name ?? tx('Group')}${sameSubject ? ` ${sameSubject + 1}` : ''}`,
       classIds: [...b.classIds],
       kind: b.classIds.length > 1 ? 'set' : 'subGroup',
       medium: input.medium ?? null,
@@ -128,9 +129,9 @@ export function removeSet(d: Draft<Project>, blockId: string, lineId: string, se
 
 /** Common Sri Lankan splits, by subject short code. */
 export const LINE_PRESETS: { label: string; codes: string[] }[] = [
-  { label: 'Religion', codes: ['BUD', 'HIN', 'ISL', 'CHR', 'CAT'] },
-  { label: 'Aesthetics', codes: ['MUS', 'ART', 'DAN', 'DRA'] },
-  { label: 'Second National Language', codes: ['SIN', 'TAM'] },
+  { get label() { return tx('Religion'); }, codes: ['BUD', 'HIN', 'ISL', 'CHR', 'CAT'] },
+  { get label() { return tx('Aesthetics'); }, codes: ['MUS', 'ART', 'DAN', 'DRA'] },
+  { get label() { return tx('Second National Language'); }, codes: ['SIN', 'TAM'] },
 ];
 
 export function presetSubjects(subjects: Subject[], codes: string[]): Subject[] {

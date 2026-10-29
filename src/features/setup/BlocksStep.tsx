@@ -21,12 +21,13 @@ import { Card, Empty, IconButton, LevelBadge, NumberInput, PageHeader, Select, T
 import { BlockBuilderCard } from './BlockBuilderCard';
 import { ClassPicker, classNames } from './ClassPicker';
 import { confirmDialog } from '@/ui/dialogs';
+import { tx } from '@/i18n';
 
 const MEDIUM_OPTIONS = [
   { value: '', label: '—' },
-  { value: 'si', label: 'Sinhala' },
-  { value: 'ta', label: 'Tamil' },
-  { value: 'en', label: 'English' },
+  { value: 'si', get label() { return tx('Sinhala'); } },
+  { value: 'ta', get label() { return tx('Tamil'); } },
+  { value: 'en', get label() { return tx('English'); } },
 ] as const;
 
 function NewBlock() {
@@ -34,13 +35,13 @@ function NewBlock() {
   const [name, setName] = useState('');
   const [classIds, setClassIds] = useState<string[]>([]);
   return (
-    <Card title="New option block">
+    <Card title={tx('New option block')}>
       <div className="grid gap-3 md:grid-cols-[16rem_1fr]">
         <div>
           <label className="label" htmlFor="nb-name">
-            Name
+            {tx('Name')}
           </label>
-          <TextInput id="nb-name" value={name} onChange={setName} placeholder="e.g. Grade 8 Religion" />
+          <TextInput id="nb-name" value={name} onChange={setName} placeholder={tx('e.g. Grade 8 Religion')} />
           <button
             className="btn btn-primary mt-3"
             disabled={!name.trim() || classIds.length === 0}
@@ -52,10 +53,10 @@ function NewBlock() {
               setClassIds([]);
             }}
           >
-            Create block
+            {tx('Create block')}
           </button>
         </div>
-        <ClassPicker value={classIds} onChange={setClassIds} label="Students from these classes" />
+        <ClassPicker value={classIds} onChange={setClassIds} label={tx('Students from these classes')} />
       </div>
     </Card>
   );
@@ -79,11 +80,11 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
     <div className="rounded-md border border-slate-200 p-3">
       <div className="flex flex-wrap items-end gap-3">
         <label>
-          <span className="label">Line</span>
+          <span className="label">{tx('Line')}</span>
           <TextInput value={line.label} onChange={(v) => update((d) => updateLine(d, block.id, line.id, { label: v }))} className="w-48" />
         </label>
         <label>
-          <span className="label">Periods/week</span>
+          <span className="label">{tx('Periods/week')}</span>
           <NumberInput
             value={periods}
             min={1}
@@ -93,7 +94,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
           />
         </label>
         <label>
-          <span className="label">Doubles</span>
+          <span className="label">{tx('Doubles')}</span>
           <NumberInput
             value={doubles}
             min={0}
@@ -104,7 +105,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
         </label>
         {blockStudents > 0 && (
           <span className="pb-2 text-sm">
-            Students:{' '}
+            {tx('Students:')}{' '}
             <LevelBadge
               level={groupStudents === 0 ? 'none' : groupStudents === blockStudents ? 'ok' : groupStudents < blockStudents ? 'under' : 'over'}
             >
@@ -115,27 +116,27 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
         <button
           className="btn ml-auto"
           onClick={async () =>
-            (await confirmDialog(`Delete line "${line.label}"?`, { confirmText: 'Delete', danger: true })) &&
+            (await confirmDialog(tx('Delete line "{label}"?', { label: line.label }), { confirmText: tx('Delete'), danger: true })) &&
             update((d) => removeLine(d, block.id, line.id))
           }
         >
-          Delete line
+          {tx('Delete line')}
         </button>
       </div>
 
       {line.sets.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">No groups yet.</p>
+        <p className="mt-3 text-sm text-slate-500">{tx('No groups yet.')}</p>
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="text-left text-xs uppercase text-slate-500">
-                <th className="py-1 pr-2">Group</th>
-                <th className="py-1 pr-2">Subject</th>
-                <th className="py-1 pr-2">Teacher</th>
-                {project.rooms.length > 0 && <th className="py-1 pr-2">Room</th>}
-                <th className="py-1 pr-2">Students</th>
-                <th className="py-1 pr-2">Medium</th>
+                <th className="py-1 pr-2">{tx('Group')}</th>
+                <th className="py-1 pr-2">{tx('Subject')}</th>
+                <th className="py-1 pr-2">{tx('Teacher')}</th>
+                {project.rooms.length > 0 && <th className="py-1 pr-2">{tx('Room')}</th>}
+                <th className="py-1 pr-2">{tx('Students')}</th>
+                <th className="py-1 pr-2">{tx('Medium')}</th>
                 <th />
               </tr>
             </thead>
@@ -150,7 +151,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                   <tr key={s.id}>
                     <td className="py-1 pr-2">
                       <TextInput
-                        aria-label="Group name"
+                        aria-label={tx('Group name')}
                         value={group?.name ?? ''}
                         onChange={(v) => update((d) => updateSet(d, block.id, line.id, s.id, { groupName: v }))}
                         className="w-40"
@@ -158,7 +159,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     </td>
                     <td className="py-1 pr-2">
                       <Select
-                        aria-label="Subject"
+                        aria-label={tx('Subject')}
                         value={s.subjectId}
                         options={project.subjects.map((x) => ({ value: x.id, label: x.shortCode ? `${x.shortCode} — ${x.name}` : x.name }))}
                         onChange={(v) => update((d) => updateSet(d, block.id, line.id, s.id, { subjectId: v }))}
@@ -167,15 +168,15 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     </td>
                     <td className="py-1 pr-2">
                       <select
-                        aria-label="Teacher"
+                        aria-label={tx('Teacher')}
                         className={`field w-48 ${clash ? 'border-red-500 bg-red-50' : ''}`}
-                        title={clash ? 'This teacher is in another group of the same line' : undefined}
+                        title={clash ? tx('This teacher is in another group of the same line') : undefined}
                         value={teacher}
                         onChange={(e) => update((d) => updateSet(d, block.id, line.id, s.id, { teacherId: e.target.value || null }))}
                       >
-                        <option value="">— no teacher —</option>
+                        <option value="">{tx('— no teacher —')}</option>
                         {qualified.length > 0 && (
-                          <optgroup label="Teaches this subject">
+                          <optgroup label={tx('Teaches this subject')}>
                             {qualified.map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -184,7 +185,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                           </optgroup>
                         )}
                         {others.length > 0 && (
-                          <optgroup label="Others">
+                          <optgroup label={tx('Others')}>
                             {others.map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -197,7 +198,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     {project.rooms.length > 0 && (
                       <td className="py-1 pr-2">
                         <Select
-                          aria-label="Room"
+                          aria-label={tx('Room')}
                           value={s.roomId ?? ''}
                           options={roomOptions}
                           onChange={(v) => update((d) => updateSet(d, block.id, line.id, s.id, { roomId: v || null }))}
@@ -207,7 +208,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     )}
                     <td className="py-1 pr-2">
                       <NumberInput
-                        aria-label="Students"
+                        aria-label={tx('Students')}
                         value={group?.studentCount ?? 0}
                         min={0}
                         onChange={(v) => update((d) => updateSet(d, block.id, line.id, s.id, { studentCount: v ?? 0 }))}
@@ -216,7 +217,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     </td>
                     <td className="py-1 pr-2">
                       <Select
-                        aria-label="Medium"
+                        aria-label={tx('Medium')}
                         value={(group?.medium ?? '') as '' | Medium}
                         options={MEDIUM_OPTIONS}
                         onChange={(v) => update((d) => updateSet(d, block.id, line.id, s.id, { medium: (v || null) as Medium | null }))}
@@ -225,7 +226,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
                     </td>
                     <td className="py-1 text-right">
                       <IconButton
-                        label={`Remove ${group?.name ?? 'group'}`}
+                        label={tx('Remove {x}', { x: group?.name ?? 'group' })}
                         danger
                         onClick={() => update((d) => removeSet(d, block.id, line.id, s.id))}
                       >
@@ -241,7 +242,7 @@ function LineEditor({ block, lineIndex }: { block: OptionBlock; lineIndex: numbe
       )}
       {unusedSubject && (
         <button className="btn mt-2" onClick={() => update((d) => void addSet(d, block.id, line.id, { subjectId: unusedSubject.id }))}>
-          + Group
+          {tx('+ Group')}
         </button>
       )}
     </div>
@@ -257,7 +258,7 @@ function BlockCard({ block }: { block: OptionBlock }) {
   const newLine = (presetLabel: string) => {
     update((d) => {
       const preset = presets.find((p) => p.label === presetLabel);
-      const lineId = addLine(d, block.id, { label: preset?.label ?? `Line ${block.lines.length + 1}`, periods: preset ? 3 : 2 });
+      const lineId = addLine(d, block.id, { label: preset?.label ?? tx('Line {x}', { x: block.lines.length + 1 }), periods: preset ? 3 : 2 });
       for (const s of preset?.subjects ?? []) addSet(d, block.id, lineId, { subjectId: s.id });
     });
   };
@@ -266,7 +267,7 @@ function BlockCard({ block }: { block: OptionBlock }) {
     <Card
       title={
         <TextInput
-          aria-label="Block name"
+          aria-label={tx('Block name')}
           value={block.name}
           onChange={(v) =>
             update((d) => {
@@ -280,19 +281,19 @@ function BlockCard({ block }: { block: OptionBlock }) {
         <button
           className="btn"
           onClick={async () =>
-            (await confirmDialog(`Delete block "${block.name}"?`, { text: 'Its groups are deleted too.', confirmText: 'Delete', danger: true })) &&
+            (await confirmDialog(tx('Delete block "{name}"?', { name: block.name }), { text: tx('Its groups are deleted too.'), confirmText: tx('Delete'), danger: true })) &&
             update((d) => removeBlock(d, block.id))
           }
         >
-          Delete block
+          {tx('Delete block')}
         </button>
       }
     >
       <div className="mb-3 text-sm">
-        <span className="text-slate-600">Classes: </span>
+        <span className="text-slate-600">{tx('Classes:')} </span>
         <span className="font-medium">{classNames(project, block.classIds)}</span>{' '}
         <button className="text-xs text-teal-800 underline" onClick={() => setEditingClasses(!editingClasses)}>
-          {editingClasses ? 'done' : 'change'}
+          {editingClasses ? tx('done') : tx('change')}
         </button>
         {editingClasses && (
           <div className="mt-2 rounded-md bg-slate-50 p-2">
@@ -307,11 +308,11 @@ function BlockCard({ block }: { block: OptionBlock }) {
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button className="btn" onClick={() => newLine('')}>
-          + Empty line
+          {tx('+ Empty line')}
         </button>
         {presets.map((p) => (
           <button key={p.label} className="btn" onClick={() => newLine(p.label)} title={p.subjects.map((s) => s.name).join(', ')}>
-            + {p.label} line
+            {tx('+ {label} line', { label: p.label })}
           </button>
         ))}
       </div>
@@ -326,18 +327,16 @@ export function BlocksStep() {
   );
   return (
     <>
-      <PageHeader title="Option blocks">
-        Use a block when students split into groups that study different subjects at the same time — Religion, Aesthetics, Second National Language,
-        O/L baskets, A/L subject lines, or a bilingual class split into English- and Sinhala-medium groups. Every group in a line is timetabled
-        together, so each needs its own teacher.
+      <PageHeader title={tx('Option blocks')}>
+        {tx('Use a block when students split into groups that study different subjects at the same time — Religion, Aesthetics, Second National Language, O/L baskets, A/L subject lines, or a bilingual class split into English- and Sinhala-medium groups. Every group in a line is timetabled together, so each needs its own teacher.')}
       </PageHeader>
       <div className="space-y-4">
-        {project.optionBlocks.length === 0 && <Empty>No option blocks yet. Most schools start with Religion and Aesthetics.</Empty>}
+        {project.optionBlocks.length === 0 && <Empty>{tx('No option blocks yet. Most schools start with Religion and Aesthetics.')}</Empty>}
         {project.optionBlocks.map((b) => (
           <BlockCard key={b.id} block={b} />
         ))}
         {errors.length > 0 && (
-          <Card title="Problems in blocks">
+          <Card title={tx('Problems in blocks')}>
             <ul className="space-y-1 text-sm">
               {errors.map((e, i) => (
                 <li

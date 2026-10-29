@@ -7,8 +7,8 @@ import { scoreTimetable, type GenerateResult } from '@/solver';
 import { runSolver } from '@/solver/runner';
 import { useProjectStore } from '@/store/projectStore';
 import { Card } from '@/ui/kit';
+import { dayLong, tx } from '@/i18n';
 
-const DAY = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' } as const;
 
 interface Answer {
   ok: boolean;
@@ -72,7 +72,7 @@ export function WhatIf() {
         moved: movedKeys.size,
         teachers: [...teachers].map((id) => project.teachers.find((x) => x.id === id)?.name ?? '?'),
         softNow: scoreTimetable(project, version.placements).total,
-        question: `${t.name} free on ${DAY[day]} ${labels.join(', ')}`,
+        question: tx('{name} free on {x} {join}', { name: t.name, x: dayLong(day), join: labels.join(', ') }),
       });
     } finally {
       setBusy(false);
@@ -91,11 +91,11 @@ export function WhatIf() {
   };
 
   return (
-    <Card title="What if…?">
-      <p className="mb-3 text-sm text-slate-600">Check a request before agreeing to it. Nothing changes until you press Apply.</p>
+    <Card title={tx('What if…?')}>
+      <p className="mb-3 text-sm text-slate-600">{tx('Check a request before agreeing to it. Nothing changes until you press Apply.')}</p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-sm">
-          <span className="label">Teacher</span>
+          <span className="label">{tx('Teacher')}</span>
           <select className="field w-52" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
             {project.teachers.map((t) => (
               <option key={t.id} value={t.id}>
@@ -104,9 +104,9 @@ export function WhatIf() {
             ))}
           </select>
         </label>
-        <span className="pb-2 text-sm">is free on</span>
+        <span className="pb-2 text-sm">{tx('is free on')}</span>
         <label className="text-sm">
-          <span className="label">Day</span>
+          <span className="label">{tx('Day')}</span>
           <select
             className="field w-36"
             value={day}
@@ -117,13 +117,13 @@ export function WhatIf() {
           >
             {project.institute.workingDays.map((d) => (
               <option key={d} value={d}>
-                {DAY[d]}
+                {dayLong(d)}
               </option>
             ))}
           </select>
         </label>
       </div>
-      <div className="mt-2 flex flex-wrap gap-1" aria-label="Periods">
+      <div className="mt-2 flex flex-wrap gap-1" aria-label={tx('Periods')}>
         {periods.map((s) => {
           const on = slotIds.includes(s.id);
           return (
@@ -138,7 +138,7 @@ export function WhatIf() {
           );
         })}
         <button className="btn btn-primary ml-2" disabled={busy || !slotIds.length} onClick={() => void ask()} data-testid="whatif-ask">
-          {busy ? 'Checking…' : 'Check'}
+          {busy ? tx('Checking…') : tx('Check')}
         </button>
       </div>
       {answer && (
@@ -147,22 +147,28 @@ export function WhatIf() {
           data-testid="whatif-answer"
         >
           <p className="font-medium">
-            {answer.ok ? 'Yes' : 'No'} — {answer.question}.
+            {answer.ok ? tx('Yes') : tx('No')} — {answer.question}.
           </p>
           {answer.ok ? (
             <>
               <p className="mt-1">
-                {answer.moved} lesson(s) move{answer.teachers.length ? `, affecting ${answer.teachers.join(', ')}` : ''}. Rule penalty {answer.softNow} →{' '}
-                {answer.result.soft.total}.
+                {answer.teachers.length
+                  ? tx('{moved} lesson(s) move, affecting {teachers}. Rule penalty {before} → {after}.', {
+                      moved: answer.moved,
+                      teachers: answer.teachers.join(', '),
+                      before: answer.softNow,
+                      after: answer.result.soft.total,
+                    })
+                  : tx('{moved} lesson(s) move. Rule penalty {before} → {after}.', { moved: answer.moved, before: answer.softNow, after: answer.result.soft.total })}
               </p>
               <button className="btn btn-primary mt-2" onClick={apply} data-testid="whatif-apply">
-                Apply (saves a new draft)
+                {tx('Apply (saves a new draft)')}
               </button>
             </>
           ) : (
             <p className="mt-1">
-              {answer.result.unplaced.length} lesson(s) would have no place
-              {answer.result.unplaced[0] ? `, e.g. ${answer.result.unplaced[0].label}: ${answer.result.unplaced[0].reason}` : ''}.
+              {tx('{unplaced} lesson(s) would have no place', { unplaced: answer.result.unplaced.length })}
+              {answer.result.unplaced[0] ? tx(', e.g. {label}: {reason}', { label: answer.result.unplaced[0].label, reason: answer.result.unplaced[0].reason }) : ''}.
             </p>
           )}
         </div>

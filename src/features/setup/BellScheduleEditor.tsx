@@ -14,18 +14,16 @@ import {
 import { DownIcon, IconButton, NumberInput, Select, TextInput, TrashIcon, UpIcon } from '@/ui/kit';
 import { useProjectStore } from '@/store/projectStore';
 import { useDelete } from './useDelete';
+import { dayLong, tx } from '@/i18n';
 
 const KIND_OPTIONS = [
-  { value: 'period', label: 'Period' },
-  { value: 'break', label: 'Break / interval' },
-  { value: 'assembly', label: 'Assembly' },
-  { value: 'formTime', label: 'Form time' },
-  { value: 'registration', label: 'Registration' },
+  { value: 'period', get label() { return tx('Period'); } },
+  { value: 'break', get label() { return tx('Break / interval'); } },
+  { value: 'assembly', get label() { return tx('Assembly'); } },
+  { value: 'formTime', get label() { return tx('Form time'); } },
+  { value: 'registration', get label() { return tx('Registration'); } },
 ] as const satisfies readonly { value: SlotKind; label: string }[];
 
-const DAY_NAMES: Record<Weekday, string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
-};
 
 type Tab = 'base' | Weekday;
 
@@ -67,7 +65,7 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-48 flex-1">
           <label className="label" htmlFor={`bell-name-${schedule.id}`}>
-            Schedule name
+            {tx('Schedule name')}
           </label>
           <TextInput
             id={`bell-name-${schedule.id}`}
@@ -81,7 +79,7 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
         </div>
         <div>
           <label className="label" htmlFor={`bell-start-${schedule.id}`}>
-            Day starts
+            {tx('Day starts')}
           </label>
           <input
             id={`bell-start-${schedule.id}`}
@@ -99,10 +97,10 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
           />
         </div>
         <p className="pb-2 text-sm text-slate-600">
-          {periods.length} periods · ends {formatClock(end)} · {formatDuration(periods.reduce((s, p) => s + p.duration, 0))} teaching
+          {tx('{periods} periods · ends {formatClock} · {formatDuration} teaching', { periods: periods.length, formatClock: formatClock(end), formatDuration: formatDuration(periods.reduce((s, p) => s + p.duration, 0)) })}
         </p>
         <button className="btn ml-auto" onClick={() => remove('bellSchedule', schedule.id, schedule.name)}>
-          Delete schedule
+          {tx('Delete schedule')}
         </button>
       </div>
 
@@ -117,14 +115,14 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
             }`}
             onClick={() => setTab(t)}
           >
-            {t === 'base' ? (overrideDays.length ? 'Other days' : 'Every day') : DAY_NAMES[t]}
+            {t === 'base' ? (overrideDays.length ? tx('Other days') : tx('Every day')) : dayLong(t)}
           </button>
         ))}
         {freeDays.length > 0 && (
           <select
             className="ml-auto mb-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs"
             value=""
-            aria-label="Customise a day"
+            aria-label={tx('Customise a day')}
             onChange={(e) => {
               const day = e.target.value as Weekday;
               if (!day) return;
@@ -135,10 +133,10 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
               setTab(day);
             }}
           >
-            <option value="">+ Different times on…</option>
+            <option value="">{tx('+ Different times on…')}</option>
             {freeDays.map((d) => (
               <option key={d} value={d}>
-                {DAY_NAMES[d]}
+                {dayLong(d)}
               </option>
             ))}
           </select>
@@ -149,10 +147,10 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
         <table className="mt-2 w-full min-w-[560px] text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-slate-500">
-              <th className="py-1 pr-2 font-semibold">Type</th>
-              <th className="py-1 pr-2 font-semibold">Label</th>
-              <th className="py-1 pr-2 font-semibold">Minutes</th>
-              <th className="py-1 pr-2 font-semibold">Time</th>
+              <th className="py-1 pr-2 font-semibold">{tx('Type')}</th>
+              <th className="py-1 pr-2 font-semibold">{tx('Label')}</th>
+              <th className="py-1 pr-2 font-semibold">{tx('Minutes')}</th>
+              <th className="py-1 pr-2 font-semibold">{tx('Time')}</th>
               <th className="py-1" />
             </tr>
           </thead>
@@ -161,7 +159,7 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
               <tr key={s.id} className={s.kind === 'period' ? '' : 'bg-slate-50'}>
                 <td className="py-1 pr-2">
                   <Select
-                    aria-label="Slot type"
+                    aria-label={tx('Slot type')}
                     value={s.kind}
                     options={KIND_OPTIONS}
                     onChange={(kind) => editSlots((list) => void (list[i]!.kind = kind))}
@@ -169,11 +167,11 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
                   />
                 </td>
                 <td className="py-1 pr-2">
-                  <TextInput aria-label="Slot label" value={s.label} onChange={(v) => editSlots((list) => void (list[i]!.label = v))} className="w-32" />
+                  <TextInput aria-label={tx('Slot label')} value={s.label} onChange={(v) => editSlots((list) => void (list[i]!.label = v))} className="w-32" />
                 </td>
                 <td className="py-1 pr-2">
                   <NumberInput
-                    aria-label="Minutes"
+                    aria-label={tx('Minutes')}
                     value={s.duration}
                     min={5}
                     max={240}
@@ -185,16 +183,16 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
                   {formatClock(s.start)}–{formatClock(s.start + s.duration)}
                 </td>
                 <td className="whitespace-nowrap py-1 text-right">
-                  <IconButton label="Move up" onClick={() => i > 0 && editSlots((l) => renumber([...l.slice(0, i - 1), l[i]!, l[i - 1]!, ...l.slice(i + 1)]))}>
+                  <IconButton label={tx('Move up')} onClick={() => i > 0 && editSlots((l) => renumber([...l.slice(0, i - 1), l[i]!, l[i - 1]!, ...l.slice(i + 1)]))}>
                     <UpIcon />
                   </IconButton>
                   <IconButton
-                    label="Move down"
+                    label={tx('Move down')}
                     onClick={() => i < slots.length - 1 && editSlots((l) => renumber([...l.slice(0, i), l[i + 1]!, l[i]!, ...l.slice(i + 2)]))}
                   >
                     <DownIcon />
                   </IconButton>
-                  <IconButton label="Remove slot" danger onClick={() => editSlots((l) => renumber(l.filter((_, j) => j !== i)))}>
+                  <IconButton label={tx('Remove slot')} danger onClick={() => editSlots((l) => renumber(l.filter((_, j) => j !== i)))}>
                     <TrashIcon />
                   </IconButton>
                 </td>
@@ -215,13 +213,13 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
             })
           }
         >
-          + Period
+          {tx('+ Period')}
         </button>
         <button
           className="btn"
-          onClick={() => editSlots((l) => void l.push({ id: newId('slot'), kind: 'break', label: 'Interval', start: 0, duration: 20 }))}
+          onClick={() => editSlots((l) => void l.push({ id: newId('slot'), kind: 'break', label: tx('Interval'), start: 0, duration: 20 }))}
         >
-          + Break
+          {tx('+ Break')}
         </button>
         {activeTab !== 'base' && (
           <button
@@ -233,7 +231,7 @@ export function BellScheduleEditor({ schedule, workingDays }: { schedule: BellSc
               setTab('base');
             }}
           >
-            Use normal times on {DAY_NAMES[activeTab]}
+            {tx('Use normal times on {x}', { x: dayLong(activeTab) })}
           </button>
         )}
       </div>

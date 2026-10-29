@@ -6,14 +6,18 @@ import { StartScreen } from '@/features/start/StartScreen';
 import { StartWizard } from '@/features/start/StartWizard';
 import { useProjectStore } from '@/store/projectStore';
 import { useAutosave } from '@/store/useAutosave';
+import { useLang } from '@/i18n';
+import { tx } from '@/i18n';
 
 export function App() {
   useAutosave();
   const { open, save, error, clearError } = useFileCommands();
   const project = useProjectStore((s) => s.project);
+  // Text is translated as it renders, so a new language re-mounts the screens.
+  const lang = useLang((s) => s.lang);
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div key={lang} lang={lang} className="flex min-h-full flex-col">
       <AppHeader open={() => void open()} save={(saveAs) => void save(saveAs)} />
 
       {error && (
@@ -30,7 +34,7 @@ export function App() {
               )}
             </div>
             <button className="btn" onClick={clearError}>
-              Dismiss
+              {tx('Dismiss')}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { isoDate } from '@/domain/relief';
 import { useProjectStore } from '@/store/projectStore';
 import { PageHeader } from '@/ui/kit';
 import { ReportView } from '@/ui/ReportView';
+import { tx } from '@/i18n';
 
 /** Teacher workload and relief fairness (PLAN.md §9.3): load, free periods, relief taken, duties and invigilation. */
 export function WorkloadScreen() {
@@ -12,16 +13,16 @@ export function WorkloadScreen() {
   const term = table.rows.map((r) => Number(r.reliefTerm));
   const max = Math.max(0, ...term);
   const top = table.rows.filter((r) => max > 0 && Number(r.reliefTerm) === max).map((r) => r.name);
-  const under = table.rows.filter((r) => r.status === 'Under norm').length;
-  const over = table.rows.filter((r) => r.status === 'Over').length;
+  const under = table.rows.filter((r) => r.status === tx('Under norm')).length;
+  const over = table.rows.filter((r) => r.status === tx('Over')).length;
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Workload and fairness">Who carries how much: teaching load, free periods, relief taken, duties and invigilation.</PageHeader>
+      <PageHeader title={tx('Workload and fairness')}>{tx('Who carries how much: teaching load, free periods, relief taken, duties and invigilation.')}</PageHeader>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Teachers under their norm" value={under} tone={under ? 'amber' : 'emerald'} />
-        <Stat label="Teachers over their maximum" value={over} tone={over ? 'red' : 'emerald'} />
-        <Stat label="Most relief this term" value={max} hint={top.slice(0, 3).join(', ')} tone="sky" />
+        <Stat label={tx('Teachers under their norm')} value={under} tone={under ? 'amber' : 'emerald'} />
+        <Stat label={tx('Teachers over their maximum')} value={over} tone={over ? 'red' : 'emerald'} />
+        <Stat label={tx('Most relief this term')} value={max} hint={top.slice(0, 3).join(', ')} tone="sky" />
       </div>
       <ReportView project={project} table={table} />
     </div>

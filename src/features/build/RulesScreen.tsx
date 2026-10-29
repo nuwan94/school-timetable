@@ -5,13 +5,15 @@ import type { RuleConfig, Strength } from '@/domain/schedule';
 import { scoreTimetable } from '@/solver';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, NumberInput, PageHeader } from '@/ui/kit';
+import { tx } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const STRENGTHS: { value: Strength; label: string }[] = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'veryHigh', label: 'Very high' },
-  { value: 'hard', label: 'Must (hard)' },
+  { value: 'low', get label() { return tx('Low'); } },
+  { value: 'medium', get label() { return tx('Medium'); } },
+  { value: 'high', get label() { return tx('High'); } },
+  { value: 'veryHigh', get label() { return tx('Very high'); } },
+  { value: 'hard', get label() { return tx('Must (hard)'); } },
 ];
 
 /** Rules editor (PLAN.md §4.2) with a live report on the current timetable. */
@@ -43,33 +45,36 @@ export function RulesScreen({ onGenerate }: { onGenerate: () => void }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Rules">
-        What makes a good timetable for your school. <b>Must</b> rules are never broken; the others are preferences — Generate tries hardest on
-        the strongest ones. Changes apply the next time you press Generate or Improve.
+      <PageHeader title={tx('Rules')}>
+        <Rich
+          text={tx(
+            'What makes a good timetable for your school. <b>Must</b> rules are never broken; the others are preferences — Generate tries hardest on the strongest ones. Changes apply the next time you press Generate or Improve.',
+          )}
+        />
       </PageHeader>
 
       {report && (
         <Card
           title={
             <span>
-              How the current timetable does{' '}
+              {tx('How the current timetable does')}{' '}
               <span className="text-sm font-normal text-slate-500" data-testid="soft-total">
-                (penalty {report.total})
+                {tx('(penalty {total})', { total: report.total })}
               </span>
             </span>
           }
           actions={
             <button className="btn" onClick={onGenerate}>
-              Improve in Generate →
+              {tx('Improve in Generate →')}
             </button>
           }
         >
           {report.byRule.length === 0 ? (
-            <p className="text-sm text-emerald-800">Every preference is met.</p>
+            <p className="text-sm text-emerald-800">{tx('Every preference is met.')}</p>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               <div>
-                <p className="label">By rule</p>
+                <p className="label">{tx('By rule')}</p>
                 <ul className="mt-1 space-y-1 text-sm" data-testid="report-rules">
                   {report.byRule.map((r) => (
                     <li key={r.code}>
@@ -86,7 +91,7 @@ export function RulesScreen({ onGenerate }: { onGenerate: () => void }) {
                           {r.examples.map((e, i) => (
                             <li key={i}>{e}</li>
                           ))}
-                          {r.count > r.examples.length && <li>…and {r.count - r.examples.length} more</li>}
+                          {r.count > r.examples.length && <li>{tx('…and {x} more', { x: r.count - r.examples.length })}</li>}
                         </ul>
                       )}
                     </li>
@@ -94,7 +99,7 @@ export function RulesScreen({ onGenerate }: { onGenerate: () => void }) {
                 </ul>
               </div>
               <div>
-                <p className="label">Teachers most affected</p>
+                <p className="label">{tx('Teachers most affected')}</p>
                 <ul className="mt-1 space-y-1 text-sm">
                   {report.byTeacher.slice(0, 10).map((t) => (
                     <li key={t.teacherId} className="flex justify-between">
@@ -137,7 +142,7 @@ export function RulesScreen({ onGenerate }: { onGenerate: () => void }) {
                       {info.fixed && <span className="block text-xs italic text-slate-500">{info.fixed}</span>}
                       {on && hits && (
                         <span className="block text-xs text-amber-800">
-                          Not met {hits.count}× in the current timetable
+                          {tx('Not met {count}× in the current timetable', { count: hits.count })}
                         </span>
                       )}
                     </span>
@@ -145,11 +150,11 @@ export function RulesScreen({ onGenerate }: { onGenerate: () => void }) {
                   {!info.fixed && on && r && (
                     <div className="flex flex-wrap items-end gap-2">
                       <label className="text-xs">
-                        <span className="label">Strength</span>
+                        <span className="label">{tx('Strength')}</span>
                         <select
                           className="field w-36"
                           value={r.strength}
-                          aria-label={`${info.code} strength`}
+                          aria-label={tx('{code} strength', { code: info.code })}
                           onChange={(e) => edit(info, (x) => void (x.strength = e.target.value as Strength))}
                         >
                           {STRENGTHS.filter((s) => s.value !== 'hard' || info.canBeHard).map((s) => (

@@ -12,6 +12,8 @@ import '@/print/sheet.css';
 import { useProjectStore } from '@/store/projectStore';
 import { Card, Empty, IconButton, PageHeader, TextInput, TrashIcon } from '@/ui/kit';
 import { confirmDialog } from '@/ui/dialogs';
+import { tx, dateLabel } from '@/i18n';
+import { Rich } from '@/i18n/Rich';
 
 const toClock = (v: string) => {
   const [h, m] = v.split(':').map(Number);
@@ -47,7 +49,7 @@ export function ExamsScreen() {
     const from = now.toISOString().slice(0, 10);
     now.setDate(now.getDate() + 13);
     const s = makeExamSeries({
-      name: `Term test ${project.exams.length + 1}`,
+      name: tx('Term test {x}', { x: project.exams.length + 1 }),
       from,
       to: now.toISOString().slice(0, 10),
     });
@@ -63,13 +65,12 @@ export function ExamsScreen() {
   if (!series)
     return (
       <div className="space-y-4">
-        <PageHeader title="Term tests">Plan the paper timetable and invigilation for a term test. The weekly timetable is not changed.</PageHeader>
+        <PageHeader title={tx('Term tests')}>{tx('Plan the paper timetable and invigilation for a term test. The weekly timetable is not changed.')}</PageHeader>
         <Empty>
-          No term tests yet.{' '}
-          <button className="text-teal-700 underline" onClick={create} data-testid="exam-new">
-            Create one
-          </button>
-          .
+          <Rich
+            text={tx('No term tests yet. <link>Create one</link>.')}
+            tags={{ link: (c) => <button className="text-teal-700 underline" onClick={create} data-testid="exam-new">{c}</button> }}
+          />
         </Empty>
       </div>
     );
@@ -96,10 +97,10 @@ export function ExamsScreen() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Term tests">Plan the paper timetable and invigilation for a term test. The weekly timetable is not changed.</PageHeader>
+      <PageHeader title={tx('Term tests')}>{tx('Plan the paper timetable and invigilation for a term test. The weekly timetable is not changed.')}</PageHeader>
 
       <div className="flex flex-wrap items-center gap-2">
-        <select className="field w-60" value={series.id} onChange={(e) => setSelected(e.target.value)} aria-label="Term test">
+        <select className="field w-60" value={series.id} onChange={(e) => setSelected(e.target.value)} aria-label={tx('Term test')}>
           {project.exams.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -107,15 +108,15 @@ export function ExamsScreen() {
           ))}
         </select>
         <button className="btn" onClick={create} data-testid="exam-new">
-          New term test
+          {tx('New term test')}
         </button>
         <button
           className="btn"
           onClick={async () => {
             if (
-              !(await confirmDialog(`Delete ${series.name}?`, {
-                text: 'Its papers, invigilation and calendar event are removed.',
-                confirmText: 'Delete',
+              !(await confirmDialog(tx('Delete {name}?', { name: series.name }), {
+                text: tx('Its papers, invigilation and calendar event are removed.'),
+                confirmText: tx('Delete'),
                 danger: true,
               }))
             )
@@ -127,22 +128,22 @@ export function ExamsScreen() {
             setSelected(null);
           }}
         >
-          Delete
+          {tx('Delete')}
         </button>
       </div>
 
-      <Card title="Dates and sessions">
+      <Card title={tx('Dates and sessions')}>
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="label">Name</span>
-            <TextInput className="w-56" value={series.name} onChange={(v) => edit((s) => void (s.name = v))} aria-label="Term test name" />
+            <span className="label">{tx('Name')}</span>
+            <TextInput className="w-56" value={series.name} onChange={(v) => edit((s) => void (s.name = v))} aria-label={tx('Term test name')} />
           </label>
           <label className="text-sm">
-            <span className="label">From</span>
+            <span className="label">{tx('From')}</span>
             <input type="date" className="field w-40" value={series.from} onChange={(e) => edit((s) => void (s.from = e.target.value))} />
           </label>
           <label className="text-sm">
-            <span className="label">To</span>
+            <span className="label">{tx('To')}</span>
             <input
               type="date"
               className="field w-40"
@@ -151,7 +152,7 @@ export function ExamsScreen() {
               onChange={(e) => edit((s) => void (s.to = e.target.value))}
             />
           </label>
-          <span className="pb-2 text-sm text-slate-600">{dates.length} school day(s)</span>
+          <span className="pb-2 text-sm text-slate-600">{tx('{dates} school day(s)', { dates: dates.length })}</span>
         </div>
         <ul className="mt-3 space-y-1">
           {series.sessions.map((ses, i) => (
@@ -160,7 +161,7 @@ export function ExamsScreen() {
                 className="w-32"
                 value={ses.label}
                 onChange={(v) => edit((s) => void (s.sessions[i]!.label = v))}
-                aria-label="Session name"
+                aria-label={tx('Session name')}
               />
               <input
                 type="time"
@@ -177,7 +178,7 @@ export function ExamsScreen() {
               />
               {series.sessions.length > 1 && !series.papers.some((pp) => pp.sessionId === ses.id) && (
                 <IconButton
-                  label={`Remove ${ses.label}`}
+                  label={tx('Remove {label}', { label: ses.label })}
                   danger
                   onClick={() => edit((s) => void (s.sessions = s.sessions.filter((x) => x.id !== ses.id)))}
                 >
@@ -194,23 +195,23 @@ export function ExamsScreen() {
               (s) =>
                 void s.sessions.push({
                   id: newId('ses'),
-                  label: `Session ${s.sessions.length + 1}`,
+                  label: tx('Session {x}', { x: s.sessions.length + 1 }),
                   start: 13 * 60,
                   end: 14 * 60,
                 }),
             )
           }
         >
-          Add session
+          {tx('Add session')}
         </button>
       </Card>
 
-      <Card title="Add a paper">
+      <Card title={tx('Add a paper')}>
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="label">Subject</span>
+            <span className="label">{tx('Subject')}</span>
             <select className="field w-52" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} data-testid="paper-subject">
-              <option value="">Choose…</option>
+              <option value="">{tx('Choose…')}</option>
               {project.subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -219,22 +220,18 @@ export function ExamsScreen() {
             </select>
           </label>
           <label className="text-sm">
-            <span className="label">Date</span>
+            <span className="label">{tx('Date')}</span>
             <select className="field w-44" value={date} onChange={(e) => setDate(e.target.value)} data-testid="paper-date">
-              <option value="">Choose…</option>
+              <option value="">{tx('Choose…')}</option>
               {dates.map((d) => (
                 <option key={d} value={d}>
-                  {d}{' '}
-                  {new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', {
-                    weekday: 'short',
-                    timeZone: 'UTC',
-                  })}
+                  {dateLabel(new Date(`${d}T00:00:00Z`), { weekday: true, utc: true })}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-sm">
-            <span className="label">Session</span>
+            <span className="label">{tx('Session')}</span>
             <select className="field w-40" value={sessionOk ? sessionId : series.sessions[0]?.id} onChange={(e) => setSessionId(e.target.value)}>
               {series.sessions.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -244,10 +241,10 @@ export function ExamsScreen() {
             </select>
           </label>
           <button className="btn btn-primary" disabled={!subjectId || !date || !classIds.length} onClick={addPaper} data-testid="paper-add">
-            Add paper
+            {tx('Add paper')}
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1" aria-label="Whole grade">
+        <div className="mt-3 flex flex-wrap gap-1" aria-label={tx('Whole grade')}>
           {grades.map((g) => (
             <button
               key={g.id}
@@ -259,11 +256,11 @@ export function ExamsScreen() {
           ))}
           {classIds.length > 0 && (
             <button className="px-2 text-xs text-slate-600 underline" onClick={() => setClassIds([])}>
-              clear
+              {tx('clear')}
             </button>
           )}
         </div>
-        <div className="mt-2 flex max-h-32 flex-wrap gap-1 overflow-y-auto" aria-label="Classes sitting">
+        <div className="mt-2 flex max-h-32 flex-wrap gap-1 overflow-y-auto" aria-label={tx('Classes sitting')}>
           {classes.map((c) => {
             const on = classIds.includes(c.id);
             return (
@@ -281,7 +278,7 @@ export function ExamsScreen() {
       </Card>
 
       <Card
-        title={`Papers (${series.papers.length})`}
+        title={tx('Papers ({papers})', { papers: series.papers.length })}
         actions={
           <div className="flex flex-wrap gap-2">
             <button
@@ -290,7 +287,7 @@ export function ExamsScreen() {
               onClick={() => edit((s) => void (s.invigilation = autoInvigilate(project, series)))}
               data-testid="exam-invigilate"
             >
-              Assign invigilators
+              {tx('Assign invigilators')}
             </button>
             <button
               className="btn"
@@ -303,22 +300,22 @@ export function ExamsScreen() {
               }
               data-testid="exam-calendar"
             >
-              {project.overlays.some((o) => o.id === `ovl_${series.id}`) ? 'Update calendar' : 'Add to calendar'}
+              {project.overlays.some((o) => o.id === `ovl_${series.id}`) ? tx('Update calendar') : tx('Add to calendar')}
             </button>
           </div>
         }
       >
         {series.papers.length === 0 ? (
-          <p className="text-sm text-slate-600">No papers yet.</p>
+          <p className="text-sm text-slate-600">{tx('No papers yet.')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="paper-table">
               <thead className="text-left text-xs text-slate-500">
                 <tr>
-                  <th className="py-1 pr-2">Date</th>
-                  <th className="pr-2">Session</th>
-                  <th className="pr-2">Subject</th>
-                  <th className="pr-2">Classes · invigilators</th>
+                  <th className="py-1 pr-2">{tx('Date')}</th>
+                  <th className="pr-2">{tx('Session')}</th>
+                  <th className="pr-2">{tx('Subject')}</th>
+                  <th className="pr-2">{tx('Classes · invigilators')}</th>
                   <th />
                 </tr>
               </thead>
@@ -348,7 +345,7 @@ export function ExamsScreen() {
                     </td>
                     <td>
                       <IconButton
-                        label="Delete paper"
+                        label={tx('Delete paper')}
                         danger
                         onClick={() =>
                           edit((s) => {
@@ -368,29 +365,29 @@ export function ExamsScreen() {
         )}
         {loads.length > 0 && (
           <p className="mt-2 text-xs text-slate-600" data-testid="exam-load">
-            Invigilation duties: {loads.length} teacher(s), {Math.min(...loads)}–{Math.max(...loads)} each.
+            {tx('Invigilation duties: {loads} teacher(s), {min}–{max} each.', { loads: loads.length, min: Math.min(...loads), max: Math.max(...loads) })}
           </p>
         )}
       </Card>
 
       {series.papers.length > 0 && (
-        <Card title={clashes.length ? `Problems (${clashes.length})` : 'No problems'}>
+        <Card title={clashes.length ? tx('Problems ({clashes})', { clashes: clashes.length }) : tx('No problems')}>
           {clashes.length === 0 ? (
-            <p className="text-sm text-emerald-800">No class sits two papers at once, and every invigilator is present and in one place.</p>
+            <p className="text-sm text-emerald-800">{tx('No class sits two papers at once, and every invigilator is present and in one place.')}</p>
           ) : (
             <ul className="list-disc space-y-0.5 pl-5 text-sm text-red-900" data-testid="exam-clashes">
               {clashes.slice(0, 30).map((c, i) => (
                 <li key={i}>{c.message}</li>
               ))}
-              {clashes.length > 30 && <li>…and {clashes.length - 30} more</li>}
+              {clashes.length > 30 && <li>{tx('…and {x} more', { x: clashes.length - 30 })}</li>}
             </ul>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-primary" onClick={() => setPrint([examTimetableSheet(project, series, lang)])} data-testid="exam-print">
-              Exam timetable (PDF)
+              {tx('Exam timetable (PDF)')}
             </button>
             <button className="btn" onClick={() => setPrint([invigilationSheet(project, series, lang)])}>
-              Invigilation roster (PDF)
+              {tx('Invigilation roster (PDF)')}
             </button>
           </div>
         </Card>

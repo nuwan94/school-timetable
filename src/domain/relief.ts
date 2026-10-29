@@ -5,6 +5,7 @@ import { numParam, ruleFor } from './rules';
 import type { Absence, ReliefAssignment, TimetableVersion } from './schedule';
 import { classIdsOfGroups, lessonEntries, type LessonEntry } from './timetable';
 import { slotsForDay, type BellSlot, type Weekday } from './time';
+import { tx } from '@/i18n';
 
 /**
  * Daily relief (PLAN.md §8, §3.10): who is away on a date, which lessons
@@ -78,7 +79,7 @@ export function dayContext(p: Project, date: string): DayContext {
   const day = weekdayOf(date);
   const overlays = p.overlays.filter((o) => o.from <= date && date <= o.to);
   const holiday = overlays.find((o) => o.kind === 'holiday');
-  const closed = holiday ? holiday.name || 'Holiday' : !p.institute.workingDays.includes(day) ? 'Not a school day' : null;
+  const closed = holiday ? holiday.name || tx('Holiday') : !p.institute.workingDays.includes(day) ? tx('Not a school day') : null;
   const version = timetableFor(p, date);
   const removedClasses = new Set(overlays.flatMap((o) => classIdsOfGroups(p, o.removedGroupIds)));
   const entries = (version ? lessonEntries(p, version.placements) : []).filter(
@@ -283,7 +284,7 @@ export function alternatives(p: Project, ctx: DayContext, need: CoverNeed, relie
   const name = (id: string) => p.teachers.find((t) => t.id === id)?.name ?? '?';
 
   if (need.classIds.length === 1 && cls?.classTeacherId && free.some((c) => c.teacherId === cls.classTeacherId))
-    out.push({ kind: 'classTeacher', label: `Class teacher (${name(cls.classTeacherId)})`, reliefTeacherId: cls.classTeacherId, combineWithGroupId: null, note: '' });
+    out.push({ kind: 'classTeacher', label: tx('Class teacher ({name})', { name: name(cls.classTeacherId) }), reliefTeacherId: cls.classTeacherId, combineWithGroupId: null, note: '' });
 
   // Neighbouring classes with a teacher present at the same time — same grade first.
   if (cls) {
@@ -296,7 +297,7 @@ export function alternatives(p: Project, ctx: DayContext, need: CoverNeed, relie
     for (const { e, other } of others.filter((x) => x.other.gradeId === cls.gradeId).slice(0, 3))
       out.push({
         kind: 'combine',
-        label: `Combine with ${other.name} (${e.parts[0]?.subject ?? e.title}, ${e.teacherIds.map(name).join('/')})`,
+        label: tx('Combine with {name} ({x}, {join})', { name: other.name, x: e.parts[0]?.subject ?? e.title, join: e.teacherIds.map(name).join('/') }),
         reliefTeacherId: e.teacherIds[0] ?? null,
         combineWithGroupId: other.id,
         note: '',
@@ -307,8 +308,8 @@ export function alternatives(p: Project, ctx: DayContext, need: CoverNeed, relie
   const supervising = relief.find((r) => r.date === ctx.date && r.kind === 'supervised' && r.slotId === need.slotId && r.reliefTeacherId);
   const supervisor = supervising?.reliefTeacherId ?? free[0]?.teacherId ?? null;
   if (supervisor)
-    for (const place of ['Library', 'Ground'])
-      out.push({ kind: 'supervised', label: `${place} — supervised by ${name(supervisor)}`, reliefTeacherId: supervisor, combineWithGroupId: null, note: place });
+    for (const place of [tx('Library'), tx('Ground')])
+      out.push({ kind: 'supervised', label: tx('{place} — supervised by {name}', { place, name: name(supervisor) }), reliefTeacherId: supervisor, combineWithGroupId: null, note: place });
   return out;
 }
 

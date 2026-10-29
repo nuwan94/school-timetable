@@ -1,4 +1,6 @@
 import type { Project } from '@/domain/project';
+import { setLangQuietly } from '@/i18n';
+import type { Lang } from '@/print/labels';
 import { generateTimetable, type GenerateOptions } from '@/solver';
 
 /**
@@ -6,7 +8,7 @@ import { generateTimetable, type GenerateOptions } from '@/solver';
  * which is when a "stop" message gets through.
  */
 
-export type ToWorker = { type: 'start'; project: Project; options: GenerateOptions } | { type: 'stop' };
+export type ToWorker = { type: 'start'; project: Project; options: GenerateOptions; lang: Lang } | { type: 'stop' };
 
 const ctx = self as unknown as {
   postMessage(message: unknown): void;
@@ -22,6 +24,7 @@ ctx.onmessage = (e) => {
     return;
   }
   stop = false;
+  setLangQuietly(msg.lang);
   let phase = 'placing';
   generateTimetable(msg.project, msg.options, {
     yieldEvery: 100,
